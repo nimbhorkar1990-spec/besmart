@@ -1,0 +1,127 @@
+/* ==========================================================
+   SmartSearch Sleek Dark Mode Theme
+   Applied when [data-theme="dark"] is on <html> or <body>
+   ========================================================== */
+
+[data-theme="dark"] {
+  --primary: #8ab4f8;
+  --primary-hover: #aecbfa;
+  --primary-light: #172b4d;
+  --primary-dark: #669df6;
+  --accent-green: #81c995;
+  --accent-red: #f28b82;
+  --accent-yellow: #fdd663;
+
+  --bg-body: #1f1f1f;
+  --bg-surface: #202124;
+  --bg-secondary: #303134;
+  --bg-tertiary: #3c4043;
+  --border-color: #5f6368;
+  --border-light: #3c4043;
+
+  --text-main: #e8eaed;
+  --text-secondary: #bdc1c6;
+  --text-muted: #9aa0a6;
+  --text-link: #8ab4f8;
+  --text-link-visited: #c58af9;
+
+  --card-bg: #303134;
+  --card-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
+  --card-shadow-hover: 0 4px 14px rgba(0, 0, 0, 0.6);
+  --searchbar-shadow: 0 2px 5px 1px rgba(0, 0, 0, 0.4);
+  --searchbar-hover-shadow: 0 2px 8px 1px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="dark"] .brand-logo,
+[data-theme="dark"] .home-brand-logo {
+  filter: brightness(1.1);
+}
+
+[data-theme="dark"] mark.search-highlight {
+  background-color: #5c4308;
+  color: #ffe082;
+}
+
+[data-theme="dark"] .searchbar-box {
+  background-color: #202124;
+  border-color: #5f6368;
+}
+
+[data-theme="dark"] .suggestions-box {
+  background-color: #303134;
+  border-color: #5f6368;
+}
+
+[data-theme="dark"] .suggestion-item:hover,
+[data-theme="dark"] .suggestion-item.active {
+  background-color: #3c4043;
+}
+
+[data-theme="dark"] .btn-smart {
+  background-color: #303134;
+  border-color: #303134;
+  color: #e8eaed;
+}
+
+[data-theme="dark"] .btn-smart:hover {
+  background-color: #3c4043;
+  border-color: #5f6368;
+}
+
+[data-theme="dark"] .related-searches-box {
+  background-color: #282a2d;
+}
+
+[data-theme="dark"] .related-search-link {
+  background-color: #303134;
+  border-color: #3c4043;
+}
+
+[data-theme="dark"] .page-btn {
+  background-color: #303134;
+  border-color: #5f6368;
+  color: #e8eaed;
+}
+
+[data-theme="dark"] .smart-footer {
+  background-color: #171717;
+  border-color: #303134;
+}
+
+[data-theme="dark"] .card {
+  background-color: #242528;
+  border-color: #3c4043;
+  color: #e8eaed;
+}
+
+[data-theme="dark"] .table {
+  color: #e8eaed;
+  border-color: #3c4043;
+}
+
+[data-theme="dark"] .table th,
+[data-theme="dark"] .table td {
+  border-color: #3c4043;
+  background-color: transparent;
+}
+
+[data-theme="dark"] .form-control,
+[data-theme="dark"] .form-select {
+  background-color: #303134;
+  border-color: #5f6368;
+  color: #e8eaed;
+}
+
+[data-theme="dark"] .form-control:focus,
+[data-theme="dark"] .form-select:focus {
+  background-color: #303134;
+  border-color: var(--primary);
+  color: #ffffff;
+}
+
+[data-theme="dark"] .modal-content {
+  background-color: #202124;
+  color: #e8eaed;
+  border-color: #5f6368;
+}
+

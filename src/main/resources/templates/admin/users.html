@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Users Management - SmartSearch Admin</title>
+    <link rel="icon" type="image/svg+xml" th:href="@{/images/logo-icon.svg}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/main.css}">
+    <link rel="stylesheet" th:href="@{/css/dark-mode.css}">
+    <link rel="stylesheet" th:href="@{/css/themes.css}">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+
+<div class="admin-layout-wrapper">
+    <aside class="admin-sidebar">
+        <div class="admin-sidebar-header">
+            <a th:href="@{/}" class="d-flex align-items-center text-decoration-none">
+                <img th:src="@{/images/logo.svg}" alt="SmartSearch" height="30">
+            </a>
+            <span class="badge bg-danger-subtle text-danger small">Admin</span>
+        </div>
+
+        <ul class="admin-nav-menu">
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/dashboard}" class="admin-nav-link">
+                    <i class="fas fa-gauge-high"></i> Dashboard
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/crawler}" class="admin-nav-link">
+                    <i class="fas fa-network-wired"></i> Web Crawler &amp; Queues
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/indexer}" class="admin-nav-link">
+                    <i class="fas fa-spider"></i> Website Indexer
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/analytics}" class="admin-nav-link">
+                    <i class="fas fa-chart-line"></i> Search Analytics
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/users}" class="admin-nav-link active">
+                    <i class="fas fa-users"></i> Users Management
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/settings}" class="admin-nav-link">
+                    <i class="fas fa-sliders"></i> Search &amp; API Settings
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/system}" class="admin-nav-link">
+                    <i class="fas fa-server"></i> System Health
+                </a>
+            </li>
+            <li class="admin-nav-item mt-4 pt-3 border-top">
+                <a th:href="@{/}" class="admin-nav-link">
+                    <i class="fas fa-arrow-left"></i> Back to Search
+                </a>
+            </li>
+        </ul>
+    </aside>
+
+    <div class="admin-content-main">
+        <header class="admin-topbar">
+            <h4 class="fw-bold mb-0">Registered Users &amp; Permissions</h4>
+            <div class="d-flex align-items-center gap-3">
+                <div th:replace="~{fragments/header :: themeSelector}"></div>
+            </div>
+        </header>
+
+        <div class="admin-body">
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <span th:text="${successMessage}">Success message</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
+            <!-- Users Table Card -->
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h5 class="admin-card-title"><i class="fas fa-user-gear text-primary me-2"></i>Accounts Directory</h5>
+                    
+                    <form th:action="@{/admin/users}" method="get" class="d-flex gap-2">
+                        <input type="text" name="search" class="form-control form-control-sm" placeholder="Search user or email..." th:value="${search}">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">Search</button>
+                    </form>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small">
+                            <tr>
+                                <th>User</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Joined</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="user : ${usersPage.content}">
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <img th:src="${user.avatarUrl != null ? user.avatarUrl : 'https://ui-avatars.com/api/?name=User'}" 
+                                             alt="Avatar" class="user-avatar-pill">
+                                        <div>
+                                            <div class="fw-semibold" th:text="${user.fullName}">Full Name</div>
+                                            <div class="small text-muted" th:text="'@' + ${user.username}">username</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td th:text="${user.email}">email@domain.com</td>
+                                <td>
+                                    <span class="badge" th:classappend="${user.role.name() == 'ROLE_ADMIN'} ? 'bg-danger' : 'bg-primary'" 
+                                          th:text="${user.role}">ROLE_USER</span>
+                                </td>
+                                <td>
+                                    <span class="status-pill status-active" th:if="${user.enabled}">
+                                        <i class="fas fa-check-circle"></i> Active
+                                    </span>
+                                    <span class="status-pill status-inactive" th:if="${!user.enabled}">
+                                        <i class="fas fa-ban"></i> Disabled
+                                    </span>
+                                </td>
+                                <td class="small text-muted" th:text="${#temporals.format(user.createdAt, 'MMM dd, yyyy')}">Date</td>
+                                <td class="text-end">
+                                    <div class="d-inline-flex gap-1" th:if="${user.username != 'admin'}">
+                                        <form th:action="@{/admin/users/toggle-status}" method="post" class="m-0">
+                                            <input type="hidden" name="id" th:value="${user.id}">
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary" 
+                                                    th:title="${user.enabled} ? 'Disable Account' : 'Enable Account'">
+                                                <i class="fas" th:classappend="${user.enabled} ? 'fa-user-slash text-warning' : 'fa-user-check text-success'"></i>
+                                            </button>
+                                        </form>
+
+                                        <form th:action="@{/admin/users/delete}" method="post" class="m-0"
+                                              onsubmit="return confirm('Permanently delete this user account?');">
+                                            <input type="hidden" name="id" th:value="${user.id}">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete User">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                    <span th:if="${user.username == 'admin'}" class="badge bg-secondary-subtle text-secondary">
+                                        Root Protected
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="p-3 border-top d-flex justify-content-center" th:if="${usersPage.totalPages > 1}">
+                    <nav class="smart-pagination">
+                        <a th:if="${usersPage.hasPrevious()}" 
+                           th:href="@{/admin/users(page=${currentPage - 1}, search=${search})}" 
+                           class="page-btn"><i class="fas fa-chevron-left"></i></a>
+
+                        <a th:each="p : ${#numbers.sequence(1, usersPage.totalPages)}" 
+                           th:href="@{/admin/users(page=${p}, search=${search})}" 
+                           class="page-btn" 
+                           th:classappend="${p == currentPage} ? 'active' : ''" 
+                           th:text="${p}">1</a>
+
+                        <a th:if="${usersPage.hasNext()}" 
+                           th:href="@{/admin/users(page=${currentPage + 1}, search=${search})}" 
+                           class="page-btn"><i class="fas fa-chevron-right"></i></a>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/js/main.js}"></script>
+<script th:src="@{/js/admin.js}"></script>
+
+</body>
+</html>
+

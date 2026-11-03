@@ -1,0 +1,36 @@
+# Maven target directory
+target/
+*.jar
+*.war
+*.ear
+*.rar
+
+# Lucene Index and runtime data
+data/
+data/lucene_index/
+data/lucene_index/*
+Java_Search_engine_database/
+*.db
+
+# Logs
+*.log
+logs/
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+bin/
+
+# OS files
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Temporary scratch & test cookies
+cookies*.txt
+scratch/
+*.tmp

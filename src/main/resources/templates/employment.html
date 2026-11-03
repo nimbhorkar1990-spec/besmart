@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
+<head th:replace="~{fragments/header :: head('Employment &amp; Career Services - SmartSearch')}">
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+<!-- Header Navbar with Home & Services Navigation Menu -->
+<header th:replace="~{fragments/header :: navbar}"></header>
+
+<!-- Main Container -->
+<main class="flex-grow-1 pb-5">
+    <!-- Hero Banner -->
+    <section class="py-5 bg-body-tertiary border-bottom">
+        <div class="container">
+            <div class="row align-items-center g-4">
+                <div class="col-lg-8">
+                    <div class="d-inline-flex align-items-center gap-2 px-3 py-1 mb-3 rounded-pill bg-primary-subtle text-primary fw-semibold small border border-primary-subtle">
+                        <i class="fas fa-briefcase"></i>
+                        <span>Service #1 &middot; Employment &amp; Talent Solutions</span>
+                    </div>
+                    <h1 class="display-5 fw-bold text-body-emphasis mb-3">
+                        Accelerate Your Tech Career with <span class="text-primary">SmartSearch Employment</span>
+                    </h1>
+                    <p class="lead text-secondary mb-4" style="max-width: 680px;">
+                        Connect directly with high-growth technology companies, search engine labs, cloud infrastructure teams, and enterprise innovators.
+                    </p>
+
+                    <!-- Search & Filter Form -->
+                    <form th:action="@{/employment}" method="get" class="card shadow-sm border-0 p-2 p-md-3 bg-body">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-12 col-md-5">
+                                <div class="input-group">
+                                    <span class="input-group-text bg-transparent border-0 text-muted"><i class="fas fa-search"></i></span>
+                                    <input type="text" name="search" class="form-control border-0 shadow-none ps-0" 
+                                           placeholder="Job title, company, skill (e.g. Spring Boot, Lucene)..." 
+                                           th:value="${search}">
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <select name="category" class="form-select border-0 shadow-none bg-light text-secondary">
+                                    <option value="ALL" th:selected="${selectedCategory == 'ALL'}">All Categories</option>
+                                    <option value="ENGINEERING" th:selected="${selectedCategory == 'ENGINEERING'}">Software Engineering</option>
+                                    <option value="AI_ML" th:selected="${selectedCategory == 'AI_ML'}">AI &amp; Machine Learning</option>
+                                    <option value="DEVOPS" th:selected="${selectedCategory == 'DEVOPS'}">DevOps &amp; Cloud</option>
+                                    <option value="SECURITY" th:selected="${selectedCategory == 'SECURITY'}">Cyber Security</option>
+                                    <option value="PRODUCT" th:selected="${selectedCategory == 'PRODUCT'}">Product &amp; Design</option>
+                                </select>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <select name="type" class="form-select border-0 shadow-none bg-light text-secondary">
+                                    <option value="ALL" th:selected="${selectedType == 'ALL'}">All Types</option>
+                                    <option value="Full-time" th:selected="${selectedType == 'Full-time'}">Full-time</option>
+                                    <option value="Remote" th:selected="${selectedType == 'Remote'}">Remote</option>
+                                    <option value="Hybrid" th:selected="${selectedType == 'Hybrid'}">Hybrid</option>
+                                    <option value="Contract" th:selected="${selectedType == 'Contract'}">Contract</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-2 d-grid">
+                                <button type="submit" class="btn btn-primary fw-medium">
+                                    <i class="fas fa-filter me-1"></i> Search
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="col-lg-4 d-none d-lg-block text-center">
+                    <div class="p-4 rounded-4 bg-primary text-white shadow-lg text-start position-relative overflow-hidden">
+                        <div class="position-absolute end-0 bottom-0 opacity-10 pe-3 pb-2" style="font-size: 8rem; pointer-events: none;">
+                            <i class="fas fa-briefcase"></i>
+                        </div>
+                        <span class="badge bg-white text-primary mb-2 fw-semibold">For Employers</span>
+                        <h4 class="fw-bold mb-2">Hiring Tech Talent?</h4>
+                        <p class="small text-white-50 mb-3">
+                            Post your engineering openings directly to the SmartSearch talent pipeline and match with qualified developers.
+                        </p>
+                        <!-- Post a Job button: Available only after Employer login -->
+                        <div th:if="${isEmployer}">
+                            <button type="button" class="btn btn-light text-primary fw-semibold btn-sm px-3 rounded-pill shadow-sm"
+                                    data-bs-toggle="modal" data-bs-target="#postJobModal">
+                                <i class="fas fa-plus-circle me-1"></i> Post a Job Opening
+                            </button>
+                        </div>
+                        <!-- When not logged in as Employer, hide Post a Job and prompt for Employer Login -->
+                        <div th:unless="${isEmployer}" class="d-flex align-items-center gap-2">
+                            <a th:href="@{/login}" class="btn btn-light text-primary fw-semibold btn-sm px-3 rounded-pill shadow-sm">
+                                <i class="fas fa-sign-in-alt me-1"></i> Employer Sign In to Post
+                            </a>
+                            <a th:href="@{/register?role=employer}" class="btn btn-outline-light btn-sm px-3 rounded-pill">
+                                Register
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Metrics Strip -->
+    <section class="py-4 border-bottom bg-body">
+        <div class="container">
+            <div class="row g-3 text-center">
+                <div class="col-6 col-md-3">
+                    <div class="p-2">
+                        <h3 class="fw-bold text-primary mb-1" th:text="${stats.totalActiveJobs}">1,480+</h3>
+                        <p class="text-secondary small mb-0">Active Tech Vacancies</p>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="p-2">
+                        <h3 class="fw-bold text-success mb-1" th:text="${stats.partnerCompanies}">340+</h3>
+                        <p class="text-secondary small mb-0">Partner Tech Companies</p>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="p-2">
+                        <h3 class="fw-bold text-info mb-1" th:text="${stats.avgPlacementSalary}">₹24 LPA</h3>
+                        <p class="text-secondary small mb-0">Average Engineering CTC</p>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="p-2">
+                        <h3 class="fw-bold text-warning mb-1" th:text="${stats.interviewsScheduled}">8,200+</h3>
+                        <p class="text-secondary small mb-0">Interviews Scheduled</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content: Listings + Sidebar -->
+    <div class="container mt-4 pt-2">
+        <!-- Flash Message Alerts -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show mb-4 shadow-sm" role="alert">
+            <i class="fas fa-circle-check me-2"></i>
+            <span th:text="${successMessage}">Operation completed successfully.</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show mb-4 shadow-sm" role="alert">
+            <i class="fas fa-triangle-exclamation me-2"></i>
+            <span th:text="${errorMessage}">An error occurred.</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <div class="row g-4">
+            <!-- Left Column: Job Listings -->
+            <div class="col-lg-8">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0 text-body">
+                        <i class="fas fa-list-ul text-primary me-2"></i>
+                        Available Positions <span class="badge bg-secondary-subtle text-secondary ms-1 fw-normal" th:text="${totalJobCount} + ' roles'">7 roles</span>
+                    </h5>
+                    <div class="d-flex align-items-center gap-2">
+                        <span th:if="${search != '' || selectedCategory != 'ALL' || selectedType != 'ALL'}" class="badge bg-primary-subtle text-primary">
+                            Filters Active
+                        </span>
+                        <a th:if="${search != '' || selectedCategory != 'ALL' || selectedType != 'ALL'}" 
+                           th:href="@{/employment}" class="btn btn-sm btn-outline-secondary py-0 px-2" title="Clear Filters">
+                            <i class="fas fa-times me-1"></i>Reset
+                        </a>
+                        <button th:if="${isEmployer}" type="button" class="btn btn-sm btn-outline-primary d-lg-none" data-bs-toggle="modal" data-bs-target="#postJobModal">
+                            <i class="fas fa-plus me-1"></i>Post Job
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Job Cards -->
+                <div class="d-flex flex-column gap-3">
+                    <div th:each="job : ${jobs}" class="card border rounded-3 p-3 p-md-4 shadow-sm transition-hover bg-body"
+                         th:classappend="${job.featured} ? 'border-primary-subtle' : ''">
+                        <div class="d-flex align-items-start gap-3">
+                            <img th:src="${job.companyLogo}" alt="Company" class="rounded-3 border" style="width: 52px; height: 52px; object-fit: cover;">
+                            
+                            <div class="flex-grow-1">
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-1">
+                                    <h5 class="fw-bold text-body mb-0" th:text="${job.title}">Job Title</h5>
+                                    <span th:if="${job.featured}" class="badge bg-warning-subtle text-warning-emphasis border border-warning small">
+                                        <i class="fas fa-star me-1"></i>Featured
+                                    </span>
+                                </div>
+
+                                <div class="text-secondary small mb-2 d-flex flex-wrap align-items-center gap-2">
+                                    <span class="fw-semibold text-primary"><i class="fas fa-building me-1"></i><span th:text="${job.company}">Company</span></span>
+                                    <span>&bull;</span>
+                                    <span><i class="fas fa-location-dot me-1 text-danger"></i><span th:text="${job.location}">Location</span></span>
+                                    <span>&bull;</span>
+                                    <span class="badge bg-light text-dark border" th:text="${job.jobType}">Full-time</span>
+                                </div>
+
+                                <!-- Verified Business Badges (Shop Act, GST, RERA, MSME) -->
+                                <div class="d-flex flex-wrap align-items-center gap-2 mb-2" th:if="${job.hasMinimumCertificates()}">
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle d-inline-flex align-items-center gap-1 small">
+                                        <i class="fas fa-shield-check"></i> Business Verified
+                                    </span>
+                                    <span th:each="cert : ${job.verifiedCertificates}" class="badge bg-body-tertiary text-body-secondary border small fw-normal">
+                                        <i class="fas fa-certificate text-primary me-1"></i><span th:text="${cert}">GST</span>
+                                    </span>
+                                </div>
+
+                                <p class="text-secondary small mb-3" style="line-height: 1.5;" th:text="${job.description}">
+                                    Job description snippet describing responsibilities and required qualifications.
+                                </p>
+
+                                <!-- Skill Tags -->
+                                <div class="d-flex flex-wrap gap-1 mb-3">
+                                    <span th:each="tag : ${job.tags}" class="badge bg-secondary-subtle text-secondary small fw-normal" th:text="${tag}">
+                                        Java
+                                    </span>
+                                </div>
+
+                                <!-- Card Footer: Salary, Applicants & Action Button -->
+                                <div class="d-flex flex-wrap align-items-center justify-content-between pt-2 border-top gap-2">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="fw-bold text-success small">
+                                            <i class="fas fa-wallet me-1"></i><span th:text="${job.salaryRange}">Salary</span>
+                                        </div>
+                                        <span class="text-muted small">&bull;</span>
+                                        <div class="text-muted small">
+                                            <i class="fas fa-user-check me-1"></i><span th:text="${job.experienceLevel}">Experience</span>
+                                        </div>
+                                        <span class="text-muted small d-none d-sm-inline">&bull;</span>
+                                        <div class="text-muted small d-none d-sm-inline">
+                                            <i class="fas fa-users me-1"></i><span th:text="${job.applicantCount}">25</span> applicants
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="text-muted small me-1" th:text="${job.postedAgo}">2 hours ago</span>
+                                        <button type="button" class="btn btn-primary btn-sm px-3 rounded-pill btn-apply-trigger"
+                                                th:data-id="${job.id}"
+                                                th:data-title="${job.title}"
+                                                th:data-company="${job.company}"
+                                                data-bs-toggle="modal" data-bs-target="#applyJobModal">
+                                            <i class="fas fa-paper-plane me-1"></i> Quick Apply
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- No Results Found State -->
+                    <div th:if="${jobs == null || jobs.isEmpty()}" class="card border rounded-3 p-5 text-center bg-body shadow-sm">
+                        <div class="mb-3 text-muted" style="font-size: 3rem;">
+                            <i class="fas fa-briefcase text-secondary opacity-50"></i>
+                        </div>
+                        <h5 class="fw-bold text-body">No matching employment opportunities found</h5>
+                        <p class="text-muted small mb-3">Try adjusting your keyword search, category, or employment type filter.</p>
+                        <div>
+                            <a th:href="@{/employment}" class="btn btn-outline-primary btn-sm px-4 rounded-pill">
+                                <i class="fas fa-arrows-rotate me-1"></i> View All Openings
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Sidebar & Career Resources -->
+            <div class="col-lg-4">
+                <div class="d-flex flex-column gap-4">
+                    <!-- Post a Job Card (Visible only when logged in as Employer) -->
+                    <div class="card border rounded-3 p-4 shadow-sm bg-body" th:if="${isEmployer}">
+                        <div class="d-flex align-items-center gap-2 mb-2 text-primary">
+                            <i class="fas fa-briefcase fa-lg"></i>
+                            <h5 class="fw-bold mb-0">Recruitment Services</h5>
+                        </div>
+                        <p class="text-secondary small mb-3">
+                            Looking to hire experienced Java engineers, cloud architects, or AI researchers? Publish your vacancy instantly.
+                        </p>
+                        <button type="button" class="btn btn-outline-primary w-100 fw-semibold rounded-pill"
+                                data-bs-toggle="modal" data-bs-target="#postJobModal">
+                            <i class="fas fa-plus-circle me-1"></i> Post a Job Opening
+                        </button>
+                    </div>
+
+                    <!-- Employer Portal Info Card (Visible when NOT logged in as Employer) -->
+                    <div class="card border rounded-3 p-4 shadow-sm bg-body" th:unless="${isEmployer}">
+                        <div class="d-flex align-items-center gap-2 mb-2 text-primary">
+                            <i class="fas fa-building-circle-check fa-lg"></i>
+                            <h5 class="fw-bold mb-0">Employer Portal</h5>
+                        </div>
+                        <p class="text-secondary small mb-3">
+                            Posting a job opening is exclusively available to verified employers. Sign in with your Employer account or register your company to publish vacancies.
+                        </p>
+                        <div class="d-grid gap-2">
+                            <a th:href="@{/login}" class="btn btn-outline-primary btn-sm rounded-pill fw-medium">
+                                <i class="fas fa-sign-in-alt me-1"></i> Employer Sign In
+                            </a>
+                            <a th:href="@{/register?role=employer}" class="btn btn-light btn-sm rounded-pill text-secondary border">
+                                <i class="fas fa-user-plus me-1"></i> Register as Employer
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Employment Services Overview Card -->
+                    <div class="card border rounded-3 p-4 shadow-sm bg-body">
+                        <h6 class="fw-bold text-body mb-3">
+                            <i class="fas fa-award text-warning me-2"></i>Why SmartSearch Employment?
+                        </h6>
+                        <ul class="list-unstyled mb-0 d-flex flex-column gap-3 small text-secondary">
+                            <li class="d-flex align-items-start gap-2">
+                                <i class="fas fa-check-circle text-success mt-1"></i>
+                                <div>
+                                    <strong class="text-body">Verified Tech Employers:</strong> Every job listing is vetted for authentic compensation and legitimate direct company hiring.
+                                </div>
+                            </li>
+                            <li class="d-flex align-items-start gap-2">
+                                <i class="fas fa-check-circle text-success mt-1"></i>
+                                <div>
+                                    <strong class="text-body">Lucene-Powered Matching:</strong> Intelligent keyword relevance algorithms match candidate resumes with job requirements.
+                                </div>
+                            </li>
+                            <li class="d-flex align-items-start gap-2">
+                                <i class="fas fa-check-circle text-success mt-1"></i>
+                                <div>
+                                    <strong class="text-body">Zero Intermediary Fees:</strong> 100% free for applicants. Connect straight to engineering hiring managers.
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Tech Career & Interview Guides -->
+                    <div class="card border rounded-3 p-4 shadow-sm bg-body">
+                        <h6 class="fw-bold text-body mb-3">
+                            <i class="fas fa-book-open-reader text-info me-2"></i>Career &amp; Interview Guides
+                        </h6>
+                        <div class="d-flex flex-column gap-2 small">
+                            <a th:href="@{/search?q=Java+Spring+Boot+interview+questions}" class="text-decoration-none d-flex align-items-center justify-content-between p-2 rounded hover-bg-light">
+                                <span><i class="fas fa-file-code text-primary me-2"></i>Java &amp; Spring Boot Interview Prep</span>
+                                <i class="fas fa-chevron-right text-muted" style="font-size: 0.75rem;"></i>
+                            </a>
+                            <a th:href="@{/search?q=Apache+Lucene+system+design+architecture}" class="text-decoration-none d-flex align-items-center justify-content-between p-2 rounded hover-bg-light">
+                                <span><i class="fas fa-microchip text-danger me-2"></i>Search Engine System Design</span>
+                                <i class="fas fa-chevron-right text-muted" style="font-size: 0.75rem;"></i>
+                            </a>
+                            <a th:href="@{/search?q=Kubernetes+DevOps+best+practices}" class="text-decoration-none d-flex align-items-center justify-content-between p-2 rounded hover-bg-light">
+                                <span><i class="fas fa-cloud text-info me-2"></i>DevOps &amp; Cloud Architecture</span>
+                                <i class="fas fa-chevron-right text-muted" style="font-size: 0.75rem;"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Modal: Quick Apply for Job -->
+<div class="modal fade" id="applyJobModal" tabindex="-1" aria-labelledby="applyJobModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white">
+                <div>
+                    <h5 class="modal-title fw-bold" id="applyJobModalLabel">
+                        <i class="fas fa-paper-plane me-2"></i>Quick Apply
+                    </h5>
+                    <p class="small text-white-50 mb-0" id="applyModalSubtitle">Submit your application</p>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form th:action="@{/employment/apply}" method="post">
+                <div class="modal-body p-4">
+                    <input type="hidden" name="jobId" id="modalJobId" value="1">
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-body">Full Name <span class="text-danger">*</span></label>
+                        <input type="text" name="fullName" class="form-control" placeholder="e.g. Alex Morgan" required
+                               th:value="${currentUser != null ? currentUser.fullName : ''}">
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small text-body">Email Address <span class="text-danger">*</span></label>
+                            <input type="email" name="email" class="form-control" placeholder="alex@example.com" required
+                                   th:value="${currentUser != null ? currentUser.email : ''}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small text-body">Phone Number</label>
+                            <input type="tel" name="phone" class="form-control" placeholder="+91 98765 43210">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-body">Years of Experience</label>
+                        <select name="experience" class="form-select">
+                            <option value="0 - 2 Years">0 - 2 Years (Junior / Entry)</option>
+                            <option value="2 - 5 Years" selected>2 - 5 Years (Mid-level)</option>
+                            <option value="5 - 8 Years">5 - 8 Years (Senior)</option>
+                            <option value="8+ Years">8+ Years (Lead / Principal)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-body">LinkedIn / GitHub / Portfolio URL</label>
+                        <input type="url" name="notes" class="form-control" placeholder="https://github.com/yourhandle or https://linkedin.com/in/yourprofile">
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm px-4 fw-medium">
+                        <i class="fas fa-check me-1"></i> Submit Application
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Post a Job Opening (Rendered only for authenticated Employer accounts) -->
+<div th:if="${isEmployer}" class="modal fade" id="postJobModal" tabindex="-1" aria-labelledby="postJobModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-dark text-white">
+                <div>
+                    <h5 class="modal-title fw-bold" id="postJobModalLabel">
+                        <i class="fas fa-plus-circle text-primary me-2"></i>Post a Job Opening
+                    </h5>
+                    <p class="small text-white-50 mb-0">Publish an engineering or tech position to the SmartSearch Employment Portal</p>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form th:action="@{/employment/post-job}" method="post" id="postJobForm">
+                <div class="modal-body p-4">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small text-body">Job Title <span class="text-danger">*</span></label>
+                            <input type="text" name="title" class="form-control" placeholder="e.g. Senior Java Backend Engineer" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small text-body">Company Name <span class="text-danger">*</span></label>
+                            <input type="text" name="company" class="form-control" placeholder="e.g. Acme Tech Solutions" required
+                                   th:value="${currentUser != null && currentUser.companyName != null ? currentUser.companyName : (currentUser != null ? currentUser.fullName : '')}">
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold small text-body">Location <span class="text-danger">*</span></label>
+                            <input type="text" name="location" class="form-control" placeholder="e.g. Bengaluru / Remote" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold small text-body">Employment Type</label>
+                            <select name="jobType" class="form-select">
+                                <option value="Full-time" selected>Full-time</option>
+                                <option value="Remote">Remote</option>
+                                <option value="Hybrid">Hybrid</option>
+                                <option value="Contract">Contract</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold small text-body">Category</label>
+                            <select name="category" class="form-select">
+                                <option value="ENGINEERING" selected>Software Engineering</option>
+                                <option value="AI_ML">AI &amp; Machine Learning</option>
+                                <option value="DEVOPS">DevOps &amp; Cloud</option>
+                                <option value="SECURITY">Cyber Security</option>
+                                <option value="PRODUCT">Product &amp; Design</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small text-body">Salary Range (Annual)</label>
+                            <input type="text" name="salaryRange" class="form-control" placeholder="e.g. ₹20,00,000 - ₹30,00,000 / yr">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small text-body">Required Experience</label>
+                            <input type="text" name="experienceLevel" class="form-control" placeholder="e.g. 3 - 6 Years">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-body">Required Skills (Comma-separated)</label>
+                        <input type="text" name="skills" class="form-control" placeholder="e.g. Java 17, Spring Boot, MySQL, Lucene, Docker">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-body">Detailed Job Description <span class="text-danger">*</span></label>
+                        <textarea name="description" class="form-control" rows="4" 
+                                  placeholder="Describe the role, key responsibilities, team structure, and qualifications..." required></textarea>
+                    </div>
+
+                    <!-- Business Registration & Regulatory Verification Section -->
+                    <div class="p-3 mb-2 rounded-3 border bg-body-tertiary">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <label class="form-label fw-bold small text-body mb-0">
+                                <i class="fas fa-shield-halved text-primary me-1"></i>Mandatory Business Verification
+                            </label>
+                            <span id="postJobCertBadge" class="badge bg-warning text-dark px-2 py-1 small">
+                                <i class="fas fa-triangle-exclamation me-1"></i><span id="postJobCertCountText">0 of 2 certificates</span>
+                            </span>
+                        </div>
+                        <p class="text-secondary small mb-3">
+                            To ensure authenticity and protect applicants, employers must provide <strong>at least any two (2)</strong> of the four Indian regulatory certificates below.
+                        </p>
+
+                        <div id="postJobAlert" class="alert alert-danger py-2 px-3 small rounded-3 d-none mb-3">
+                            <i class="fas fa-triangle-exclamation me-1"></i>
+                            <span id="postJobAlertText">Minimum any two (2) certificates (Shop Act, GST, RERA, or MSME) are strictly required to post job advertisements.</span>
+                        </div>
+
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-body">
+                                    <i class="fas fa-store text-secondary me-1"></i>1. Shop Act Registration
+                                </label>
+                                <input type="text" name="shopActCert" id="postJobShopAct" class="form-control form-control-sm post-job-cert-input"
+                                       placeholder="e.g. MH/PUN/SHOP/91024/2019"
+                                       th:value="${currentUser != null ? currentUser.shopActCert : ''}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-body">
+                                    <i class="fas fa-receipt text-secondary me-1"></i>2. GST Certificate (GSTIN)
+                                </label>
+                                <input type="text" name="gstCert" id="postJobGst" class="form-control form-control-sm post-job-cert-input"
+                                       placeholder="e.g. 27AAACV9204P1Z3"
+                                       th:value="${currentUser != null ? currentUser.gstCert : ''}">
+                            </div>
+                        </div>
+
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-body">
+                                    <i class="fas fa-building-columns text-secondary me-1"></i>3. RERA Certificate No.
+                                </label>
+                                <input type="text" name="reraCert" id="postJobRera" class="form-control form-control-sm post-job-cert-input"
+                                       placeholder="e.g. MAHARERA/P52100012345"
+                                       th:value="${currentUser != null ? currentUser.reraCert : ''}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-body">
+                                    <i class="fas fa-industry text-secondary me-1"></i>4. MSME / Udyam No.
+                                </label>
+                                <input type="text" name="msmeCert" id="postJobMsme" class="form-control form-control-sm post-job-cert-input"
+                                       placeholder="e.g. UDYAM-MH-19-0012984"
+                                       th:value="${currentUser != null ? currentUser.msmeCert : ''}">
+                            </div>
+                        </div>
+                        <div class="form-text small text-secondary mt-2">
+                            <i class="fas fa-circle-info me-1"></i>Verification badges reflecting your provided credentials will appear on the job vacancy card.
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" id="btnSubmitPostJob" class="btn btn-primary btn-sm px-4 fw-medium">
+                        <i class="fas fa-check-circle me-1"></i> Publish Job Opening
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Footer -->
+<footer th:replace="~{fragments/footer :: footer}"></footer>
+
+<!-- Bootstrap 5 Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/js/main.js}"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Quick Apply Modal Handlers
+        const applyTriggers = document.querySelectorAll(".btn-apply-trigger");
+        const modalJobId = document.getElementById("modalJobId");
+        const modalSubtitle = document.getElementById("applyModalSubtitle");
+
+        applyTriggers.forEach(btn => {
+            btn.addEventListener("click", function() {
+                const jobId = this.getAttribute("data-id");
+                const title = this.getAttribute("data-title");
+                const company = this.getAttribute("data-company");
+
+                if (modalJobId) modalJobId.value = jobId;
+                if (modalSubtitle) modalSubtitle.textContent = "Applying for: " + title + " at " + company;
+            });
+        });
+
+        // Post Job Modal Certificate Live Counter & Validation
+        const postJobForm = document.getElementById("postJobForm");
+        const postJobCertBadge = document.getElementById("postJobCertBadge");
+        const postJobCertCountText = document.getElementById("postJobCertCountText");
+        const postJobCertInputs = document.querySelectorAll(".post-job-cert-input");
+        const postJobAlert = document.getElementById("postJobAlert");
+
+        function countPostJobCertificates() {
+            let count = 0;
+            postJobCertInputs.forEach(input => {
+                if (input.value && input.value.trim().length > 0) {
+                    count++;
+                }
+            });
+            return count;
+        }
+
+        function updatePostJobCertUI() {
+            if (!postJobCertBadge || !postJobCertCountText) return;
+            const count = countPostJobCertificates();
+            if (count >= 2) {
+                postJobCertBadge.className = "badge bg-success px-2 py-1 small";
+                postJobCertBadge.innerHTML = `<i class="fas fa-check-circle me-1"></i>${count} of 2 verified (Requirement Met)`;
+                if (postJobAlert) postJobAlert.classList.add("d-none");
+            } else {
+                postJobCertBadge.className = "badge bg-warning text-dark px-2 py-1 small";
+                postJobCertBadge.innerHTML = `<i class="fas fa-triangle-exclamation me-1"></i>${count} of 2 certificates (Min. 2 required)`;
+            }
+        }
+
+        postJobCertInputs.forEach(input => {
+            input.addEventListener("input", updatePostJobCertUI);
+        });
+
+        // Initialize UI on load
+        updatePostJobCertUI();
+
+        if (postJobForm) {
+            postJobForm.addEventListener("submit", function(e) {
+                const count = countPostJobCertificates();
+                if (count < 2) {
+                    e.preventDefault();
+                    if (postJobAlert) {
+                        postJobAlert.classList.remove("d-none");
+                    }
+                    for (let input of postJobCertInputs) {
+                        if (!input.value || !input.value.trim()) {
+                            input.focus();
+                            break;
+                        }
+                    }
+                    return false;
+                }
+                if (postJobAlert) postJobAlert.classList.add("d-none");
+            });
+        }
+    });
+</script>
+
+</body>
+</html>
+

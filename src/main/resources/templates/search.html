@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
+<head th:replace="~{fragments/header :: head(${req.query != '' ? req.query + ' - SmartSearch' : 'Search - SmartSearch'})}">
+</head>
+<body>
+
+<!-- Sticky Search Header -->
+<header class="search-header-container">
+    <div class="search-top-row">
+        <!-- Logo -->
+        <a th:href="@{/}" class="text-decoration-none d-flex align-items-center">
+            <img th:src="@{/images/logo.svg}" alt="SmartSearch" class="brand-logo">
+        </a>
+
+        <!-- Search Bar with Autocomplete & Voice Search -->
+        <div class="search-results-bar">
+            <div class="searchbar-wrapper">
+                <form id="searchForm" th:action="@{/search}" method="get" autocomplete="off">
+                    <input type="hidden" name="category" th:value="${req.category}">
+                    <input type="hidden" name="exactMatch" th:value="${req.exactMatch}">
+                    <input type="hidden" name="site" th:value="${req.site}">
+                    <input type="hidden" name="sortBy" th:value="${req.sortBy}">
+
+                    <div class="searchbar-box">
+                        <i class="fas fa-search searchbar-icon"></i>
+                        <input type="text" id="mainSearchInput" name="q" class="searchbar-input" 
+                               th:value="${req.query}" placeholder="Search..." autofocus>
+
+                        <button type="button" id="clearSearchBtn" class="searchbar-action-btn" title="Clear">
+                            <i class="fas fa-times"></i>
+                        </button>
+
+                        <button type="button" id="voiceSearchBtn" th:if="${voiceSearchEnabled}" class="searchbar-action-btn" title="Voice Search">
+                            <i class="fas fa-microphone"></i>
+                        </button>
+
+                        <button type="submit" class="searchbar-action-btn text-primary" title="Search">
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    <div id="suggestionsDropdown" class="suggestions-box"></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Right: Services, Theme Selector Dropdown & User menu -->
+        <div class="d-none d-md-flex align-items-center gap-3 ms-auto">
+            <!-- Services Menu Dropdown -->
+            <div class="dropdown">
+                <button class="btn btn-sm btn-outline-secondary rounded-pill dropdown-toggle d-flex align-items-center gap-1"
+                        type="button" id="searchServicesDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-briefcase text-primary"></i>
+                    <span>Services</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-2" aria-labelledby="searchServicesDropdownBtn" style="min-width: 230px;">
+                    <li><h6 class="dropdown-header text-uppercase small fw-bold"><i class="fas fa-layer-group me-1 text-primary"></i> Platform Services</h6></li>
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center gap-2 py-2" th:href="@{/employment}">
+                            <span class="badge bg-primary text-white rounded-pill px-2 py-1 small">1</span>
+                            <i class="fas fa-user-tie text-primary"></i>
+                            <div>
+                                <div class="fw-semibold">1. Employment</div>
+                                <div class="text-muted small" style="font-size: 0.75rem;">Jobs &amp; Recruitment</div>
+                            </div>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <div th:replace="~{fragments/header :: themeSelector}"></div>
+
+            <!-- User dropdown -->
+            <div sec:authorize="isAuthenticated()" class="dropdown">
+                <button class="btn btn-link text-decoration-none p-0 d-flex align-items-center gap-2 dropdown-toggle" 
+                        type="button" id="searchUserMenuBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                    <img th:src="${currentUser != null && currentUser.avatarUrl != null ? currentUser.avatarUrl : 'https://ui-avatars.com/api/?name=User&background=1a73e8&color=fff'}" 
+                         alt="Avatar" class="user-avatar-pill">
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="searchUserMenuBtn">
+                    <li><h6 class="dropdown-header" th:text="${currentUser != null ? currentUser.fullName : 'Account'}">User</h6></li>
+                    <li><a class="dropdown-item" th:href="@{/user/saved}"><i class="fas fa-bookmark me-2 text-primary"></i>Saved Bookmarks</a></li>
+                    <li><a class="dropdown-item" th:href="@{/user/history}"><i class="fas fa-history me-2 text-info"></i>Search History</a></li>
+                    <li><a class="dropdown-item" th:href="@{/user/profile}"><i class="fas fa-user-circle me-2 text-secondary"></i>Profile</a></li>
+                    <li sec:authorize="hasAuthority('ROLE_ADMIN')">
+                        <hr class="dropdown-divider">
+                    </li>
+                    <li sec:authorize="hasAuthority('ROLE_ADMIN')">
+                        <a class="dropdown-item text-danger fw-semibold" th:href="@{/admin/dashboard}">
+                            <i class="fas fa-shield-halved me-2"></i>Admin Dashboard
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <form th:action="@{/logout}" method="post" class="m-0">
+                            <button type="submit" class="dropdown-item text-danger">
+                                <i class="fas fa-sign-out-alt me-2"></i>Log Out
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Guest Login -->
+            <div sec:authorize="isAnonymous()">
+                <a th:href="@{/login}" class="btn btn-primary btn-sm px-3 rounded-pill">Sign In</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Tabs Navigation -->
+    <div class="category-tabs-container">
+        <a th:href="@{/search(q=${req.query}, category='ALL', exactMatch=${req.exactMatch}, site=${req.site})}" 
+           class="category-tab" th:classappend="${req.category == 'ALL'} ? 'active' : ''">
+            <i class="fas fa-globe"></i> All
+        </a>
+        <a th:href="@{/search(q=${req.query}, category='IMAGES', exactMatch=${req.exactMatch}, site=${req.site})}" 
+           class="category-tab" th:classappend="${req.category == 'IMAGES'} ? 'active' : ''">
+            <i class="fas fa-image"></i> Images
+        </a>
+        <a th:href="@{/search(q=${req.query}, category='VIDEOS', exactMatch=${req.exactMatch}, site=${req.site})}" 
+           class="category-tab" th:classappend="${req.category == 'VIDEOS'} ? 'active' : ''">
+            <i class="fas fa-video"></i> Videos
+        </a>
+        <a th:href="@{/search(q=${req.query}, category='NEWS', exactMatch=${req.exactMatch}, site=${req.site})}" 
+           class="category-tab" th:classappend="${req.category == 'NEWS'} ? 'active' : ''">
+            <i class="fas fa-newspaper"></i> News
+        </a>
+        <a th:href="@{/search(q=${req.query}, category='MAPS', exactMatch=${req.exactMatch}, site=${req.site})}" 
+           class="category-tab" th:classappend="${req.category == 'MAPS'} ? 'active' : ''">
+            <i class="fas fa-map-marked-alt"></i> Maps
+        </a>
+        <a th:href="@{/search(q=${req.query}, category='SHOPPING', exactMatch=${req.exactMatch}, site=${req.site})}" 
+           class="category-tab" th:classappend="${req.category == 'SHOPPING'} ? 'active' : ''">
+            <i class="fas fa-shopping-bag"></i> Shopping
+        </a>
+    </div>
+</header>
+
+<!-- Main Results Body -->
+<main class="search-content-area container-fluid">
+    <!-- Top Stats & Filter Button -->
+    <div class="results-stats-row">
+        <div>
+            <span th:text="'About ' + ${#numbers.formatInteger(res.totalHits, 0, 'COMMA')} + ' results (' + ${res.searchDurationMs} + ' seconds)'">
+                About 142 results (0.012 seconds)
+            </span>
+            <span th:if="${req.exactMatch != null && req.exactMatch != ''}" class="badge bg-secondary ms-2">
+                Exact: "<span th:text="${req.exactMatch}"></span>"
+            </span>
+            <span th:if="${req.site != null && req.site != ''}" class="badge bg-info ms-2">
+                Site: <span th:text="${req.site}"></span>
+            </span>
+        </div>
+        <div>
+            <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill" data-bs-toggle="modal" data-bs-target="#advancedSearchModal">
+                <i class="fas fa-sliders me-1"></i> Filters
+            </button>
+        </div>
+    </div>
+
+    <!-- Automated Multi-Engine Discovery Banner -->
+    <div th:if="${res.discoveryStatus != null}" class="alert py-2 px-3 small d-flex flex-wrap align-items-center justify-content-between mb-3 rounded-4 border shadow-sm" style="background: rgba(13, 110, 253, 0.06); border-color: rgba(13, 110, 253, 0.2) !important;">
+        <div class="d-flex align-items-center gap-2">
+            <i class="fas fa-network-wired text-primary"></i>
+            <span class="fw-semibold text-dark" th:text="${res.discoveryStatus}">Multi-Engine Discovery Active</span>
+        </div>
+        <span th:if="${res.crawlerActive}" class="badge bg-success-subtle text-success border border-success">
+            <i class="fas fa-circle-notch fa-spin me-1"></i> Auto-Crawler Active
+        </span>
+    </div>
+
+    <!-- Empty Search State -->
+    <div th:if="${res.results.isEmpty()}" class="py-5 text-center">
+        <div class="text-muted mb-3 fs-1"><i class="fas fa-magnifying-glass"></i></div>
+        <h4 class="fw-semibold">No results found for "<span th:text="${req.query}">query</span>"</h4>
+        <p class="text-muted">Suggestions:</p>
+        <ul class="list-unstyled text-muted small">
+            <li>Check if your spelling is correct</li>
+            <li>Try different or more general keywords</li>
+            <li>Try fewer keywords or remove filters</li>
+        </ul>
+        <a th:href="@{/}" class="btn btn-primary btn-sm rounded-pill mt-3 px-4">Back to Homepage</a>
+    </div>
+
+    <!-- ======================================================= -->
+    <!-- 1. CATEGORY: ALL (Web Results + Knowledge Card)        -->
+    <!-- ======================================================= -->
+    <div th:if="${req.category == 'ALL' && !res.results.isEmpty()}" class="row">
+        <!-- Left: Search Results List -->
+        <div class="col-lg-7 col-xl-7">
+            <div class="search-results-list">
+                <div th:each="item : ${res.results}" class="result-item-card">
+                    <!-- URL & Breadcrumb Header -->
+                    <div class="result-url-header">
+                        <img th:src="'https://www.google.com/s2/favicons?domain=' + ${item.domain != null ? item.domain : 'example.com'} + '&sz=32'" 
+                             alt="Favicon" class="result-favicon" onerror="this.src='/images/logo-icon.svg'">
+                        <span class="result-domain" th:text="${item.domain}">example.com</span>
+                        <span class="result-url-breadcrumb" th:text="${item.url}">https://example.com/path</span>
+                    </div>
+
+                    <!-- Title -->
+                    <h2 class="result-title">
+                        <a th:href="${item.url}" target="_blank" rel="noopener noreferrer" th:text="${item.title}">
+                            Page Title Here
+                        </a>
+                    </h2>
+
+                    <!-- Snippet with Keyword Highlighting -->
+                    <p class="result-snippet" th:utext="${item.snippet}">
+                        Snippet text with matched words highlighted.
+                    </p>
+
+                    <!-- Quick Result Actions (Bookmark, Copy Link) -->
+                    <div class="result-actions">
+                        <button type="button" class="btn-result-action btn-bookmark-action" 
+                                th:classappend="${item.saved} ? 'saved' : ''"
+                                th:data-url="${item.url}" 
+                                th:data-title="${item.title}" 
+                                th:data-snippet="${item.snippet}"
+                                th:data-category="${item.category}"
+                                th:data-image="${item.imageUrl}">
+                            <i th:class="${item.saved} ? 'fas fa-bookmark' : 'far fa-bookmark'"></i>
+                            <span>Save</span>
+                        </button>
+
+                        <button type="button" class="btn-result-action btn-copy-url" th:data-url="${item.url}">
+                            <i class="far fa-copy"></i>
+                            <span>Copy link</span>
+                        </button>
+
+                        <span class="badge ms-auto" th:classappend="${item.sourceBadgeClass != null ? item.sourceBadgeClass : 'bg-body-secondary text-secondary'}" 
+                              th:text="${item.sourceBadge != null ? item.sourceBadge : item.source}">
+                            SmartSearch Index
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Related Searches -->
+            <div class="related-searches-box" th:if="${res.relatedSearches != null && !res.relatedSearches.isEmpty()}">
+                <div class="related-searches-title">
+                    <i class="fas fa-magnifying-glass text-primary"></i> Related Searches
+                </div>
+                <div class="related-searches-grid">
+                    <a th:each="related : ${res.relatedSearches}" 
+                       th:href="@{/search(q=${related}, category='ALL')}" 
+                       class="related-search-link">
+                        <i class="fas fa-arrow-trend-up text-muted"></i>
+                        <span th:text="${related}">related query</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <nav class="smart-pagination" th:if="${res.totalPages > 1}">
+                <!-- Previous -->
+                <a th:if="${res.hasPrevious}" 
+                   th:href="@{/search(q=${req.query}, category=${req.category}, page=${res.page - 1}, exactMatch=${req.exactMatch}, site=${req.site})}" 
+                   class="page-btn" title="Previous Page">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+
+                <!-- Page numbers -->
+                <a th:each="p : ${#numbers.sequence(1, res.totalPages)}"
+                   th:if="${p >= res.page - 2 && p <= res.page + 2}"
+                   th:href="@{/search(q=${req.query}, category=${req.category}, page=${p}, exactMatch=${req.exactMatch}, site=${req.site})}"
+                   th:classappend="${p == res.page} ? 'active' : ''"
+                   class="page-btn" th:text="${p}">1</a>
+
+                <!-- Next -->
+                <a th:if="${res.hasNext}" 
+                   th:href="@{/search(q=${req.query}, category=${req.category}, page=${res.page + 1}, exactMatch=${req.exactMatch}, site=${req.site})}" 
+                   class="page-btn" title="Next Page">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            </nav>
+        </div>
+
+        <!-- Right: Knowledge Graph Card (Sidebar) -->
+        <div class="col-lg-5 col-xl-4 offset-xl-1 mt-4 mt-lg-0" th:if="${res.knowledgeCard != null}">
+            <div class="knowledge-card">
+                <img th:if="${res.knowledgeCard.imageUrl != null}" 
+                     th:src="${res.knowledgeCard.imageUrl}" 
+                     alt="Knowledge Image" class="knowledge-card-img" 
+                     onerror="this.style.display='none'">
+                
+                <h3 class="knowledge-card-title" th:text="${res.knowledgeCard.title}">Topic Title</h3>
+                <div class="knowledge-card-subtitle" th:text="${res.knowledgeCard.subtitle}">Overview</div>
+                <p class="knowledge-card-desc" th:text="${res.knowledgeCard.description}">Knowledge summary description...</p>
+                
+                <div class="border-top pt-2 mt-3 d-flex justify-content-between align-items-center">
+                    <a th:href="${res.knowledgeCard.sourceUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary btn-sm rounded-pill">
+                        Read more on Wikipedia <i class="fas fa-arrow-up-right-from-square ms-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================= -->
+    <!-- 2. CATEGORY: IMAGES                                     -->
+    <!-- ======================================================= -->
+    <div th:if="${req.category == 'IMAGES' && !res.results.isEmpty()}">
+        <div class="images-search-grid">
+            <div th:each="img : ${res.results}" class="image-card">
+                <a th:href="${img.url}" target="_blank" rel="noopener noreferrer">
+                    <img th:src="${img.imageUrl != null ? img.imageUrl : img.url}" th:alt="${img.title}" loading="lazy">
+                    <div class="image-card-overlay">
+                        <div class="fw-semibold text-truncate" th:text="${img.title}">Image Title</div>
+                        <div class="small opacity-75" th:text="${img.domain}">unsplash.com</div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================= -->
+    <!-- 3. CATEGORY: VIDEOS                                     -->
+    <!-- ======================================================= -->
+    <div th:if="${req.category == 'VIDEOS' && !res.results.isEmpty()}">
+        <div class="videos-search-grid">
+            <div th:each="vid : ${res.results}" class="video-card">
+                <div class="video-thumbnail-box">
+                    <img th:src="${vid.imageUrl}" th:alt="${vid.title}" loading="lazy">
+                    <span class="video-duration-pill" th:text="${vid.duration != null ? vid.duration : '10:00'}">12:30</span>
+                </div>
+                <div class="video-card-body">
+                    <h3 class="video-card-title">
+                        <a th:href="${vid.url}" target="_blank" rel="noopener noreferrer" th:text="${vid.title}">Video Title</a>
+                    </h3>
+                    <div class="video-meta">
+                        <span th:text="${vid.channel != null ? vid.channel : 'YouTube'}">Channel</span>
+                        <span th:text="${vid.publishedDate != null ? vid.publishedDate : 'Recent'}">2 days ago</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================= -->
+    <!-- 4. CATEGORY: NEWS                                       -->
+    <!-- ======================================================= -->
+    <div th:if="${req.category == 'NEWS' && !res.results.isEmpty()}" class="news-search-list">
+        <div th:each="news : ${res.results}" class="news-card">
+            <div class="news-source-row">
+                <span class="badge bg-primary-subtle text-primary fw-bold" th:text="${news.channel != null ? news.channel : 'News Source'}">Publisher</span>
+                <span class="text-muted" th:text="${news.publishedDate != null ? news.publishedDate : 'Today'}">1 hour ago</span>
+            </div>
+            <h3 class="result-title">
+                <a th:href="${news.url}" target="_blank" rel="noopener noreferrer" th:text="${news.title}">News Headline</a>
+            </h3>
+            <p class="result-snippet" th:text="${news.snippet}">Article lead snippet text...</p>
+        </div>
+    </div>
+
+    <!-- ======================================================= -->
+    <!-- 5. CATEGORY: MAPS                                       -->
+    <!-- ======================================================= -->
+    <div th:if="${req.category == 'MAPS' && !res.results.isEmpty()}">
+        <div class="map-preview-card p-4">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="fs-1 text-primary"><i class="fas fa-location-dot"></i></div>
+                <div>
+                    <h3 class="fw-bold mb-0" th:text="${res.results[0].title}">Location Title</h3>
+                    <p class="text-muted mb-0" th:text="${res.results[0].location}">Coordinates info</p>
+                </div>
+            </div>
+            <p th:text="${res.results[0].snippet}">Map navigation details...</p>
+            <div class="d-flex gap-2">
+                <a th:href="${res.results[0].url}" target="_blank" class="btn btn-primary rounded-pill btn-sm px-3">
+                    <i class="fas fa-diamond-turn-right me-1"></i> Get Directions
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================= -->
+    <!-- 6. CATEGORY: SHOPPING                                   -->
+    <!-- ======================================================= -->
+    <div th:if="${req.category == 'SHOPPING' && !res.results.isEmpty()}">
+        <div class="shopping-search-grid">
+            <div th:each="item : ${res.results}" class="product-card">
+                <img th:src="${item.imageUrl}" th:alt="${item.title}">
+                <div class="product-price mt-2" th:text="${item.price != null ? item.price : '$49.99'}">$49.99</div>
+                <div class="fw-semibold text-truncate my-1">
+                    <a th:href="${item.url}" target="_blank" th:text="${item.title}">Product Name</a>
+                </div>
+                <div class="product-rating mb-2">
+                    <i class="fas fa-star"></i> <span th:text="${item.rating != null ? item.rating : '4.8 (120)'}">4.8</span>
+                </div>
+                <div class="small text-muted mt-auto" th:text="${item.merchant != null ? item.merchant : 'Online Store'}">Store</div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Modals -->
+<div th:replace="~{fragments/modals :: voiceModal}"></div>
+<div th:replace="~{fragments/modals :: advancedSearchModal}"></div>
+
+<!-- Footer -->
+<footer th:replace="~{fragments/footer :: footer}"></footer>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/js/main.js}"></script>
+<script th:src="@{/js/search.js}"></script>
+<script th:src="@{/js/voice-search.js}"></script>
+
+</body>
+</html>
+

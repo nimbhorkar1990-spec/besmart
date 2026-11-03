@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - SmartSearch</title>
+    <link rel="icon" type="image/svg+xml" th:href="@{/images/logo-icon.svg}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/main.css}">
+    <link rel="stylesheet" th:href="@{/css/dark-mode.css}">
+    <link rel="stylesheet" th:href="@{/css/themes.css}">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+
+<div class="admin-layout-wrapper">
+    <!-- Admin Sidebar -->
+    <aside class="admin-sidebar">
+        <div class="admin-sidebar-header">
+            <a th:href="@{/}" class="d-flex align-items-center text-decoration-none">
+                <img th:src="@{/images/logo.svg}" alt="SmartSearch" height="30">
+            </a>
+            <span class="badge bg-danger-subtle text-danger small">Admin</span>
+        </div>
+
+        <ul class="admin-nav-menu">
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/dashboard}" class="admin-nav-link active">
+                    <i class="fas fa-gauge-high"></i> Dashboard
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/crawler}" class="admin-nav-link">
+                    <i class="fas fa-network-wired"></i> Web Crawler &amp; Queues
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/indexer}" class="admin-nav-link">
+                    <i class="fas fa-spider"></i> Website Indexer
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/analytics}" class="admin-nav-link">
+                    <i class="fas fa-chart-line"></i> Search Analytics
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/users}" class="admin-nav-link">
+                    <i class="fas fa-users"></i> Users Management
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/settings}" class="admin-nav-link">
+                    <i class="fas fa-sliders"></i> Search &amp; API Settings
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/system}" class="admin-nav-link">
+                    <i class="fas fa-server"></i> System Health
+                </a>
+            </li>
+            
+            <li class="admin-nav-item mt-4 pt-3 border-top">
+                <a th:href="@{/}" class="admin-nav-link">
+                    <i class="fas fa-arrow-left"></i> Back to Search
+                </a>
+            </li>
+        </ul>
+    </aside>
+
+    <!-- Main Admin Content -->
+    <div class="admin-content-main">
+        <!-- Topbar -->
+        <header class="admin-topbar">
+            <div class="d-flex align-items-center gap-2">
+                <h4 class="fw-bold mb-0">Overview &amp; Control Center</h4>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <div th:replace="~{fragments/header :: themeSelector}"></div>
+                <div class="d-flex align-items-center gap-2">
+                    <img th:src="${currentUser != null && currentUser.avatarUrl != null ? currentUser.avatarUrl : 'https://ui-avatars.com/api/?name=Admin&background=0b57d0&color=fff'}" 
+                         class="user-avatar-pill" alt="Admin">
+                    <span class="fw-semibold small d-none d-sm-inline" th:text="${currentUser != null ? currentUser.fullName : 'Administrator'}">Admin</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Body -->
+        <div class="admin-body">
+            <!-- Alert Messages -->
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <span th:text="${successMessage}">Success message</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
+            <!-- Key Metric Cards -->
+            <div class="row g-3 mb-4">
+                <!-- Total Searches -->
+                <div class="col-sm-6 col-xl-3">
+                    <div class="stat-card">
+                        <div>
+                            <p class="stat-label">Total Searches</p>
+                            <h3 class="stat-value" th:text="${#numbers.formatInteger(analytics.totalSearches, 0, 'COMMA')}">1,240</h3>
+                        </div>
+                        <div class="stat-icon-wrapper stat-icon-primary">
+                            <i class="fas fa-magnifying-glass"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Indexed Pages -->
+                <div class="col-sm-6 col-xl-3">
+                    <div class="stat-card">
+                        <div>
+                            <p class="stat-label">Lucene Indexed Pages</p>
+                            <h3 class="stat-value" th:text="${totalIndexedPages}">42</h3>
+                        </div>
+                        <div class="stat-icon-wrapper stat-icon-green">
+                            <i class="fas fa-file-lines"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Unique Queries -->
+                <div class="col-sm-6 col-xl-3">
+                    <div class="stat-card">
+                        <div>
+                            <p class="stat-label">Unique Keywords</p>
+                            <h3 class="stat-value" th:text="${analytics.uniqueQueries}">256</h3>
+                        </div>
+                        <div class="stat-icon-wrapper stat-icon-yellow">
+                            <i class="fas fa-tags"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Registered Users -->
+                <div class="col-sm-6 col-xl-3">
+                    <div class="stat-card">
+                        <div>
+                            <p class="stat-label">Registered Accounts</p>
+                            <h3 class="stat-value" th:text="${totalUsers}">18</h3>
+                        </div>
+                        <div class="stat-icon-wrapper stat-icon-red">
+                            <i class="fas fa-users"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Second Row: Popular Searches & Quick Crawl / Index Status -->
+            <div class="row g-4 mb-4">
+                <!-- Popular Keywords Table -->
+                <div class="col-lg-6">
+                    <div class="admin-card h-100">
+                        <div class="admin-card-header">
+                            <h5 class="admin-card-title"><i class="fas fa-fire text-danger me-2"></i>Top Search Keywords</h5>
+                            <a th:href="@{/admin/analytics}" class="small text-decoration-none">View All</a>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table align-middle mb-0">
+                                <thead class="table-light small">
+                                    <tr>
+                                        <th>Keyword</th>
+                                        <th>Category</th>
+                                        <th class="text-end">Searches</th>
+                                        <th class="text-center" style="width: 60px;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="q : ${topQueries}">
+                                        <td>
+                                            <a th:href="@{/search(q=${q.query})}" target="_blank" class="fw-semibold text-decoration-none">
+                                                <i class="fas fa-arrow-trend-up text-muted me-2 small"></i><span th:text="${q.query}">keyword</span>
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary-subtle text-secondary" th:text="${q.topCategory}">ALL</span>
+                                        </td>
+                                        <td class="text-end fw-bold" th:text="${#numbers.formatInteger(q.searchCount, 0, 'COMMA')}">
+                                            120
+                                        </td>
+                                        <td class="text-center">
+                                            <form th:action="@{/admin/analytics/delete}" method="post" class="d-inline m-0"
+                                                  th:data-query="${q.query}"
+                                                  onsubmit="return confirm('Delete keyword \'' + this.dataset.query + '\' from analytics?');">
+                                                <input type="hidden" name="id" th:value="${q.id}">
+                                                <input type="hidden" name="from" value="dashboard">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" title="Delete Keyword">
+                                                    <i class="fas fa-trash-can small"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    <tr th:if="${topQueries == null || topQueries.isEmpty()}">
+                                        <td colspan="4" class="text-center text-muted py-4">No search analytics recorded yet.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lucene Index Quick Status -->
+                <div class="col-lg-6">
+                    <div class="admin-card h-100">
+                        <div class="admin-card-header">
+                            <h5 class="admin-card-title"><i class="fas fa-database text-primary me-2"></i>Apache Lucene Index Engine</h5>
+                            <a th:href="@{/admin/indexer}" class="btn btn-sm btn-outline-primary rounded-pill">Manage Index</a>
+                        </div>
+                        <div class="admin-card-body">
+                            <div class="d-flex align-items-center justify-content-between p-3 bg-body-tertiary rounded-3 mb-3 border">
+                                <div>
+                                    <div class="text-muted small">Index Engine Status</div>
+                                    <div class="fw-bold fs-5 text-success">
+                                        <i class="fas fa-circle-check me-1"></i> Active &amp; Ready
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="text-muted small">Documents In Lucene</div>
+                                    <div class="fw-bold fs-5" th:text="${luceneStats.totalDocuments}">10</div>
+                                </div>
+                            </div>
+
+                            <p class="small text-muted mb-4">
+                                Apache Lucene indexes web documents with BM25 similarity ranking, multi-field search and query highlighting.
+                            </p>
+
+                            <div class="d-flex gap-2">
+                                <a th:href="@{/admin/indexer}" class="btn btn-primary btn-sm rounded-pill px-3">
+                                    <i class="fas fa-plus me-1"></i> Crawl New Website
+                                </a>
+                                <form th:action="@{/admin/indexer/reindex}" method="post" class="m-0"
+                                      onsubmit="return confirm('Re-index all database pages into Lucene?');">
+                                    <button type="submit" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                                        <i class="fas fa-arrows-rotate me-1"></i> Re-index All
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Third Row: Recent Crawled / Indexed Pages -->
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h5 class="admin-card-title"><i class="fas fa-globe text-success me-2"></i>Recent Indexed Web Pages</h5>
+                    <a th:href="@{/admin/indexer}" class="small text-decoration-none">View All Indexed Pages</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small">
+                            <tr>
+                                <th>Page Title</th>
+                                <th>URL / Domain</th>
+                                <th>Category</th>
+                                <th>Indexed Date</th>
+                                <th class="text-end">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="page : ${recentPages}">
+                                <td>
+                                    <div class="fw-semibold text-truncate" style="max-width: 320px;" th:text="${page.title}">Title</div>
+                                    <div class="small text-muted text-truncate" style="max-width: 320px;" th:text="${page.description}">Description</div>
+                                </td>
+                                <td>
+                                    <a th:href="${page.url}" target="_blank" class="small text-decoration-none text-truncate d-inline-block" style="max-width: 250px;" th:text="${page.url}">
+                                        url
+                                    </a>
+                                </td>
+                                <td><span class="badge bg-secondary-subtle text-secondary" th:text="${page.category}">ALL</span></td>
+                                <td class="small text-muted" th:text="${#temporals.format(page.indexedAt, 'MMM dd, yyyy HH:mm')}">Date</td>
+                                <td class="text-end">
+                                    <span class="status-pill status-active" th:if="${page.status == 'INDEXED'}">
+                                        <i class="fas fa-circle-check"></i> Indexed
+                                    </span>
+                                    <span class="status-pill status-inactive" th:if="${page.status != 'INDEXED'}">
+                                        <i class="fas fa-triangle-exclamation"></i> Failed
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr th:if="${recentPages == null || recentPages.isEmpty()}">
+                                <td colspan="5" class="text-center text-muted py-4">No indexed web pages yet.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/js/main.js}"></script>
+<script th:src="@{/js/admin.js}"></script>
+
+</body>
+</html>
+

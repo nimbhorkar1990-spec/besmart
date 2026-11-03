@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- Voice Search Modal -->
+<div th:fragment="voiceModal" id="voiceModal" class="voice-modal-backdrop">
+    <div class="voice-modal-content">
+        <h4 class="fw-bold mb-1">Voice Search</h4>
+        <p class="text-muted small">Speak clearly into your microphone</p>
+        
+        <div class="voice-mic-wave">
+            <i class="fas fa-microphone"></i>
+        </div>
+        
+        <p id="voiceStatusText" class="fw-semibold text-primary fs-5 mb-4">Listening...</p>
+        
+        <button type="button" id="closeVoiceModal" class="btn btn-outline-secondary btn-sm rounded-pill px-4">
+            Cancel
+        </button>
+    </div>
+</div>
+
+<!-- Advanced Search Modal -->
+<div th:fragment="advancedSearchModal" class="modal fade" id="advancedSearchModal" tabindex="-1" aria-labelledby="advancedSearchLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow border-0">
+            <form th:action="@{/search}" method="get">
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title fw-bold" id="advancedSearchLabel">
+                        <i class="fas fa-sliders me-2 text-primary"></i>Advanced Search Filters
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <!-- Search Query -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Keywords / Query</label>
+                        <input type="text" name="q" class="form-control" th:value="${req != null ? req.query : ''}" placeholder="e.g. spring boot">
+                    </div>
+
+                    <!-- Exact Match -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Exact Word or Phrase</label>
+                        <input type="text" name="exactMatch" class="form-control" th:value="${req != null ? req.exactMatch : ''}" placeholder="e.g. &quot;reactive programming&quot;">
+                    </div>
+
+                    <!-- Domain Filter -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Site or Domain (e.g. github.com, spring.io)</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-globe"></i></span>
+                            <input type="text" name="site" class="form-control" th:value="${req != null ? req.site : ''}" placeholder="domain.com">
+                        </div>
+                    </div>
+
+                    <!-- Category -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Category</label>
+                        <select name="category" class="form-select">
+                            <option value="ALL" th:selected="${req != null && req.category == 'ALL'}">All</option>
+                            <option value="IMAGES" th:selected="${req != null && req.category == 'IMAGES'}">Images</option>
+                            <option value="VIDEOS" th:selected="${req != null && req.category == 'VIDEOS'}">Videos</option>
+                            <option value="NEWS" th:selected="${req != null && req.category == 'NEWS'}">News</option>
+                            <option value="MAPS" th:selected="${req != null && req.category == 'MAPS'}">Maps</option>
+                            <option value="SHOPPING" th:selected="${req != null && req.category == 'SHOPPING'}">Shopping</option>
+                        </select>
+                    </div>
+
+                    <!-- Sort By -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold small">Sort Results By</label>
+                            <select name="sortBy" class="form-select">
+                                <option value="RELEVANCE" th:selected="${req != null && req.sortBy == 'RELEVANCE'}">Relevance (BM25)</option>
+                                <option value="DATE" th:selected="${req != null && req.sortBy == 'DATE'}">Date (Newest)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold small">SafeSearch</label>
+                            <select name="safeSearch" class="form-select">
+                                <option value="MODERATE" th:selected="${req != null && req.safeSearch == 'MODERATE'}">Moderate</option>
+                                <option value="STRICT" th:selected="${req != null && req.safeSearch == 'STRICT'}">Strict</option>
+                                <option value="OFF" th:selected="${req != null && req.safeSearch == 'OFF'}">Off</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top bg-body-tertiary">
+                    <button type="button" class="btn btn-secondary btn-sm px-3 rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm px-4 rounded-pill">
+                        <i class="fas fa-search me-1"></i> Apply &amp; Search
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
+

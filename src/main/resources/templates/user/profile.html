@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/header :: head('User Profile - SmartSearch')}">
+</head>
+<body class="bg-body-tertiary">
+
+<header th:replace="~{fragments/header :: navbar}"></header>
+
+<main class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+                <div class="card-header bg-body p-4 border-bottom d-flex align-items-center gap-3">
+                    <img th:src="${currentUser.avatarUrl != null ? currentUser.avatarUrl : 'https://ui-avatars.com/api/?name=User&background=1a73e8&color=fff'}" 
+                         alt="Avatar" class="rounded-circle border" width="64" height="64">
+                    <div>
+                        <h4 class="fw-bold mb-0" th:text="${currentUser.fullName}">User Name</h4>
+                        <div class="text-muted small">
+                            <span class="badge bg-primary-subtle text-primary me-2" th:text="${currentUser.role}">ROLE_USER</span>
+                            <span th:text="'Member since ' + ${#temporals.format(currentUser.createdAt, 'MMM yyyy')}">Member since Jan 2026</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body p-4 p-md-5">
+                    <div th:if="${successMessage}" class="alert alert-success py-2 px-3 small rounded-3" th:text="${successMessage}">
+                        Success message
+                    </div>
+                    <div th:if="${errorMessage}" class="alert alert-danger py-2 px-3 small rounded-3" th:text="${errorMessage}">
+                        Error message
+                    </div>
+
+                    <form th:action="@{/user/profile}" th:object="${profileDto}" method="post">
+                        <h5 class="fw-bold mb-3 text-primary">Personal Details</h5>
+                        <div class="row mb-3">
+                            <div class="col-md-6 mb-3 mb-md-0">
+                                <label class="form-label small fw-semibold">Username</label>
+                                <input type="text" class="form-control bg-body-tertiary" th:value="*{username}" readonly>
+                                <div class="form-text small">Username cannot be changed.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Full Name</label>
+                                <input type="text" th:field="*{fullName}" class="form-control" required>
+                                <div class="text-danger small" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3 mb-md-0">
+                                <label class="form-label small fw-semibold">Email Address</label>
+                                <input type="email" th:field="*{email}" class="form-control" required>
+                                <div class="text-danger small" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Avatar Image URL</label>
+                                <input type="url" th:field="*{avatarUrl}" class="form-control" placeholder="https://...">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6 mb-3 mb-md-0">
+                                <label class="form-label small fw-semibold">
+                                    <i class="fas fa-phone text-primary me-1"></i>Mobile Number <span class="text-danger">*</span>
+                                </label>
+                                <input type="tel" th:field="*{mobileNumber}" class="form-control" placeholder="+91 98765 43210" required>
+                                <div class="text-danger small" th:if="${#fields.hasErrors('mobileNumber')}" th:errors="*{mobileNumber}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">
+                                    <i class="fab fa-whatsapp text-success me-1"></i>WhatsApp Number
+                                </label>
+                                <input type="tel" th:field="*{whatsappNumber}" class="form-control" placeholder="+91 98765 43210 (Optional)">
+                                <div class="text-danger small" th:if="${#fields.hasErrors('whatsappNumber')}" th:errors="*{whatsappNumber}"></div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <h5 class="fw-bold mb-3 text-primary">Change Password <span class="text-muted fw-normal fs-6">(Optional)</span></h5>
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3 mb-md-0">
+                                <label class="form-label small fw-semibold">Current Password</label>
+                                <input type="password" th:field="*{currentPassword}" class="form-control" placeholder="Required only if changing">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">New Password</label>
+                                <input type="password" th:field="*{newPassword}" class="form-control" placeholder="At least 6 characters">
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <a th:href="@{/}" class="btn btn-outline-secondary rounded-pill px-4">Cancel</a>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/footer :: footer}"></footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/js/main.js}"></script>
+
+</body>
+</html>
+

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/header :: head('Saved Bookmarks - SmartSearch')}">
+</head>
+<body class="bg-body-tertiary">
+
+<header th:replace="~{fragments/header :: navbar}"></header>
+
+<main class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold mb-1"><i class="fas fa-bookmark text-primary me-2"></i>Saved Bookmarks</h3>
+                    <p class="text-muted small mb-0">Search results you have saved for quick access</p>
+                </div>
+            </div>
+
+            <!-- Category Filter Tabs -->
+            <div class="d-flex gap-2 mb-4 overflow-x-auto pb-2">
+                <a th:href="@{/user/saved(category='ALL')}" 
+                   class="btn btn-sm rounded-pill px-3"
+                   th:classappend="${selectedCategory == 'ALL'} ? 'btn-primary' : 'btn-outline-secondary'">
+                    All
+                </a>
+                <a th:each="cat : ${categories}" 
+                   th:if="${cat.name() != 'ALL'}"
+                   th:href="@{/user/saved(category=${cat.name()})}" 
+                   class="btn btn-sm rounded-pill px-3"
+                   th:classappend="${selectedCategory == cat.name()} ? 'btn-primary' : 'btn-outline-secondary'"
+                   th:text="${cat.displayName}">Category</a>
+            </div>
+
+            <!-- Alerts -->
+            <div th:if="${successMessage}" class="alert alert-success py-2 px-3 small rounded-3 mb-4" th:text="${successMessage}">
+                Success message
+            </div>
+
+            <!-- Saved Results Grid -->
+            <div class="row g-3" th:if="${savedPage.totalElements > 0}">
+                <div th:each="item : ${savedPage.content}" class="col-md-6 col-lg-6">
+                    <div class="card h-100 shadow-sm border-0 rounded-4 p-3 position-relative">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge bg-primary-subtle text-primary" th:text="${item.category}">ALL</span>
+                            <span class="text-muted small" th:text="${#temporals.format(item.savedAt, 'MMM dd, yyyy')}">Date</span>
+                        </div>
+
+                        <h5 class="fw-semibold mb-2">
+                            <a th:href="${item.url}" target="_blank" rel="noopener noreferrer" class="text-decoration-none text-body" th:text="${item.title}">
+                                Title
+                            </a>
+                        </h5>
+
+                        <p class="text-muted small mb-3 flex-grow-1" th:utext="${item.snippet}">
+                            Snippet description...
+                        </p>
+
+                        <div class="d-flex justify-content-between align-items-center pt-2 border-top mt-auto">
+                            <a th:href="${item.url}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                Visit Link <i class="fas fa-external-link-alt ms-1"></i>
+                            </a>
+
+                            <form th:action="@{/user/saved/delete}" method="post" class="m-0">
+                                <input type="hidden" name="id" th:value="${item.id}">
+                                <input type="hidden" name="category" th:value="${selectedCategory}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle p-2" title="Remove bookmark">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div th:if="${savedPage.totalElements == 0}" class="card shadow-sm border-0 rounded-4 text-center py-5">
+                <div class="text-muted mb-2 fs-1"><i class="fas fa-bookmark-slash"></i></div>
+                <h5 class="fw-semibold">No saved results found</h5>
+                <p class="text-muted small">You haven't bookmarked any results yet. Look for the "Save" button on search results!</p>
+                <div>
+                    <a th:href="@{/}" class="btn btn-primary btn-sm rounded-pill px-4 mt-2">Start Searching</a>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div class="d-flex justify-content-center mt-4" th:if="${savedPage.totalPages > 1}">
+                <nav class="smart-pagination">
+                    <a th:if="${savedPage.hasPrevious()}" 
+                       th:href="@{/user/saved(page=${currentPage - 1}, category=${selectedCategory})}" 
+                       class="page-btn"><i class="fas fa-chevron-left"></i></a>
+
+                    <a th:each="p : ${#numbers.sequence(1, savedPage.totalPages)}" 
+                       th:href="@{/user/saved(page=${p}, category=${selectedCategory})}" 
+                       class="page-btn" 
+                       th:classappend="${p == currentPage} ? 'active' : ''" 
+                       th:text="${p}">1</a>
+
+                    <a th:if="${savedPage.hasNext()}" 
+                       th:href="@{/user/saved(page=${currentPage + 1}, category=${selectedCategory})}" 
+                       class="page-btn"><i class="fas fa-chevron-right"></i></a>
+                </nav>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/footer :: footer}"></footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/js/main.js}"></script>
+
+</body>
+</html>
+

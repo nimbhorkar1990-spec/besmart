@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<footer th:fragment="footer" class="smart-footer mt-auto">
+    <div class="container-fluid d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
+        <div class="d-flex align-items-center gap-3">
+            <span><i class="fas fa-globe-americas me-1 text-primary"></i> Worldwide</span>
+            <span class="text-muted">|</span>
+            <span>Powered by <strong>Apache Lucene</strong> &amp; <strong>Spring Boot</strong></span>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <a th:href="@{/employment}" class="text-decoration-none text-primary fw-medium"><i class="fas fa-briefcase me-1"></i>Employment</a>
+            <a th:href="@{/search?q=technology&category=NEWS}" class="text-decoration-none">News</a>
+            <a th:href="@{/search?q=java&category=ALL}" class="text-decoration-none">Explore</a>
+            <a th:href="@{/admin/dashboard}" class="text-decoration-none">Admin</a>
+            <span class="text-muted">&copy; 2026 SmartSearch Inc.</span>
+        </div>
+    </div>
+</footer>
+
+</body>
+</html>
+

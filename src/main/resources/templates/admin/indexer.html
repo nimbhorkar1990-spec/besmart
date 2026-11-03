@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Website Indexer - SmartSearch Admin</title>
+    <link rel="icon" type="image/svg+xml" th:href="@{/images/logo-icon.svg}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/main.css}">
+    <link rel="stylesheet" th:href="@{/css/dark-mode.css}">
+    <link rel="stylesheet" th:href="@{/css/themes.css}">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+
+<div class="admin-layout-wrapper">
+    <!-- Admin Sidebar -->
+    <aside class="admin-sidebar">
+        <div class="admin-sidebar-header">
+            <a th:href="@{/}" class="d-flex align-items-center text-decoration-none">
+                <img th:src="@{/images/logo.svg}" alt="SmartSearch" height="30">
+            </a>
+            <span class="badge bg-danger-subtle text-danger small">Admin</span>
+        </div>
+
+        <ul class="admin-nav-menu">
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/dashboard}" class="admin-nav-link">
+                    <i class="fas fa-gauge-high"></i> Dashboard
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/crawler}" class="admin-nav-link">
+                    <i class="fas fa-network-wired"></i> Web Crawler &amp; Queues
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/indexer}" class="admin-nav-link active">
+                    <i class="fas fa-spider"></i> Website Indexer
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/analytics}" class="admin-nav-link">
+                    <i class="fas fa-chart-line"></i> Search Analytics
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/users}" class="admin-nav-link">
+                    <i class="fas fa-users"></i> Users Management
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/settings}" class="admin-nav-link">
+                    <i class="fas fa-sliders"></i> Search &amp; API Settings
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/system}" class="admin-nav-link">
+                    <i class="fas fa-server"></i> System Health
+                </a>
+            </li>
+            <li class="admin-nav-item mt-4 pt-3 border-top">
+                <a th:href="@{/}" class="admin-nav-link">
+                    <i class="fas fa-arrow-left"></i> Back to Search
+                </a>
+            </li>
+        </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="admin-content-main">
+        <header class="admin-topbar">
+            <h4 class="fw-bold mb-0">Website Indexer &amp; Lucene Corpus</h4>
+            <div class="d-flex align-items-center gap-3">
+                <div th:replace="~{fragments/header :: themeSelector}"></div>
+                <form th:action="@{/admin/indexer/reindex}" method="post" class="m-0"
+                      onsubmit="return confirm('Re-index all database records into Apache Lucene?');">
+                    <button type="submit" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                        <i class="fas fa-arrows-rotate me-1"></i> Re-Index All
+                    </button>
+                </form>
+            </div>
+        </header>
+
+        <div class="admin-body">
+            <!-- Alerts -->
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <span th:text="${successMessage}">Success message</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <span th:text="${errorMessage}">Error message</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
+            <!-- Lucene Engine Status Bar -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="p-3 bg-body rounded-4 border shadow-sm">
+                        <div class="text-muted small">Indexed Documents</div>
+                        <h3 class="fw-bold text-primary mb-0" th:text="${luceneStats.totalDocuments}">10</h3>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 bg-body rounded-4 border shadow-sm">
+                        <div class="text-muted small">Lucene Index Directory</div>
+                        <div class="fw-semibold text-truncate small" th:text="${luceneStats.indexLocation}">data/lucene_index</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 bg-body rounded-4 border shadow-sm">
+                        <div class="text-muted small">Status</div>
+                        <div class="fw-bold text-success"><i class="fas fa-circle-check me-1"></i> Synchronized</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Web Crawler Submission Form -->
+            <div class="admin-card mb-4">
+                <div class="admin-card-header">
+                    <h5 class="admin-card-title"><i class="fas fa-spider text-primary me-2"></i>Crawl &amp; Index New Web Page</h5>
+                </div>
+                <div class="admin-card-body">
+                    <form th:action="@{/admin/indexer/crawl}" th:object="${indexPageDto}" method="post">
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <label class="form-label small fw-semibold">Target URL to Crawl *</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-link"></i></span>
+                                    <input type="url" th:field="*{url}" class="form-control" placeholder="https://example.com/page" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-semibold">Category</label>
+                                <select th:field="*{category}" class="form-select">
+                                    <option value="ALL">All / General</option>
+                                    <option value="NEWS">News</option>
+                                    <option value="IMAGES">Images</option>
+                                    <option value="VIDEOS">Videos</option>
+                                    <option value="MAPS">Maps</option>
+                                    <option value="SHOPPING">Shopping</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Custom Title <span class="text-muted">(Optional - will auto-extract if blank)</span></label>
+                                <input type="text" th:field="*{title}" class="form-control" placeholder="Page Title">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Keywords <span class="text-muted">(Comma separated)</span></label>
+                                <input type="text" th:field="*{keywords}" class="form-control" placeholder="java, spring, microservices">
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold">Custom Description <span class="text-muted">(Optional - will auto-extract from meta description)</span></label>
+                                <textarea th:field="*{description}" class="form-control" rows="2" placeholder="Brief summary..."></textarea>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary rounded-pill px-4">
+                                <i class="fas fa-robot me-1"></i> Crawl &amp; Index URL
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Indexed Pages Table -->
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h5 class="admin-card-title"><i class="fas fa-list text-secondary me-2"></i>Indexed Documents Database</h5>
+                    
+                    <form th:action="@{/admin/indexer}" method="get" class="d-flex gap-2">
+                        <input type="text" name="search" class="form-control form-control-sm" placeholder="Search pages..." th:value="${search}">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">Search</button>
+                    </form>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small">
+                            <tr>
+                                <th>Title &amp; Snippet</th>
+                                <th>URL</th>
+                                <th>Category</th>
+                                <th>Crawled At</th>
+                                <th>Status</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="page : ${indexedPages.content}">
+                                <td>
+                                    <div class="fw-semibold text-truncate" style="max-width: 280px;" th:text="${page.title}">Title</div>
+                                    <div class="small text-muted text-truncate" style="max-width: 280px;" th:text="${page.description}">Snippet</div>
+                                </td>
+                                <td>
+                                    <a th:href="${page.url}" target="_blank" class="small text-truncate d-inline-block" style="max-width: 220px;" th:text="${page.url}">url</a>
+                                </td>
+                                <td><span class="badge bg-secondary-subtle text-secondary" th:text="${page.category}">ALL</span></td>
+                                <td class="small text-muted" th:text="${#temporals.format(page.indexedAt, 'yyyy-MM-dd HH:mm')}">Date</td>
+                                <td>
+                                    <span class="status-pill status-active" th:if="${page.status == 'INDEXED'}">Indexed</span>
+                                    <span class="status-pill status-inactive" th:if="${page.status != 'INDEXED'}">Failed</span>
+                                </td>
+                                <td class="text-end">
+                                    <form th:action="@{/admin/indexer/delete}" method="post" class="m-0 d-inline"
+                                          onsubmit="return confirm('Remove page from index and database?');">
+                                        <input type="hidden" name="id" th:value="${page.id}">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle p-2" title="Delete">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            <tr th:if="${indexedPages.totalElements == 0}">
+                                <td colspan="6" class="text-center text-muted py-4">No indexed documents found.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="p-3 border-top d-flex justify-content-center" th:if="${indexedPages.totalPages > 1}">
+                    <nav class="smart-pagination">
+                        <a th:if="${indexedPages.hasPrevious()}" 
+                           th:href="@{/admin/indexer(page=${currentPage - 1}, search=${search})}" 
+                           class="page-btn"><i class="fas fa-chevron-left"></i></a>
+
+                        <a th:each="p : ${#numbers.sequence(1, indexedPages.totalPages)}" 
+                           th:href="@{/admin/indexer(page=${p}, search=${search})}" 
+                           class="page-btn" 
+                           th:classappend="${p == currentPage} ? 'active' : ''" 
+                           th:text="${p}">1</a>
+
+                        <a th:if="${indexedPages.hasNext()}" 
+                           th:href="@{/admin/indexer(page=${currentPage + 1}, search=${search})}" 
+                           class="page-btn"><i class="fas fa-chevron-right"></i></a>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/js/main.js}"></script>
+<script th:src="@{/js/admin.js}"></script>
+
+</body>
+</html>
+

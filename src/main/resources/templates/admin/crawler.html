@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Crawler &amp; Discovery - SmartSearch Admin</title>
+    
+    <link rel="icon" type="image/svg+xml" th:href="@{/images/logo-icon.svg}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/main.css}">
+    <link rel="stylesheet" th:href="@{/css/dark-mode.css}">
+    <link rel="stylesheet" th:href="@{/css/themes.css}">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+
+<div class="admin-layout-wrapper">
+    <!-- Admin Sidebar -->
+    <aside class="admin-sidebar">
+        <div class="admin-sidebar-header">
+            <a th:href="@{/}" class="d-flex align-items-center text-decoration-none">
+                <img th:src="@{/images/logo.svg}" alt="SmartSearch" height="30">
+            </a>
+            <span class="badge bg-danger-subtle text-danger small">Admin</span>
+        </div>
+
+        <ul class="admin-nav-menu">
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/dashboard}" class="admin-nav-link">
+                    <i class="fas fa-gauge-high"></i> Dashboard
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/crawler}" class="admin-nav-link active">
+                    <i class="fas fa-network-wired"></i> Web Crawler &amp; Queues
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/indexer}" class="admin-nav-link">
+                    <i class="fas fa-spider"></i> Website Indexer
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/analytics}" class="admin-nav-link">
+                    <i class="fas fa-chart-line"></i> Search Analytics
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/users}" class="admin-nav-link">
+                    <i class="fas fa-users"></i> Users Management
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/settings}" class="admin-nav-link">
+                    <i class="fas fa-sliders"></i> Search &amp; API Settings
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/system}" class="admin-nav-link">
+                    <i class="fas fa-server"></i> System Health
+                </a>
+            </li>
+            <li class="admin-nav-item mt-4 pt-3 border-top">
+                <a th:href="@{/}" class="admin-nav-link">
+                    <i class="fas fa-arrow-left"></i> Back to Search
+                </a>
+            </li>
+        </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="admin-content-main">
+        <header class="admin-topbar">
+            <div class="d-flex align-items-center gap-2">
+                <h4 class="fw-bold mb-0">Automated Web Crawler &amp; Multi-Engine Discovery</h4>
+                <span th:if="${!isCrawlerPaused}" class="badge bg-success-subtle text-success ms-2">
+                    <i class="fas fa-circle-play me-1"></i> Crawler Active
+                </span>
+                <span th:if="${isCrawlerPaused}" class="badge bg-warning-subtle text-warning ms-2">
+                    <i class="fas fa-circle-pause me-1"></i> Crawler Paused
+                </span>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <div th:replace="~{fragments/header :: themeSelector}"></div>
+            </div>
+        </header>
+
+        <div class="admin-body">
+            <!-- Flash Message Alerts -->
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fas fa-circle-check me-2"></i>
+                <span th:text="${successMessage}">Success message</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-triangle-exclamation me-2"></i>
+                <span th:text="${errorMessage}">Error message</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
+            <!-- Action Controls Toolbar -->
+            <div class="d-flex flex-wrap gap-2 mb-4">
+                <form th:action="@{/admin/crawler/toggle-pause}" method="post" class="m-0">
+                    <button type="submit" class="btn" th:classappend="${isCrawlerPaused} ? 'btn-success' : 'btn-warning'">
+                        <i class="fas" th:classappend="${isCrawlerPaused} ? 'fa-play' : 'fa-pause'"></i>
+                        <span th:text="${isCrawlerPaused} ? 'Resume Automated Crawler' : 'Pause Automated Crawler'">Toggle</span>
+                    </button>
+                </form>
+
+                <form th:action="@{/admin/crawler/retry-failed}" method="post" class="m-0">
+                    <button type="submit" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrows-rotate me-1"></i> Retry Failed URLs
+                    </button>
+                </form>
+
+                <form th:action="@{/admin/crawler/purge-outdated}" method="post" class="m-0"
+                      onsubmit="return confirm('Clear error logs and refresh crawler state?');">
+                    <button type="submit" class="btn btn-outline-danger">
+                        <i class="fas fa-trash-can me-1"></i> Purge Error Logs
+                    </button>
+                </form>
+            </div>
+
+            <!-- Metrics Cards -->
+            <div class="row g-3 mb-4">
+                <div class="col-sm-6 col-xl-2">
+                    <div class="stat-card">
+                        <div>
+                            <p class="stat-label">Discovered URLs</p>
+                            <h4 class="stat-value text-primary" th:text="${queueMetrics.totalDiscovered}">150</h4>
+                        </div>
+                        <div class="stat-icon-wrapper stat-icon-primary"><i class="fas fa-globe"></i></div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-xl-2">
+                    <div class="stat-card">
+                        <div>
+                            <p class="stat-label">Crawled Pages</p>
+                            <h4 class="stat-value text-info" th:text="${queueMetrics.totalCrawled}">80</h4>
+                        </div>
+                        <div class="stat-icon-wrapper stat-icon-yellow"><i class="fas fa-spider"></i></div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-xl-2">
+                    <div class="stat-card">
+                        <div>
+                            <p class="stat-label">Indexed In Lucene</p>
+                            <h4 class="stat-value text-success" th:text="${queueMetrics.totalIndexed}">50</h4>
+                        </div>
+                        <div class="stat-icon-wrapper stat-icon-green"><i class="fas fa-database"></i></div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-xl-2">
+                    <div class="stat-card">
+                        <div>
+                            <p class="stat-label">Pending In Queue</p>
+                            <h4 class="stat-value text-secondary" th:text="${queueMetrics.pendingQueueSize}">12</h4>
+                        </div>
+                        <div class="stat-icon-wrapper stat-icon-primary"><i class="fas fa-clock"></i></div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-xl-2">
+                    <div class="stat-card">
+                        <div>
+                            <p class="stat-label">Failed URLs</p>
+                            <h4 class="stat-value text-danger" th:text="${queueMetrics.failedCount}">0</h4>
+                        </div>
+                        <div class="stat-icon-wrapper stat-icon-red"><i class="fas fa-triangle-exclamation"></i></div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-xl-2">
+                    <div class="stat-card">
+                        <div>
+                            <p class="stat-label">Active Crawling</p>
+                            <h4 class="stat-value text-primary" th:text="${queueMetrics.activeCrawlingCount}">0</h4>
+                        </div>
+                        <div class="stat-icon-wrapper stat-icon-green"><i class="fas fa-rotate"></i></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Providers Management Table -->
+            <div class="admin-card mb-4">
+                <div class="admin-card-header d-flex justify-content-between align-items-center">
+                    <h5 class="admin-card-title mb-0">
+                        <i class="fas fa-magnifying-glass-chart text-primary me-2"></i>Multi-Search Engine Provider Connectors
+                    </h5>
+                    <span class="badge bg-secondary-subtle text-secondary small">Official Authorized APIs</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small">
+                            <tr>
+                                <th>Provider</th>
+                                <th>Status</th>
+                                <th>Priority</th>
+                                <th>API Key / Search Engine ID</th>
+                                <th>Usage / Calls</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="p : ${providers}">
+                                <td>
+                                    <div class="fw-semibold" th:text="${p.displayName}">Provider Name</div>
+                                    <div class="small text-muted" th:text="${p.endpointUrl}">https://api...</div>
+                                </td>
+                                <td>
+                                    <span th:if="${p.enabled}" class="badge bg-success-subtle text-success border border-success">
+                                        <i class="fas fa-check-circle me-1"></i> Enabled
+                                    </span>
+                                    <span th:if="${!p.enabled}" class="badge bg-secondary-subtle text-secondary">
+                                        <i class="fas fa-ban me-1"></i> Disabled
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary-subtle text-primary" th:text="'Priority #' + ${p.priority}">#1</span>
+                                </td>
+                                <td>
+                                    <div class="small font-monospace" th:if="${p.apiKey != null && !p.apiKey.isEmpty()}">
+                                        <span th:text="${#strings.length(p.apiKey) > 8 ? #strings.substring(p.apiKey, 0, 4) + '...' + #strings.substring(p.apiKey, #strings.length(p.apiKey) - 4) : '••••••••'}">Key</span>
+                                        <span th:if="${p.searchEngineId != null && !p.searchEngineId.isEmpty()}" class="text-muted" th:text="' (cx: ' + ${p.searchEngineId} + ')'"></span>
+                                    </div>
+                                    <span th:if="${p.apiKey == null || p.apiKey.isEmpty()}" class="text-muted small italic">
+                                        <span th:if="${p.providerId == 'WIKIPEDIA'}">Zero-Config Open API (Ready)</span>
+                                        <span th:if="${p.providerId != 'WIKIPEDIA'}">No API Key configured</span>
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="small">
+                                        <span class="fw-bold text-success" th:text="${p.successCalls}">0</span> success /
+                                        <span class="fw-bold text-danger" th:text="${p.failureCalls}">0</span> failed
+                                    </div>
+                                    <div class="small text-muted" th:text="${p.totalCalls} + ' total queries'">0 queries</div>
+                                </td>
+                                <td class="text-end">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" 
+                                            th:data-bs-target="'#providerModal' + ${p.id}">
+                                        <i class="fas fa-sliders me-1"></i> Configure
+                                    </button>
+
+                                    <!-- Provider Configuration Modal -->
+                                    <div class="modal fade" th:id="'providerModal' + ${p.id}" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content text-start">
+                                                <form th:action="@{/admin/crawler/provider/update}" method="post">
+                                                    <input type="hidden" name="id" th:value="${p.id}">
+                                                    <div class="modal-header">
+                                                        <h6 class="modal-title fw-bold" th:text="'Configure ' + ${p.displayName}">Provider</h6>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <div class="form-check form-switch mb-3">
+                                                            <input class="form-check-input" type="checkbox" name="enabled" value="true"
+                                                                   th:id="'check' + ${p.id}" th:checked="${p.enabled}">
+                                                            <label class="form-check-label fw-semibold" th:for="'check' + ${p.id}">Enable Provider</label>
+                                                        </div>
+
+                                                        <div class="mb-3" th:if="${p.providerId != 'WIKIPEDIA'}">
+                                                            <label class="form-label small fw-semibold">API Key / Access Token</label>
+                                                            <input type="password" name="apiKey" class="form-control form-control-sm font-monospace"
+                                                                   th:value="${p.apiKey}" placeholder="Enter authorized API key">
+                                                        </div>
+
+                                                        <div class="mb-3" th:if="${p.providerId == 'GOOGLE'}">
+                                                            <label class="form-label small fw-semibold">Google Search Engine ID (cx)</label>
+                                                            <input type="text" name="searchEngineId" class="form-control form-control-sm font-monospace"
+                                                                   th:value="${p.searchEngineId}" placeholder="e.g. 017576662512468239146:omuauf_lfve">
+                                                        </div>
+
+                                                        <div class="mb-3">
+                                                            <label class="form-label small fw-semibold">Priority Order</label>
+                                                            <select name="priority" class="form-select form-select-sm">
+                                                                <option value="1" th:selected="${p.priority == 1}">1 (Highest - Primary Source)</option>
+                                                                <option value="2" th:selected="${p.priority == 2}">2 (High)</option>
+                                                                <option value="3" th:selected="${p.priority == 3}">3 (Medium)</option>
+                                                                <option value="4" th:selected="${p.priority == 4}">4 (Fallback)</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                                                        <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Crawler Configuration & Policies Form -->
+            <div class="admin-card mb-4">
+                <div class="admin-card-header">
+                    <h5 class="admin-card-title mb-0">
+                        <i class="fas fa-shield-halved text-success me-2"></i>Crawler Politeness Policies &amp; SSRF Protection
+                    </h5>
+                </div>
+                <div class="admin-card-body p-3">
+                    <form th:action="@{/admin/crawler/settings}" method="post">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label small fw-semibold">Max Crawl Depth</label>
+                                <input type="number" name="maxDepth" class="form-control form-control-sm" th:value="${maxDepth}" min="1" max="5">
+                                <div class="form-text small">Maximum link hop distance from seed query</div>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small fw-semibold">Max Pages Per Domain</label>
+                                <input type="number" name="maxPagesPerDomain" class="form-control form-control-sm" th:value="${maxPagesPerDomain}" min="1" max="100">
+                                <div class="form-text small">Prevents crawler traps &amp; infinite loops</div>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small fw-semibold">Polite Crawl Delay (ms)</label>
+                                <input type="number" name="delayMs" class="form-control form-control-sm" th:value="${delayMs}" min="100" max="5000" step="100">
+                                <div class="form-text small">Respects server load + robots.txt delay</div>
+                            </div>
+                            <div class="col-md-3 d-flex flex-column justify-content-center">
+                                <div class="form-check form-switch mt-2">
+                                    <input class="form-check-input" type="checkbox" name="crawlerEnabled" value="true" 
+                                           id="crawlerEnabledSwitch" th:checked="${crawlerEnabled}">
+                                    <label class="form-check-label fw-semibold small" for="crawlerEnabledSwitch">Active Background Worker</label>
+                                </div>
+                                <div class="mt-2">
+                                    <button type="submit" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-floppy-disk me-1"></i> Update Policies
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Section: Recent Crawl Jobs -->
+            <div class="admin-card mb-4">
+                <div class="admin-card-header d-flex justify-content-between align-items-center">
+                    <h5 class="admin-card-title mb-0">
+                        <i class="fas fa-list-check text-primary me-2"></i>Recent Crawl Jobs
+                    </h5>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-secondary-subtle text-secondary small">Live Queue History</span>
+                        <form th:action="@{/admin/crawler/jobs/clear}" method="post" class="m-0"
+                              onsubmit="return confirm('Clear recent crawl jobs history?');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" title="Clear Crawl Jobs History">
+                                <i class="fas fa-trash-can me-1"></i> Clear Jobs
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 small">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Trigger / Query</th>
+                                <th>Discovered</th>
+                                <th>Crawled</th>
+                                <th>Indexed</th>
+                                <th>Duplicates</th>
+                                <th>Errors</th>
+                                <th>Status</th>
+                                <th>Started</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="job : ${recentJobs}">
+                                <td>
+                                    <span class="badge bg-secondary-subtle text-secondary me-1" th:text="${job.triggerSource}">AUTO</span>
+                                    <span class="fw-semibold text-truncate d-inline-block" style="max-width: 240px;" th:text="${job.seedQueryOrUrl}">query</span>
+                                </td>
+                                <td th:text="${job.pagesDiscovered}">0</td>
+                                <td class="fw-bold" th:classappend="${job.pagesCrawled > 0} ? 'text-success' : 'text-muted'" th:text="${job.pagesCrawled}">0</td>
+                                <td class="text-success fw-bold" th:text="${job.pagesIndexed}">0</td>
+                                <td class="text-muted" th:text="${job.duplicatesSkipped}">0</td>
+                                <td>
+                                    <span th:if="${job.errorsCount == 0}" class="text-muted">0</span>
+                                    <a th:if="${job.errorsCount > 0}" th:href="@{/admin/crawler(jobId=${job.id})}"
+                                       class="badge bg-danger-subtle text-danger text-decoration-none fw-bold"
+                                       th:title="'Click to inspect ' + ${job.errorsCount} + ' errors for job #' + ${job.id}"
+                                       th:text="${job.errorsCount} + ' errors'">0</a>
+                                </td>
+                                <td>
+                                    <span th:if="${job.status == 'COMPLETED'}" class="badge bg-success-subtle text-success">
+                                        <i class="fas fa-check-circle me-1"></i>DONE
+                                    </span>
+                                    <span th:if="${job.status == 'RUNNING'}" class="badge bg-primary-subtle text-primary">
+                                        <i class="fas fa-spinner fa-spin me-1"></i>RUNNING
+                                    </span>
+                                    <span th:if="${job.status == 'FAILED'}" class="badge bg-danger-subtle text-danger">
+                                        <i class="fas fa-triangle-exclamation me-1"></i>FAILED
+                                    </span>
+                                    <span th:if="${job.status == 'PAUSED'}" class="badge bg-warning-subtle text-warning">
+                                        <i class="fas fa-pause me-1"></i>PAUSED
+                                    </span>
+                                </td>
+                                <td class="text-muted" th:text="${#temporals.format(job.startedAt, 'HH:mm:ss')}">Time</td>
+                            </tr>
+                            <tr th:if="${recentJobs == null || recentJobs.isEmpty()}">
+                                <td colspan="8" class="text-center text-muted py-3">No crawl jobs executed yet.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Section: Crawl Safety & Error Log -->
+            <div class="admin-card mb-4" id="crawl-safety-section">
+                <div class="admin-card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <h5 class="admin-card-title mb-0">
+                            <i class="fas fa-shield-halved text-danger me-2"></i>Crawl Safety &amp; Error Log
+                        </h5>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <span class="badge bg-success-subtle text-success border border-success">
+                            <i class="fas fa-shield-virus me-1"></i>SSRF Guard Active
+                        </span>
+                        <span class="badge bg-primary-subtle text-primary border border-primary">
+                            <i class="fas fa-robot me-1"></i>Robots.txt Enforced
+                        </span>
+                        <span class="badge bg-info-subtle text-info border border-info">
+                            <i class="fas fa-lock me-1"></i>Private IP Shield
+                        </span>
+                    </div>
+                </div>
+
+                <div class="p-3">
+                    <!-- Safety & Error Metric Tiles -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-6 col-md-3">
+                            <div class="p-3 rounded border bg-light d-flex align-items-center justify-content-between">
+                                <div>
+                                    <div class="small text-muted fw-semibold">SSRF / Safety Blocks</div>
+                                    <div class="fs-4 fw-bold text-danger" th:text="${safetyStats.ssrfBlocked}">0</div>
+                                </div>
+                                <div class="fs-3 text-danger opacity-75"><i class="fas fa-shield-slash"></i></div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="p-3 rounded border bg-light d-flex align-items-center justify-content-between">
+                                <div>
+                                    <div class="small text-muted fw-semibold">Robots.txt Policy</div>
+                                    <div class="fs-4 fw-bold text-warning" th:text="${safetyStats.robotsDisallowed}">0</div>
+                                </div>
+                                <div class="fs-3 text-warning opacity-75"><i class="fas fa-robot"></i></div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="p-3 rounded border bg-light d-flex align-items-center justify-content-between">
+                                <div>
+                                    <div class="small text-muted fw-semibold">HTTP Network Errors</div>
+                                    <div class="fs-4 fw-bold text-primary" th:text="${safetyStats.httpErrors}">0</div>
+                                </div>
+                                <div class="fs-3 text-primary opacity-75"><i class="fas fa-network-wired"></i></div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="p-3 rounded border bg-light d-flex align-items-center justify-content-between">
+                                <div>
+                                    <div class="small text-muted fw-semibold">Timeouts &amp; DNS</div>
+                                    <div class="fs-4 fw-bold text-secondary" th:text="${safetyStats.timeouts + safetyStats.dnsFailures}">0</div>
+                                </div>
+                                <div class="fs-3 text-secondary opacity-75"><i class="fas fa-hourglass-end"></i></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Search & Filter Controls -->
+                    <form th:action="@{/admin/crawler}" method="get" class="row g-2 align-items-center mb-3">
+                        <div class="col-12 col-md-4">
+                            <select name="errorType" class="form-select form-select-sm">
+                                <option value="ALL" th:selected="${selectedErrorType == 'ALL'}">All Error Types</option>
+                                <option value="SSRF_BLOCKED" th:selected="${selectedErrorType == 'SSRF_BLOCKED'}">SSRF_BLOCKED (SSRF / Metadata Protection)</option>
+                                <option value="PRIVATE_IP_BLOCKED" th:selected="${selectedErrorType == 'PRIVATE_IP_BLOCKED'}">PRIVATE_IP_BLOCKED (Private IP / RFC 1918)</option>
+                                <option value="RESTRICTED_PORT" th:selected="${selectedErrorType == 'RESTRICTED_PORT'}">RESTRICTED_PORT (Prohibited Port)</option>
+                                <option value="ROBOTS_DISALLOWED" th:selected="${selectedErrorType == 'ROBOTS_DISALLOWED'}">ROBOTS_DISALLOWED (robots.txt Policy)</option>
+                                <option value="HTTP_STATUS" th:selected="${selectedErrorType == 'HTTP_STATUS'}">HTTP_STATUS (HTTP 4xx / 5xx)</option>
+                                <option value="TIMEOUT" th:selected="${selectedErrorType == 'TIMEOUT'}">TIMEOUT (Socket / Read Timeout)</option>
+                                <option value="DNS_FAILURE" th:selected="${selectedErrorType == 'DNS_FAILURE'}">DNS_FAILURE (Host Resolution)</option>
+                                <option value="SSL_ERROR" th:selected="${selectedErrorType == 'SSL_ERROR'}">SSL_ERROR (TLS Handshake)</option>
+                                <option value="PARSING_ERROR" th:selected="${selectedErrorType == 'PARSING_ERROR'}">PARSING_ERROR (Parsing / Malformed)</option>
+                                <option value="DISALLOWED_EXTENSION" th:selected="${selectedErrorType == 'DISALLOWED_EXTENSION'}">DISALLOWED_EXTENSION (Binary / Non-HTML)</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <input type="text" name="searchError" class="form-control form-control-sm" 
+                                   placeholder="Filter by domain or URL..." th:value="${searchError}">
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-sm btn-primary">
+                                <i class="fas fa-filter me-1"></i> Filter
+                            </button>
+                        </div>
+                        <div class="col-auto">
+                            <a th:href="@{/admin/crawler}" class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-rotate-left me-1"></i> Reset
+                            </a>
+                        </div>
+                        <div class="col-auto" th:if="${selectedJobId != null}">
+                            <span class="badge bg-warning-subtle text-dark border border-warning">
+                                <i class="fas fa-filter me-1"></i> Job #<span th:text="${selectedJobId}">1</span> Filter Active
+                            </span>
+                        </div>
+                        <div class="col-auto ms-auto d-flex gap-2">
+                            <form th:action="@{/admin/crawler/errors/clear}" method="post" class="m-0"
+                                  onsubmit="return confirm('Clear all safety & error logs in the system?');">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="fas fa-trash-can me-1"></i> Clear All Logs
+                                </button>
+                            </form>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 small">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 80px;">Time</th>
+                                <th style="min-width: 220px;">Domain / Target URL</th>
+                                <th style="width: 170px;">Safety / Error Type</th>
+                                <th style="width: 90px;">HTTP Code</th>
+                                <th>Diagnostic Reason / Message</th>
+                                <th style="width: 110px;" class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="err : ${recentErrors}">
+                                <td>
+                                    <span class="text-muted fw-semibold" th:text="${#temporals.format(err.occurredAt, 'HH:mm:ss')}">Time</span>
+                                    <div class="text-muted small" style="font-size: 0.72rem;" th:text="'#' + ${err.id}">#1</div>
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-dark text-truncate" style="max-width: 260px;" th:text="${err.domain}">domain</div>
+                                    <div class="text-muted text-truncate font-monospace" style="max-width: 260px; font-size: 0.78rem;" 
+                                         th:title="${err.url}" th:text="${err.url}">url</div>
+                                </td>
+                                <td>
+                                    <span class="badge" th:classappend="${err.badgeClass}" th:text="${err.errorType}">ERROR_TYPE</span>
+                                </td>
+                                <td>
+                                    <span th:if="${err.httpStatusCode != null && err.httpStatusCode > 0}" 
+                                          class="badge" 
+                                          th:classappend="${err.httpStatusCode >= 400 && err.httpStatusCode < 500} ? 'bg-warning-subtle text-warning-emphasis' : 'bg-danger-subtle text-danger'"
+                                          th:text="${err.httpStatusCode}">404</span>
+                                    <span th:if="${err.httpStatusCode == null || err.httpStatusCode == 0}" class="text-muted small">N/A</span>
+                                </td>
+                                <td>
+                                    <div class="text-truncate" style="max-width: 320px;" 
+                                         th:title="${err.errorMessage}" th:text="${err.errorMessage}">Message</div>
+                                </td>
+                                <td class="text-end">
+                                    <button type="button" class="btn btn-sm btn-outline-info py-0 px-2 btn-inspect-error"
+                                            th:data-id="${err.id}"
+                                            th:data-domain="${err.domain}"
+                                            th:data-url="${err.url}"
+                                            th:data-type="${err.errorType}"
+                                            th:data-status="${err.httpStatusCode != null && err.httpStatusCode > 0 ? err.httpStatusCode : 'N/A'}"
+                                            th:data-message="${err.errorMessage}"
+                                            th:data-time="${#temporals.format(err.occurredAt, 'yyyy-MM-dd HH:mm:ss')}"
+                                            th:data-job="${err.crawlJobId != null ? err.crawlJobId : 'N/A'}"
+                                            title="Inspect Error Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <form th:action="@{/admin/crawler/errors/{id}/delete(id=${err.id})}" method="post" class="d-inline"
+                                          onsubmit="return confirm('Delete this log entry?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" title="Delete Log">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            <tr th:if="${recentErrors == null || recentErrors.isEmpty()}">
+                                <td colspan="6" class="text-center text-muted py-4">
+                                    <i class="fas fa-circle-check text-success fs-3 d-block mb-2"></i>
+                                    Clean! No safety violations or crawl errors match the selected filter.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Modal: Inspect Error Details -->
+            <div class="modal fade" id="errorDetailModal" tabindex="-1" aria-labelledby="errorDetailModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="errorDetailModalLabel">
+                                <i class="fas fa-triangle-exclamation text-danger me-2"></i>Crawl Safety &amp; Diagnostic Details
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row g-3 mb-3">
+                                <div class="col-sm-6">
+                                    <label class="form-label small text-muted">Error Classification</label>
+                                    <div><span id="modalErrorType" class="badge bg-danger fs-6">ERROR</span></div>
+                                </div>
+                                <div class="col-sm-3">
+                                    <label class="form-label small text-muted">HTTP Status Code</label>
+                                    <div id="modalHttpStatus" class="fw-bold">N/A</div>
+                                </div>
+                                <div class="col-sm-3">
+                                    <label class="form-label small text-muted">Crawl Job ID</label>
+                                    <div id="modalJobId" class="fw-bold text-primary">N/A</div>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small text-muted">Target Domain</label>
+                                    <div id="modalDomain" class="fw-semibold text-dark">domain</div>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small text-muted">Full Target URL</label>
+                                    <div class="p-2 rounded bg-light border font-monospace small text-break" id="modalUrl">https://...</div>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small text-muted">Timestamp</label>
+                                    <div id="modalTime" class="text-muted small">2026-03-01 12:00:00</div>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small text-muted">Detailed Error Message / Trace</label>
+                                    <div class="p-3 rounded bg-light border text-danger font-monospace small text-break" 
+                                         style="max-height: 220px; overflow-y: auto;" id="modalMessage">Error details...</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/js/main.js}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const inspectButtons = document.querySelectorAll('.btn-inspect-error');
+    const modalEl = document.getElementById('errorDetailModal');
+    if (modalEl && typeof bootstrap !== 'undefined') {
+        const modal = new bootstrap.Modal(modalEl);
+        inspectButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.getElementById('modalErrorType').textContent = this.getAttribute('data-type') || 'ERROR';
+                document.getElementById('modalHttpStatus').textContent = this.getAttribute('data-status') || 'N/A';
+                document.getElementById('modalJobId').textContent = this.getAttribute('data-job') !== 'N/A' ? ('#' + this.getAttribute('data-job')) : 'N/A';
+                document.getElementById('modalDomain').textContent = this.getAttribute('data-domain') || '';
+                document.getElementById('modalUrl').textContent = this.getAttribute('data-url') || '';
+                document.getElementById('modalTime').textContent = this.getAttribute('data-time') || '';
+                document.getElementById('modalMessage').textContent = this.getAttribute('data-message') || 'No diagnostic message available';
+                modal.show();
+            });
+        });
+    }
+});
+</script>
+
+</body>
+</html>
+

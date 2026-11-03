@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
+<head th:replace="~{fragments/header :: head('SmartSearch - Modern Java Search Engine')}">
+</head>
+<body>
+
+<!-- Header Navbar -->
+<header th:replace="~{fragments/header :: navbar}"></header>
+
+<!-- Main Central Hero Container -->
+<main class="home-hero-container">
+    <div class="text-center w-100">
+        <!-- Logo -->
+        <a th:href="@{/}" class="d-inline-block text-decoration-none">
+            <img th:src="@{/images/logo.svg}" alt="SmartSearch" class="home-brand-logo">
+        </a>
+
+        <!-- Central Search Bar & Form -->
+        <div class="searchbar-wrapper">
+            <form id="searchForm" th:action="@{/search}" method="get" autocomplete="off">
+                <div class="searchbar-box">
+                    <i class="fas fa-search searchbar-icon"></i>
+                    
+                    <input type="text" id="mainSearchInput" name="q" class="searchbar-input" 
+                           placeholder="Search the web, news, docs, images, videos..." 
+                           autofocus required>
+
+                    <!-- Clear input button -->
+                    <button type="button" id="clearSearchBtn" class="searchbar-action-btn" title="Clear search" style="display: none;">
+                        <i class="fas fa-times"></i>
+                    </button>
+
+                    <!-- Voice Search button -->
+                    <button type="button" id="voiceSearchBtn" th:if="${voiceSearchEnabled}" class="searchbar-action-btn" title="Search by voice">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+
+                    <!-- Submit Arrow -->
+                    <button type="submit" class="searchbar-action-btn text-primary" title="Search">
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <!-- Autocomplete Suggestions Dropdown -->
+                <div id="suggestionsDropdown" class="suggestions-box"></div>
+            </form>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="home-action-buttons justify-content-center">
+            <button type="button" onclick="document.getElementById('searchForm').submit();" class="btn-smart">
+                <i class="fas fa-search me-1 text-primary"></i> SmartSearch
+            </button>
+            <a th:href="@{/search?q=artificial+intelligence&category=ALL}" class="btn-smart text-decoration-none">
+                <i class="fas fa-wand-magic-sparkles me-1 text-warning"></i> I'm Feeling Lucky
+            </a>
+            <button type="button" class="btn-smart" data-bs-toggle="modal" data-bs-target="#advancedSearchModal">
+                <i class="fas fa-sliders me-1 text-secondary"></i> Advanced
+            </button>
+        </div>
+
+        <!-- Category Shortcut Pills & Services -->
+        <div class="d-flex justify-content-center flex-wrap gap-2 mt-4">
+            <a th:href="@{/employment}" class="search-chip border border-primary-subtle text-primary fw-semibold" title="Employment &amp; Career Opportunities">
+                <i class="fas fa-briefcase text-primary"></i> 1. Employment
+            </a>
+            <a th:href="@{/search?q=technology&category=ALL}" class="search-chip">
+                <i class="fas fa-globe text-primary"></i> All
+            </a>
+            <a th:href="@{/search?q=nature&category=IMAGES}" class="search-chip">
+                <i class="fas fa-image text-success"></i> Images
+            </a>
+            <a th:href="@{/search?q=java&category=VIDEOS}" class="search-chip">
+                <i class="fas fa-video text-danger"></i> Videos
+            </a>
+            <a th:href="@{/search?q=software&category=NEWS}" class="search-chip">
+                <i class="fas fa-newspaper text-info"></i> News
+            </a>
+            <a th:href="@{/search?q=silicon+valley&category=MAPS}" class="search-chip">
+                <i class="fas fa-map-marked-alt text-warning"></i> Maps
+            </a>
+            <a th:href="@{/search?q=laptop&category=SHOPPING}" class="search-chip">
+                <i class="fas fa-shopping-bag text-primary"></i> Shopping
+            </a>
+        </div>
+
+        <!-- Recent Searches / Popular Queries Chips -->
+        <div class="recent-chips-container" th:if="${recentSearches != null && !recentSearches.isEmpty()}">
+            <div class="recent-chips-title" th:text="${currentUser != null ? 'Your Recent Searches' : 'Trending Searches'}">
+                Trending Searches
+            </div>
+            <div class="recent-chips-list">
+                <a th:each="query : ${recentSearches}" 
+                   th:href="@{/search(q=${query})}" 
+                   class="search-chip">
+                    <i class="fas fa-arrow-trend-up text-muted"></i>
+                    <span th:text="${query}">query</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Hotkey Hint -->
+        <div class="mt-4 text-muted small">
+            <span>Press <kbd class="bg-secondary text-white px-2 py-1 rounded">/</kbd> to search anytime</span>
+        </div>
+    </div>
+</main>
+
+<!-- Modals -->
+<div th:replace="~{fragments/modals :: voiceModal}"></div>
+<div th:replace="~{fragments/modals :: advancedSearchModal}"></div>
+
+<!-- Footer -->
+<footer th:replace="~{fragments/footer :: footer}"></footer>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/js/main.js}"></script>
+<script th:src="@{/js/search.js}"></script>
+<script th:src="@{/js/voice-search.js}"></script>
+
+</body>
+</html>
+
