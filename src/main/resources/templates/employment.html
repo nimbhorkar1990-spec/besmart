@@ -142,6 +142,30 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
 
+        <!-- Logged-in Employer Quick Banner -->
+        <div th:if="${isEmployer}" class="card border-0 bg-primary-subtle text-primary-emphasis p-3 rounded-4 mb-4 shadow-sm">
+            <div class="d-flex flex-row flex-wrap align-items-center justify-content-between gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="bg-primary text-white rounded-3 p-2 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                        <i class="fas fa-bullhorn fa-lg"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-body" th:text="'Employer Account: ' + (${currentUser != null and currentUser.companyName != null and !currentUser.companyName.isBlank()} ? ${currentUser.companyName} : (${currentUser != null} ? ${currentUser.fullName} : 'Verified Company'))">
+                            Acme Tech Solutions
+                        </div>
+                        <div class="small text-secondary">
+                            <span class="badge bg-success-subtle text-success border border-success-subtle me-1"><i class="fas fa-shield-check me-1"></i>Verified Business</span>
+                            <span>You are authenticated to post new job openings &amp; advertisements.</span>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-primary px-4 py-2 rounded-pill fw-semibold shadow-sm"
+                        data-bs-toggle="modal" data-bs-target="#postJobModal">
+                    <i class="fas fa-plus-circle me-1"></i> Post a Job Ad
+                </button>
+            </div>
+        </div>
+
         <div class="row g-4">
             <!-- Left Column: Job Listings -->
             <div class="col-lg-8">
@@ -633,6 +657,15 @@
                 }
                 if (postJobAlert) postJobAlert.classList.add("d-none");
             });
+        }
+        // Auto-open Post Job Modal if employer opened with ?post=true or #post
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('post') === 'true' || window.location.hash === '#post') {
+            const postJobModalEl = document.getElementById("postJobModal");
+            if (postJobModalEl) {
+                const modal = new bootstrap.Modal(postJobModalEl);
+                modal.show();
+            }
         }
     });
 </script>

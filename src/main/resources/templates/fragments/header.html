@@ -111,6 +111,20 @@
                                 </div>
                             </a>
                         </li>
+                        <!-- Option for Logged-In Employer to Post Ads -->
+                        <li th:if="${currentUser != null and currentUser.isEmployer()}">
+                            <hr class="dropdown-divider my-1">
+                        </li>
+                        <li th:if="${currentUser != null and currentUser.isEmployer()}">
+                            <a class="dropdown-item d-flex align-items-center gap-2 py-2 text-primary" th:href="@{/employment(post='true')}">
+                                <span class="badge bg-success text-white px-2 py-1 rounded-pill small fw-bold"><i class="fas fa-plus"></i></span>
+                                <i class="fas fa-bullhorn text-success fa-lg"></i>
+                                <div>
+                                    <div class="fw-semibold text-body">Post a Job Ad</div>
+                                    <div class="text-muted small" style="font-size: 0.75rem;">Create &amp; publish verified vacancies</div>
+                                </div>
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </nav>
@@ -118,6 +132,14 @@
 
         <!-- Right: Actions, Theme Selector Dropdown, User Profile -->
         <div class="d-flex align-items-center gap-3">
+            <!-- Employer Quick Action: Post Job Ad -->
+            <a th:if="${currentUser != null and currentUser.isEmployer()}" 
+               th:href="@{/employment(post='true')}" 
+               class="btn btn-primary btn-sm px-3 rounded-pill d-none d-sm-inline-flex align-items-center gap-1 shadow-sm fw-semibold">
+                <i class="fas fa-bullhorn"></i>
+                <span>Post Job Ad</span>
+            </a>
+
             <!-- Theme Dropdown Selector -->
             <div th:replace="~{fragments/header :: themeSelector}"></div>
 
@@ -131,6 +153,17 @@
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="userMenuBtn">
                     <li><h6 class="dropdown-header" th:text="${currentUser != null ? currentUser.email : ''}">user@mail.com</h6></li>
+
+                    <!-- Employer Option: Post a Job Ad -->
+                    <li th:if="${currentUser != null and currentUser.isEmployer()}">
+                        <a class="dropdown-item fw-semibold text-primary" th:href="@{/employment(post='true')}">
+                            <i class="fas fa-bullhorn me-2 text-primary"></i>Post a Job Ad
+                        </a>
+                    </li>
+                    <li th:if="${currentUser != null and currentUser.isEmployer()}">
+                        <hr class="dropdown-divider">
+                    </li>
+
                     <li><a class="dropdown-item" th:href="@{/user/saved}"><i class="fas fa-bookmark me-2 text-primary"></i>Saved Bookmarks</a></li>
                     <li><a class="dropdown-item" th:href="@{/user/history}"><i class="fas fa-history me-2 text-info"></i>Search History</a></li>
                     <li><a class="dropdown-item" th:href="@{/user/profile}"><i class="fas fa-user-circle me-2 text-secondary"></i>Profile Settings</a></li>

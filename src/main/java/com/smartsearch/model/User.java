@@ -238,6 +238,10 @@ public class User {
         return getCertificateCount() >= 2;
     }
 
+    public boolean isEmployer() {
+        return "EMPLOYER".equalsIgnoreCase(accountType) || role == Role.ROLE_ADMIN;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
