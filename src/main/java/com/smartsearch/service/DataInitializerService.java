@@ -236,31 +236,41 @@ public class DataInitializerService implements ApplicationRunner {
     }
 
     private void initSearchProviders() {
-        if (providerConfigRepository.count() == 0) {
-            List<com.smartsearch.model.SearchProviderConfig> configs = new ArrayList<>();
-            configs.add(new com.smartsearch.model.SearchProviderConfig(
-                    "GOOGLE", "Google Custom Search JSON API", true,
-                    settingService.getSetting("GOOGLE_API_KEY", ""),
-                    settingService.getSetting("GOOGLE_SEARCH_ENGINE_ID", ""),
-                    "https://www.googleapis.com/customsearch/v1", 1
-            ));
-            configs.add(new com.smartsearch.model.SearchProviderConfig(
-                    "BING", "Microsoft Bing Web Search API v7", true,
-                    settingService.getSetting("BING_API_KEY", ""), "",
-                    "https://api.bing.microsoft.com/v7.0/search", 2
-            ));
-            configs.add(new com.smartsearch.model.SearchProviderConfig(
-                    "BRAVE", "Brave Search API", true,
-                    settingService.getSetting("BRAVE_API_KEY", ""), "",
-                    "https://api.search.brave.com/res/v1/web/search", 3
-            ));
-            configs.add(new com.smartsearch.model.SearchProviderConfig(
-                    "WIKIPEDIA", "Wikimedia Open Search API", true,
-                    "", "", "https://en.wikipedia.org/w/api.php", 4
-            ));
+        seedProviderIfNotExists("GOOGLE", "Google Custom Search JSON API", true,
+                settingService.getSetting("GOOGLE_API_KEY", ""),
+                settingService.getSetting("GOOGLE_SEARCH_ENGINE_ID", ""),
+                "https://www.googleapis.com/customsearch/v1", 1);
 
-            providerConfigRepository.saveAll(configs);
-            logger.info("Initialized 4 default search providers (Google, Bing, Brave, Wikipedia).");
+        seedProviderIfNotExists("BING", "Microsoft Bing Web Search API v7", true,
+                settingService.getSetting("BING_API_KEY", ""), "",
+                "https://api.bing.microsoft.com/v7.0/search", 2);
+
+        seedProviderIfNotExists("YAHOO", "Yahoo Search Provider (API & RSS)", true,
+                settingService.getSetting("YAHOO_API_KEY", ""), "",
+                "https://news.search.yahoo.com/rss", 3);
+
+        seedProviderIfNotExists("DUCKDUCKGO", "DuckDuckGo Search (API & Web)", true,
+                "", "", "https://api.duckduckgo.com", 4);
+
+        seedProviderIfNotExists("BRAVE", "Brave Search API", true,
+                settingService.getSetting("BRAVE_API_KEY", ""), "",
+                "https://api.search.brave.com/res/v1/web/search", 5);
+
+        seedProviderIfNotExists("WIKIPEDIA", "Wikimedia Open Search API", true,
+                "", "", "https://en.wikipedia.org/w/api.php", 6);
+
+        seedProviderIfNotExists("SEARXNG", "SearXNG Metasearch API", false,
+                "", "", "https://searx.be/search", 7);
+    }
+
+    private void seedProviderIfNotExists(String providerId, String displayName, boolean enabled,
+                                         String apiKey, String searchEngineId, String endpointUrl, int priority) {
+        if (providerConfigRepository.findByProviderId(providerId).isEmpty()) {
+            com.smartsearch.model.SearchProviderConfig cfg = new com.smartsearch.model.SearchProviderConfig(
+                    providerId, displayName, enabled, apiKey, searchEngineId, endpointUrl, priority
+            );
+            providerConfigRepository.save(cfg);
+            logger.info("Initialized search provider: {}", providerId);
         }
     }
 

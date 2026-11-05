@@ -118,6 +118,7 @@ public class BingSearchProvider implements SearchProvider {
                         dto.setSource("BING");
                         dto.setSourceBadge("Bing Web Search");
                         dto.setSourceBadgeClass("badge-provider-bing");
+                        dto.addVerifiedProvider("Bing");
                         results.add(dto);
                     }
                 }

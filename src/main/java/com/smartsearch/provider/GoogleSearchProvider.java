@@ -127,6 +127,7 @@ public class GoogleSearchProvider implements SearchProvider {
                         dto.setSource("GOOGLE");
                         dto.setSourceBadge("Google Search API");
                         dto.setSourceBadgeClass("badge-provider-google");
+                        dto.addVerifiedProvider("Google");
                         results.add(dto);
                     }
                 }

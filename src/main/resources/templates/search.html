@@ -228,9 +228,10 @@
                             <span>Copy link</span>
                         </button>
 
-                        <span class="badge ms-auto" th:classappend="${item.sourceBadgeClass != null ? item.sourceBadgeClass : 'bg-body-secondary text-secondary'}" 
-                              th:text="${item.sourceBadge != null ? item.sourceBadge : item.source}">
-                            SmartSearch Index
+                        <span class="badge ms-auto d-inline-flex align-items-center gap-1" th:classappend="${item.sourceBadgeClass != null ? item.sourceBadgeClass : 'bg-body-secondary text-secondary'}" 
+                              th:title="${item.verifiedProviders != null && item.verifiedProviders.size() > 1 ? 'Corroborated across multiple search providers' : ''}">
+                            <i class="fas fa-layer-group text-primary me-1" th:if="${item.verifiedProviders != null && item.verifiedProviders.size() > 1}"></i>
+                            <span th:text="${item.sourceBadge != null ? item.sourceBadge : item.source}">SmartSearch Index</span>
                         </span>
                     </div>
                 </div>

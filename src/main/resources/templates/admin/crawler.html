@@ -223,8 +223,10 @@
                                         <span th:if="${p.searchEngineId != null && !p.searchEngineId.isEmpty()}" class="text-muted" th:text="' (cx: ' + ${p.searchEngineId} + ')'"></span>
                                     </div>
                                     <span th:if="${p.apiKey == null || p.apiKey.isEmpty()}" class="text-muted small italic">
-                                        <span th:if="${p.providerId == 'WIKIPEDIA'}">Zero-Config Open API (Ready)</span>
-                                        <span th:if="${p.providerId != 'WIKIPEDIA'}">No API Key configured</span>
+                                        <span th:if="${p.providerId == 'WIKIPEDIA' || p.providerId == 'DUCKDUCKGO'}">Zero-Config Open Interface (Ready)</span>
+                                        <span th:if="${p.providerId == 'YAHOO'}">Open Syndication RSS (Key Optional)</span>
+                                        <span th:if="${p.providerId == 'SEARXNG'}">Open Metasearch API (Ready)</span>
+                                        <span th:if="${p.providerId != 'WIKIPEDIA' && p.providerId != 'DUCKDUCKGO' && p.providerId != 'YAHOO' && p.providerId != 'SEARXNG'}">No API Key configured</span>
                                     </span>
                                 </td>
                                 <td>
@@ -257,10 +259,19 @@
                                                             <label class="form-check-label fw-semibold" th:for="'check' + ${p.id}">Enable Provider</label>
                                                         </div>
 
-                                                        <div class="mb-3" th:if="${p.providerId != 'WIKIPEDIA'}">
+                                                        <div class="mb-3" th:if="${p.providerId != 'WIKIPEDIA' && p.providerId != 'DUCKDUCKGO'}">
                                                             <label class="form-label small fw-semibold">API Key / Access Token</label>
                                                             <input type="password" name="apiKey" class="form-control form-control-sm font-monospace"
                                                                    th:value="${p.apiKey}" placeholder="Enter authorized API key">
+                                                            <div class="form-text small text-muted" th:if="${p.providerId == 'YAHOO'}">
+                                                                Optional: Enter RapidAPI Yahoo Search key or leave blank for Yahoo open RSS search.
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="mb-3" th:if="${p.providerId == 'SEARXNG'}">
+                                                            <label class="form-label small fw-semibold">SearXNG Endpoint URL</label>
+                                                            <input type="text" name="endpointUrl" class="form-control form-control-sm font-monospace"
+                                                                   th:value="${p.endpointUrl}" placeholder="https://searx.be/search">
                                                         </div>
 
                                                         <div class="mb-3" th:if="${p.providerId == 'GOOGLE'}">
@@ -274,8 +285,11 @@
                                                             <select name="priority" class="form-select form-select-sm">
                                                                 <option value="1" th:selected="${p.priority == 1}">1 (Highest - Primary Source)</option>
                                                                 <option value="2" th:selected="${p.priority == 2}">2 (High)</option>
-                                                                <option value="3" th:selected="${p.priority == 3}">3 (Medium)</option>
-                                                                <option value="4" th:selected="${p.priority == 4}">4 (Fallback)</option>
+                                                                <option value="3" th:selected="${p.priority == 3}">3 (Medium-High)</option>
+                                                                <option value="4" th:selected="${p.priority == 4}">4 (Medium)</option>
+                                                                <option value="5" th:selected="${p.priority == 5}">5 (Medium-Low)</option>
+                                                                <option value="6" th:selected="${p.priority == 6}">6 (Low)</option>
+                                                                <option value="7" th:selected="${p.priority == 7}">7 (Fallback)</option>
                                                             </select>
                                                         </div>
                                                     </div>

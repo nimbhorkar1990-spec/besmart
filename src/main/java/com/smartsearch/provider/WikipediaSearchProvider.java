@@ -115,6 +115,7 @@ public class WikipediaSearchProvider implements SearchProvider {
                         dto.setSource("WIKIPEDIA");
                         dto.setSourceBadge("Wikipedia API");
                         dto.setSourceBadgeClass("badge-provider-wiki");
+                        dto.addVerifiedProvider("Wikipedia");
                         results.add(dto);
                     }
                 }

@@ -16,6 +16,7 @@ public class SearchResultItemDto {
     private String canonicalUrl;
     private String crawledAt;
     private boolean saved;
+    private java.util.List<String> verifiedProviders = new java.util.ArrayList<>();
     
     // Rich category specific attributes
     private String duration;      // For Videos (e.g., "14:20")
@@ -212,6 +213,28 @@ public class SearchResultItemDto {
 
     public void setCoordinates(String coordinates) {
         this.coordinates = coordinates;
+    }
+
+    public java.util.List<String> getVerifiedProviders() {
+        if (verifiedProviders == null) {
+            verifiedProviders = new java.util.ArrayList<>();
+        }
+        return verifiedProviders;
+    }
+
+    public void setVerifiedProviders(java.util.List<String> verifiedProviders) {
+        this.verifiedProviders = verifiedProviders;
+    }
+
+    public void addVerifiedProvider(String provider) {
+        if (provider != null && !provider.isBlank()) {
+            if (this.verifiedProviders == null) {
+                this.verifiedProviders = new java.util.ArrayList<>();
+            }
+            if (!this.verifiedProviders.contains(provider)) {
+                this.verifiedProviders.add(provider);
+            }
+        }
     }
 }
 

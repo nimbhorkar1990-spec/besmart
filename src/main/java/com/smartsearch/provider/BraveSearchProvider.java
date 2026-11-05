@@ -118,6 +118,7 @@ public class BraveSearchProvider implements SearchProvider {
                         dto.setSource("BRAVE");
                         dto.setSourceBadge("Brave Search API");
                         dto.setSourceBadgeClass("badge-provider-brave");
+                        dto.addVerifiedProvider("Brave");
                         results.add(dto);
                     }
                 }

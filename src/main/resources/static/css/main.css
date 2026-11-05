@@ -607,6 +607,24 @@ mark.search-highlight {
   border: 1px solid rgba(113, 88, 226, 0.25) !important;
 }
 
+.badge-provider-yahoo {
+  background-color: rgba(96, 1, 210, 0.12) !important;
+  color: #6001d2 !important;
+  border: 1px solid rgba(96, 1, 210, 0.25) !important;
+}
+
+.badge-provider-ddg {
+  background-color: rgba(222, 88, 51, 0.12) !important;
+  color: #de5833 !important;
+  border: 1px solid rgba(222, 88, 51, 0.25) !important;
+}
+
+.badge-provider-searxng {
+  background-color: rgba(0, 164, 166, 0.12) !important;
+  color: #008284 !important;
+  border: 1px solid rgba(0, 164, 166, 0.25) !important;
+}
+
 .badge-provider-lucene {
   background-color: rgba(25, 135, 84, 0.12) !important;
   color: #198754 !important;

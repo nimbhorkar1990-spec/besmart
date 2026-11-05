@@ -377,26 +377,49 @@ public class AdminController {
                                  @RequestParam(value = "enabled", defaultValue = "false") boolean enabled,
                                  @RequestParam(value = "apiKey", required = false) String apiKey,
                                  @RequestParam(value = "searchEngineId", required = false) String searchEngineId,
+                                 @RequestParam(value = "endpointUrl", required = false) String endpointUrl,
                                  @RequestParam(value = "priority", defaultValue = "1") int priority,
                                  RedirectAttributes redirectAttributes) {
         providerConfigRepository.findById(id).ifPresent(p -> {
             p.setEnabled(enabled);
             p.setApiKey(apiKey != null ? apiKey.trim() : "");
             p.setSearchEngineId(searchEngineId != null ? searchEngineId.trim() : "");
+            if (endpointUrl != null && !endpointUrl.isBlank()) {
+                p.setEndpointUrl(endpointUrl.trim());
+            }
             p.setPriority(priority);
             providerConfigRepository.save(p);
 
             // Also synchronize with SystemSettingService
-            if ("GOOGLE".equalsIgnoreCase(p.getProviderId())) {
-                settingService.updateSetting("GOOGLE_API_KEY", p.getApiKey(), "Google Custom Search API Key");
-                settingService.updateSetting("GOOGLE_SEARCH_ENGINE_ID", p.getSearchEngineId(), "Google Search Engine CX ID");
-                settingService.updateSetting("GOOGLE_SEARCH_ENABLED", String.valueOf(enabled), "Google search active");
-            } else if ("BING".equalsIgnoreCase(p.getProviderId())) {
-                settingService.updateSetting("BING_API_KEY", p.getApiKey(), "Bing Search API Key");
-                settingService.updateSetting("BING_SEARCH_ENABLED", String.valueOf(enabled), "Bing search active");
-            } else if ("BRAVE".equalsIgnoreCase(p.getProviderId())) {
-                settingService.updateSetting("BRAVE_API_KEY", p.getApiKey(), "Brave Search API Key");
-                settingService.updateSetting("BRAVE_SEARCH_ENABLED", String.valueOf(enabled), "Brave search active");
+            String pid = p.getProviderId().toUpperCase();
+            switch (pid) {
+                case "GOOGLE" -> {
+                    settingService.updateSetting("GOOGLE_API_KEY", p.getApiKey(), "Google Custom Search API Key");
+                    settingService.updateSetting("GOOGLE_SEARCH_ENGINE_ID", p.getSearchEngineId(), "Google Search Engine CX ID");
+                    settingService.updateSetting("GOOGLE_SEARCH_ENABLED", String.valueOf(enabled), "Google search active");
+                }
+                case "BING" -> {
+                    settingService.updateSetting("BING_API_KEY", p.getApiKey(), "Bing Search API Key");
+                    settingService.updateSetting("BING_SEARCH_ENABLED", String.valueOf(enabled), "Bing search active");
+                }
+                case "BRAVE" -> {
+                    settingService.updateSetting("BRAVE_API_KEY", p.getApiKey(), "Brave Search API Key");
+                    settingService.updateSetting("BRAVE_SEARCH_ENABLED", String.valueOf(enabled), "Brave search active");
+                }
+                case "YAHOO" -> {
+                    settingService.updateSetting("YAHOO_API_KEY", p.getApiKey(), "Yahoo Search API / RapidAPI Key");
+                    settingService.updateSetting("YAHOO_SEARCH_ENABLED", String.valueOf(enabled), "Yahoo search active");
+                }
+                case "DUCKDUCKGO" -> {
+                    settingService.updateSetting("DUCKDUCKGO_SEARCH_ENABLED", String.valueOf(enabled), "DuckDuckGo search active");
+                }
+                case "WIKIPEDIA" -> {
+                    settingService.updateSetting("WIKIPEDIA_SEARCH_ENABLED", String.valueOf(enabled), "Wikipedia search active");
+                }
+                case "SEARXNG" -> {
+                    settingService.updateSetting("SEARXNG_ENDPOINT", p.getEndpointUrl(), "SearXNG API Endpoint");
+                    settingService.updateSetting("SEARXNG_SEARCH_ENABLED", String.valueOf(enabled), "SearXNG search active");
+                }
             }
         });
 
