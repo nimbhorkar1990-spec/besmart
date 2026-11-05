@@ -180,3 +180,4 @@ public class SearchProviderRecommendation {
         this.isAdded = isAdded;
     }
 }
+

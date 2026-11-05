@@ -13,3 +13,4 @@ public interface SearchProviderRecommendationRepository extends JpaRepository<Se
     List<SearchProviderRecommendation> findAllByOrderByQualityRatingDesc();
     List<SearchProviderRecommendation> findByIsAddedFalseOrderByQualityRatingDesc();
 }
+

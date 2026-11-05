@@ -13,3 +13,4 @@ public interface AdminActivityLogRepository extends JpaRepository<AdminActivityL
     List<AdminActivityLog> findTop50ByOrderByTimestampDesc();
     Page<AdminActivityLog> findAllByOrderByTimestampDesc(Pageable pageable);
 }
+

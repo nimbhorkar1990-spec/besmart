@@ -1,8 +1,6 @@
 package com.smartsearch.service;
 
-import com.smartsearch.model.IndexedPage;
-import com.smartsearch.model.Role;
-import com.smartsearch.model.User;
+import com.smartsearch.model.*;
 import com.smartsearch.repository.IndexedPageRepository;
 import com.smartsearch.repository.UserRepository;
 import org.slf4j.Logger;
@@ -12,6 +10,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -28,6 +27,10 @@ public class DataInitializerService implements ApplicationRunner {
     private final com.smartsearch.repository.SearchProviderConfigRepository providerConfigRepository;
     private final com.smartsearch.repository.SearchProviderRecommendationRepository recommendationRepository;
     private final SystemSettingService settingService;
+    private final com.smartsearch.repository.BlogPublishingPermissionRepository blogPermissionRepository;
+    private final com.smartsearch.repository.UserBlogLimitRepository userBlogLimitRepository;
+    private final com.smartsearch.repository.BlogPostRepository blogPostRepository;
+    private final com.smartsearch.repository.AiSeoRecommendationRepository aiSeoRecommendationRepository;
 
     public DataInitializerService(UserRepository userRepository,
                                   IndexedPageRepository indexedPageRepository,
@@ -35,7 +38,11 @@ public class DataInitializerService implements ApplicationRunner {
                                   PasswordEncoder passwordEncoder,
                                   com.smartsearch.repository.SearchProviderConfigRepository providerConfigRepository,
                                   com.smartsearch.repository.SearchProviderRecommendationRepository recommendationRepository,
-                                  SystemSettingService settingService) {
+                                  SystemSettingService settingService,
+                                  com.smartsearch.repository.BlogPublishingPermissionRepository blogPermissionRepository,
+                                  com.smartsearch.repository.UserBlogLimitRepository userBlogLimitRepository,
+                                  com.smartsearch.repository.BlogPostRepository blogPostRepository,
+                                  com.smartsearch.repository.AiSeoRecommendationRepository aiSeoRecommendationRepository) {
         this.userRepository = userRepository;
         this.indexedPageRepository = indexedPageRepository;
         this.luceneService = luceneService;
@@ -43,6 +50,10 @@ public class DataInitializerService implements ApplicationRunner {
         this.providerConfigRepository = providerConfigRepository;
         this.recommendationRepository = recommendationRepository;
         this.settingService = settingService;
+        this.blogPermissionRepository = blogPermissionRepository;
+        this.userBlogLimitRepository = userBlogLimitRepository;
+        this.blogPostRepository = blogPostRepository;
+        this.aiSeoRecommendationRepository = aiSeoRecommendationRepository;
     }
 
     @Override
@@ -52,6 +63,7 @@ public class DataInitializerService implements ApplicationRunner {
         initSearchProviders();
         initProviderRecommendations();
         initCrawlerSettings();
+        initBlogAndSeoData();
     }
 
     private void initUsers() {
@@ -415,6 +427,202 @@ public class DataInitializerService implements ApplicationRunner {
         }
         if (settingService.getSetting("CRAWLER_ENABLED", "").isBlank()) {
             settingService.updateSetting("CRAWLER_ENABLED", "true", "Whether background web crawler is active");
+        }
+    }
+
+    private void initBlogAndSeoData() {
+        // 1. Master Permissions
+        if (blogPermissionRepository.count() == 0) {
+            BlogPublishingPermission perm = new BlogPublishingPermission();
+            perm.setAllowAllUsersCreate(true);
+            perm.setAllowAgentsCreate(true);
+            perm.setAllowPropertyOwnersCreate(true);
+            perm.setAllowAdminsCreate(true);
+            perm.setAllowAiGenerate(true);
+            perm.setAllowAiAutoPublish(false);
+            perm.setRequireAdminApproval(false);
+            perm.setDefaultValidityDays(90);
+            perm.setAllowCustomValidity(true);
+            perm.setAutoExpireAndUnpublish(true);
+            perm.setAllowBlogRenewal(true);
+            perm.setAutomaticSeoMasterSwitch(true);
+            perm.setAutoMetaTitleOpt(true);
+            perm.setAutoMetaDescOpt(true);
+            perm.setAutoKeywordSuggestions(true);
+            perm.setAutoInternalLinking(true);
+            perm.setAutoImageAltText(true);
+            perm.setAutoSchemaMarkup(true);
+            perm.setAutoSitemapUpdate(true);
+            perm.setAutoSeoContentAnalysis(true);
+            perm.setAutoIndexingSubmission(false);
+            perm.setAutoSeoMonitoring(true);
+            blogPermissionRepository.save(perm);
+            logger.info("Initialized default blog publishing permissions & SEO authority rules.");
+        }
+
+        // 2. Default Category Limits (Admin: 50/30d, Agents: 10/30d, Owners: 5/30d, Users: 3/30d, AI: 20/30d)
+        if (userBlogLimitRepository.count() == 0) {
+            List<UserBlogLimit> defaultLimits = new ArrayList<>();
+            defaultLimits.add(new UserBlogLimit("ADMIN", 50, 30));
+            defaultLimits.add(new UserBlogLimit("AGENT", 10, 30));
+            defaultLimits.add(new UserBlogLimit("PROPERTY_OWNER", 5, 30));
+            defaultLimits.add(new UserBlogLimit("USER", 3, 30));
+            defaultLimits.add(new UserBlogLimit("AI", 20, 30));
+            userBlogLimitRepository.saveAll(defaultLimits);
+            logger.info("Initialized role-based blog publishing limits.");
+        }
+
+        // 3. Sample Blog Posts
+        if (blogPostRepository.count() == 0) {
+            User admin = userRepository.findByUsername("admin").orElse(null);
+
+            // Blog 1
+            BlogPost b1 = new BlogPost();
+            b1.setTitle("Top 10 High-Growth Real Estate Investment Hubs in 2026");
+            b1.setSlug("top-10-high-growth-real-estate-investment-hubs-2026");
+            b1.setSummary("Explore the most lucrative urban and suburban micro-markets experiencing explosive capital appreciation and sustained high rental yields in 2026.");
+            b1.setContent("<h2>1. The Shifting Landscape of Real Estate Returns</h2>"
+                    + "<p>As transit networks expand and decentralized commercial hubs emerge, Tier-1 and Tier-2 suburban growth corridors are capturing record institutional and retail investment. Investors seeking resilient long-term capital appreciation are prioritizing integrated townships, metro-connected suburban enclaves, and sustainable smart-living communities.</p>"
+                    + "<h2>2. Prime Micro-Markets to Watch</h2>"
+                    + "<p>Leading micro-markets are characterized by robust infrastructural pipelines, including high-speed expressway interchanges, upcoming international airports, and modern technology SEZs. Key growth metrics highlight:</p>"
+                    + "<ul>"
+                    + "<li><strong>High Rental Yields:</strong> Outperforming central business districts by an average of 180 to 240 basis points annually.</li>"
+                    + "<li><strong>Capital Value Growth:</strong> Anticipated 12-15% CAGR across organized residential gated layouts.</li>"
+                    + "<li><strong>Lifestyle Amenities:</strong> Proximity to world-class educational institutions, multispecialty healthcare, and lifestyle shopping centers.</li>"
+                    + "</ul>"
+                    + "<h2>3. Key Takeaway for Savvy Investors</h2>"
+                    + "<p>Early-stage allocation into verified projects with transparent regulatory approvals guarantees the best risk-adjusted upside. Always verify land titles, developer balance sheets, and municipal zoning permits before contract execution.</p>");
+            b1.setCategory("Real Estate");
+            b1.setTags("Real Estate, Investment, Property Trends, Capital Growth, Rental Yields");
+            b1.setCoverImageUrl("https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=1200&auto=format&fit=crop");
+            b1.setCoverImageAlt("Modern urban architecture and high-growth real estate investments in 2026");
+            b1.setAuthor(admin);
+            b1.setAuthorName("SmartSearch Editorial Team");
+            b1.setAuthorRole("ADMIN");
+            b1.setIsAiGenerated(false);
+            b1.setStatus("PUBLISHED");
+            b1.setValidityDays(90);
+            b1.setPublishedAt(LocalDateTime.now().minusDays(5));
+            b1.setExpiresAt(LocalDateTime.now().plusDays(85));
+            b1.setViewsCount(1420L);
+            b1.setOrganicClicks(385L);
+            b1.setOrganicImpressions(5200L);
+            b1.setMetaTitle("Top 10 High-Growth Real Estate Investment Hubs (2026)");
+            b1.setMetaDescription("Discover top real estate investment micro-markets in 2026 delivering superior capital appreciation and high rental yields. Read our comprehensive market analysis.");
+            b1.setPrimaryKeyword("Real Estate Investment Hubs");
+            b1.setSecondaryKeywords("Property Trends, Rental Yields, Capital Growth");
+            b1.setSeoScore(94);
+            b1.setReadabilityScore(78);
+            b1.setGoogleIndexingStatus("INDEXED");
+            b1.setSchemaMarkup("{\n  \"@context\": \"https://schema.org\",\n  \"@type\": \"Article\",\n  \"headline\": \"Top 10 High-Growth Real Estate Investment Hubs in 2026\",\n  \"author\": {\"@type\": \"Person\", \"name\": \"SmartSearch Editorial Team\"}\n}");
+            blogPostRepository.save(b1);
+
+            // Blog 2
+            BlogPost b2 = new BlogPost();
+            b2.setTitle("Essential Legal Checklist for Property Buyers: Title Deeds & RERA Compliance");
+            b2.setSlug("essential-legal-checklist-for-property-buyers-rera-compliance");
+            b2.setSummary("Ensure foolproof property transactions with this comprehensive step-by-step legal diligence roadmap covering title verification, encumbrance certificates, and statutory compliance.");
+            b2.setContent("<h2>1. The Importance of Legal Due Diligence</h2>"
+                    + "<p>Purchasing residential or commercial real estate represents one of the largest capital outlays an individual or business will ever make. Conducting meticulous legal scrutiny mitigates ownership disputes, fraudulent encumbrances, and municipal violation penalties.</p>"
+                    + "<h2>2. Critical Documents Every Buyer Must Scrutinize</h2>"
+                    + "<ol>"
+                    + "<li><strong>Mother Deed & Chain of Title:</strong> Traces ownership lineage without gaps for at least the preceding 30 years.</li>"
+                    + "<li><strong>RERA Registration Certificate:</strong> Guarantees that the project adheres to statutory escrow funding norms and milestone schedules.</li>"
+                    + "<li><strong>Non-Encumbrance Certificate (Form 15 & 16):</strong> Confirms the property is free of unpaid mortgages or legal court attachments.</li>"
+                    + "<li><strong>Commencement & Occupancy Certificates:</strong> Validates building layout sanctions and official fitness for human occupation.</li>"
+                    + "</ol>"
+                    + "<h2>3. Practical Buyer Recommendations</h2>"
+                    + "<p>Never compromise on hiring an independent property attorney to review original documentation before making token deposits.</p>");
+            b2.setCategory("Real Estate");
+            b2.setTags("Real Estate, Legal Diligence, RERA, Property Law, Title Verification");
+            b2.setCoverImageUrl("https://images.unsplash.com/photo-1450133064473-71024230f91b?w=1200&auto=format&fit=crop");
+            b2.setCoverImageAlt("Property legal documentation and RERA compliance checklist");
+            b2.setAuthor(admin);
+            b2.setAuthorName("Legal & Real Estate Advisory Board");
+            b2.setAuthorRole("ADMIN");
+            b2.setIsAiGenerated(false);
+            b2.setStatus("PUBLISHED");
+            b2.setValidityDays(180);
+            b2.setPublishedAt(LocalDateTime.now().minusDays(12));
+            b2.setExpiresAt(LocalDateTime.now().plusDays(168));
+            b2.setViewsCount(2180L);
+            b2.setOrganicClicks(590L);
+            b2.setOrganicImpressions(7450L);
+            b2.setMetaTitle("Legal Checklist for Property Buyers: Title Deeds & RERA");
+            b2.setMetaDescription("Step-by-step legal guide for buying property safely. Learn how to verify title deeds, RERA certificates, encumbrance records, and occupancy approvals.");
+            b2.setPrimaryKeyword("Legal Checklist Property Buyers");
+            b2.setSecondaryKeywords("RERA Compliance, Title Verification, Encumbrance Certificate");
+            b2.setSeoScore(92);
+            b2.setReadabilityScore(74);
+            b2.setGoogleIndexingStatus("INDEXED");
+            b2.setSchemaMarkup("{\n  \"@context\": \"https://schema.org\",\n  \"@type\": \"Article\",\n  \"headline\": \"Essential Legal Checklist for Property Buyers: Title Deeds & RERA Compliance\"\n}");
+            blogPostRepository.save(b2);
+
+            // Blog 3 (AI Generated)
+            BlogPost b3 = new BlogPost();
+            b3.setTitle("Future of AI-Powered Semantic Search & Multi-Engine Syndication");
+            b3.setSlug("future-of-ai-powered-semantic-search-multi-engine-syndication");
+            b3.setSummary("How natural language vector embeddings, cross-engine result aggregation, and smart de-duplication are redefining how modern users find information.");
+            b3.setContent("<h2>1. Beyond Exact Keyword Matching</h2>"
+                    + "<p>Traditional lexical information retrieval relies heavily on BM25 frequency algorithms. The advent of semantic embeddings and transformer-based understanding allows modern search platforms to parse user intent, context, and nuance.</p>"
+                    + "<h2>2. The Architecture of Multi-Source Syndication</h2>"
+                    + "<p>By aggregating verified API signals across global providers such as Google, Bing, Yahoo, DuckDuckGo, and Brave, users receive a unified, de-duplicated, and unbiased index of answers.</p>"
+                    + "<h2>3. Relevance & Speed at Scale</h2>"
+                    + "<p>Sub-100ms response latencies achieved via distributed Lucene index sharding and parallel HTTP client pipelines guarantee a seamless user experience.</p>");
+            b3.setCategory("Technology");
+            b3.setTags("Technology, Artificial Intelligence, Semantic Search, Search Engine, Multi-Provider");
+            b3.setCoverImageUrl("https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&auto=format&fit=crop");
+            b3.setCoverImageAlt("AI Neural Network and semantic search data visualization");
+            b3.setAuthor(null);
+            b3.setAuthorName("SmartSearch AI Content Bot");
+            b3.setAuthorRole("AI");
+            b3.setIsAiGenerated(true);
+            b3.setStatus("PUBLISHED");
+            b3.setValidityDays(90);
+            b3.setPublishedAt(LocalDateTime.now().minusDays(2));
+            b3.setExpiresAt(LocalDateTime.now().plusDays(88));
+            b3.setViewsCount(890L);
+            b3.setOrganicClicks(230L);
+            b3.setOrganicImpressions(3100L);
+            b3.setMetaTitle("AI Semantic Search & Multi-Engine Syndication Future");
+            b3.setMetaDescription("Explore the future of semantic search engines powered by AI vector embeddings, multi-provider aggregation, and smart deduplication algorithms.");
+            b3.setPrimaryKeyword("AI Semantic Search");
+            b3.setSecondaryKeywords("Search Engines, Multi-Provider, Vector Search");
+            b3.setSeoScore(96);
+            b3.setReadabilityScore(82);
+            b3.setGoogleIndexingStatus("CRAWLED_PENDING");
+            blogPostRepository.save(b3);
+
+            // Seed sample AI Recommendations for pending review
+            AiSeoRecommendation rec1 = new AiSeoRecommendation(
+                    b1,
+                    "Target High-Opportunity LSI Keyword 'Commercial Real Estate Yields'",
+                    "Current keywords focus on residential hubs. Adding commercial sub-sector terms captures high-intent B2B search traffic.",
+                    "Commercial lease terms are surging in target micro-markets. Adding this term enhances topical authority for enterprise buyers.",
+                    "Estimated +18% B2B Search Discovery",
+                    "HIGH",
+                    "SUGGEST_KEYWORDS",
+                    true,
+                    "{\"secondaryKeywords\": \"Property Trends, Rental Yields, Capital Growth, Commercial Real Estate Yields\"}",
+                    "AI term analysis detected high search volume and low competition for 'Commercial Real Estate Yields' across Google search logs."
+            );
+            aiSeoRecommendationRepository.save(rec1);
+
+            AiSeoRecommendation rec2 = new AiSeoRecommendation(
+                    b2,
+                    "Optimize Headline for Featured Snippet Question-Intent",
+                    "Current: 'Essential Legal Checklist for Property Buyers...'\nAI Suggestion: 'What Legal Documents Do You Need to Buy Property? (2026 Checklist)'",
+                    "Structuring title as a direct question increases the likelihood of securing the Position Zero Google Featured Snippet box.",
+                    "Estimated +25% Featured Snippet Placement Probability",
+                    "HIGH",
+                    "OPTIMIZE_META_TAGS",
+                    true,
+                    "{\"metaTitle\": \"What Legal Documents Do You Need to Buy Property? (2026 Checklist)\"}",
+                    "Question-based queries with numbered checklists trigger Google Rich Snippet answers in 43% of property advisory searches."
+            );
+            aiSeoRecommendationRepository.save(rec2);
+
+            logger.info("Seeded initial blog posts, SEO metrics, and AI recommendations.");
         }
     }
 }

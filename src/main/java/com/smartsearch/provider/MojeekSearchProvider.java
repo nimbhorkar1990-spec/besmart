@@ -238,3 +238,4 @@ public class MojeekSearchProvider implements SearchProvider {
         }
     }
 }
+

@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog Management &amp; SEO Authorities - SmartSearch Admin</title>
+    <link rel="icon" type="image/svg+xml" th:href="@{/images/logo-icon.svg}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/main.css}">
+    <link rel="stylesheet" th:href="@{/css/dark-mode.css}">
+    <link rel="stylesheet" th:href="@{/css/themes.css}">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+    <style>
+        .stat-card-glow {
+            border: 1px solid rgba(13, 110, 253, 0.15);
+            background: linear-gradient(145deg, var(--bg-card, #ffffff), rgba(13, 110, 253, 0.03));
+            border-radius: 1rem;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .stat-card-glow:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06);
+        }
+        .nav-tabs-sources .nav-link {
+            font-weight: 600;
+            color: #555;
+            padding: 0.75rem 1.25rem;
+            border: none;
+            border-bottom: 3px solid transparent;
+            border-radius: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+        }
+        .nav-tabs-sources .nav-link.active {
+            color: #0d6efd;
+            border-bottom-color: #0d6efd;
+            background: transparent;
+        }
+        .seo-score-badge {
+            font-weight: 700;
+            border-radius: 20px;
+            padding: 0.25rem 0.6rem;
+            font-size: 0.85rem;
+        }
+        .seo-score-high { background-color: #d1e7dd; color: #0f5132; }
+        .seo-score-medium { background-color: #fff3cd; color: #664d03; }
+        .seo-score-low { background-color: #f8d7da; color: #842029; }
+        .switch-custom {
+            cursor: pointer;
+            width: 3rem;
+            height: 1.5rem;
+        }
+    </style>
+</head>
+<body class="admin-body">
+<div class="admin-wrapper">
+
+    <!-- Admin Sidebar Navigation -->
+    <aside class="admin-sidebar">
+        <div class="admin-brand">
+            <a th:href="@{/admin/dashboard}" class="d-flex align-items-center gap-2 text-decoration-none">
+                <i class="fas fa-magnifying-glass text-primary fs-4"></i>
+                <span class="brand-text fw-bold text-dark fs-5">SmartSearch</span>
+            </a>
+            <span class="badge bg-danger-subtle text-danger small">Admin</span>
+        </div>
+
+        <ul class="admin-nav-menu">
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/dashboard}" class="admin-nav-link">
+                    <i class="fas fa-gauge-high"></i> Dashboard
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/search-sources}" class="admin-nav-link">
+                    <i class="fas fa-globe-americas"></i> Search Sources
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/blog-seo}" class="admin-nav-link active">
+                    <i class="fas fa-newspaper"></i> Blog &amp; SEO Authorities
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/crawler}" class="admin-nav-link">
+                    <i class="fas fa-network-wired"></i> Web Crawler &amp; Queues
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/indexer}" class="admin-nav-link">
+                    <i class="fas fa-spider"></i> Website Indexer
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/analytics}" class="admin-nav-link">
+                    <i class="fas fa-chart-line"></i> Search Analytics
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/users}" class="admin-nav-link">
+                    <i class="fas fa-users"></i> Users Management
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/settings}" class="admin-nav-link">
+                    <i class="fas fa-sliders"></i> Search &amp; API Settings
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/system}" class="admin-nav-link">
+                    <i class="fas fa-server"></i> System Health
+                </a>
+            </li>
+            <li class="admin-nav-item mt-4 pt-3 border-top">
+                <a th:href="@{/blogs}" target="_blank" class="admin-nav-link text-primary">
+                    <i class="fas fa-arrow-up-right-from-square"></i> View Live Blogs
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/}" class="admin-nav-link">
+                    <i class="fas fa-arrow-left"></i> Back to Search
+                </a>
+            </li>
+        </ul>
+    </aside>
+
+    <!-- Admin Main Body -->
+    <div class="admin-content-main">
+        <header class="admin-topbar">
+            <div>
+                <h4 class="fw-bold mb-0">Blog Management &amp; SEO Authorities</h4>
+                <div class="text-muted small">Permissions Control · Publishing Quotas · Expiration Lifecycle · AI-Powered SEO Automation</div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#newBlogModal">
+                    <i class="fas fa-plus me-1"></i> New Blog Post
+                </button>
+                <button type="button" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#aiBlogModal">
+                    <i class="fas fa-robot me-1"></i> AI Blog Generator
+                </button>
+            </div>
+        </header>
+
+        <main class="admin-page-content p-4">
+
+            <!-- Flash Notifications -->
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show rounded-3 shadow-sm mb-4" role="alert">
+                <i class="fas fa-check-circle me-2"></i>
+                <span th:text="${successMessage}">Operation completed successfully.</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show rounded-3 shadow-sm mb-4" role="alert">
+                <i class="fas fa-triangle-exclamation me-2"></i>
+                <span th:text="${errorMessage}">Error occurred.</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
+            <!-- Section H: Performance KPI Cards -->
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-lg-3">
+                    <div class="stat-card-glow p-3 h-100 shadow-sm">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="text-muted small fw-medium">Total Blogs</span>
+                            <span class="badge bg-primary-subtle text-primary rounded-pill px-2">All</span>
+                        </div>
+                        <div class="h3 fw-bold mb-1" th:text="${totalBlogs}">0</div>
+                        <div class="small text-muted">
+                            <span class="text-success fw-bold" th:text="${publishedBlogs}">0</span> Live ·
+                            <span class="text-warning fw-bold" th:text="${pendingBlogs}">0</span> Pending
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-6 col-lg-3">
+                    <div class="stat-card-glow p-3 h-100 shadow-sm">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="text-muted small fw-medium">AI SEO Health</span>
+                            <span class="badge bg-success-subtle text-success rounded-pill px-2">Avg Score</span>
+                        </div>
+                        <div class="h3 fw-bold mb-1 text-success" th:text="${avgSeoScore} + '/100'">0/100</div>
+                        <div class="small text-muted">
+                            <i class="fas fa-robot text-primary me-1"></i>
+                            <span th:text="${aiGeneratedBlogs}">0</span> AI-Generated Articles
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-6 col-lg-3">
+                    <div class="stat-card-glow p-3 h-100 shadow-sm">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="text-muted small fw-medium">Organic Impressions</span>
+                            <span class="badge bg-info-subtle text-info rounded-pill px-2">Google/SERPs</span>
+                        </div>
+                        <div class="h3 fw-bold mb-1 text-info" th:text="${#numbers.formatInteger(totalImpressions, 0, 'COMMA')}">0</div>
+                        <div class="small text-muted">
+                            <i class="fas fa-mouse-pointer me-1"></i>
+                            <span th:text="${totalClicks}">0</span> Organic Clicks
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-6 col-lg-3">
+                    <div class="stat-card-glow p-3 h-100 shadow-sm">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="text-muted small fw-medium">Lifecycle Status</span>
+                            <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2">Validity</span>
+                        </div>
+                        <div class="h3 fw-bold mb-1" th:text="${expiredBlogs}">0</div>
+                        <div class="small text-muted">
+                            <span class="text-danger fw-bold" th:text="${expiredBlogs}">0</span> Expired ·
+                            <span class="text-secondary fw-bold" th:text="${draftBlogs}">0</span> Drafts
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-header bg-transparent border-bottom px-3 pt-3 pb-0">
+                    <ul class="nav nav-tabs nav-tabs-sources border-0 overflow-x-auto flex-nowrap" id="blogSeoTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" th:classappend="${activeTab == 'dashboard' or activeTab == null ? 'active' : ''}" id="tab-dashboard-link" th:href="@{/admin/blog-seo(tab='dashboard')}">
+                                <i class="fas fa-chart-pie"></i> SEO Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" th:classappend="${activeTab == 'posts' ? 'active' : ''}" id="tab-posts-link" th:href="@{/admin/blog-seo(tab='posts')}">
+                                <i class="fas fa-file-lines"></i> Blog Posts Master
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" th:classappend="${activeTab == 'permissions' ? 'active' : ''}" id="tab-permissions-link" th:href="@{/admin/blog-seo(tab='permissions')}">
+                                <i class="fas fa-user-shield"></i> Role Permissions (B)
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" th:classappend="${activeTab == 'limits' ? 'active' : ''}" id="tab-limits-link" th:href="@{/admin/blog-seo(tab='limits')}">
+                                <i class="fas fa-gauge"></i> User Limits (C)
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" th:classappend="${activeTab == 'validity' ? 'active' : ''}" id="tab-validity-link" th:href="@{/admin/blog-seo(tab='validity')}">
+                                <i class="fas fa-clock-rotate-left"></i> Validity &amp; Expiry (D)
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" th:classappend="${activeTab == 'recommendations' ? 'active' : ''}" id="tab-recommendations-link" th:href="@{/admin/blog-seo(tab='recommendations')}">
+                                <i class="fas fa-wand-magic-sparkles"></i> AI Recommendations (F)
+                                <span class="badge bg-danger rounded-pill" th:if="${#lists.size(pendingRecommendations) > 0}" th:text="${#lists.size(pendingRecommendations)}">0</span>
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" th:classappend="${activeTab == 'automation' ? 'active' : ''}" id="tab-automation-link" th:href="@{/admin/blog-seo(tab='automation')}">
+                                <i class="fas fa-bolt"></i> SEO Automation (G)
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="card-body p-4">
+
+                    <!-- ================= TAB 1: SEO DASHBOARD ================= -->
+                    <div th:if="${activeTab == 'dashboard' or activeTab == null}">
+                        <div class="row g-4">
+                            <!-- Left: Top Performing Blogs -->
+                            <div class="col-lg-7">
+                                <div class="card border rounded-4 shadow-sm h-100">
+                                    <div class="card-header bg-light-subtle d-flex justify-content-between align-items-center py-3">
+                                        <h6 class="fw-bold mb-0"><i class="fas fa-trophy text-warning me-2"></i> Top Performing Published Blogs</h6>
+                                        <a th:href="@{/admin/blog-seo(tab='posts')}" class="btn btn-sm btn-outline-secondary rounded-pill">View All</a>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover align-middle mb-0">
+                                                <thead class="table-light small">
+                                                    <tr>
+                                                        <th>Blog Title</th>
+                                                        <th>Author</th>
+                                                        <th>Views</th>
+                                                        <th>Clicks</th>
+                                                        <th>SEO Score</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr th:each="post : ${topBlogs}">
+                                                        <td>
+                                                            <div class="fw-semibold text-truncate" style="max-width: 240px;" th:text="${post.title}">Title</div>
+                                                            <div class="small text-muted" th:text="${post.category}">Category</div>
+                                                        </td>
+                                                        <td class="small" th:text="${post.authorName != null ? post.authorName : 'Editorial'}">Author</td>
+                                                        <td class="fw-bold text-primary" th:text="${post.viewsCount}">0</td>
+                                                        <td class="fw-bold text-success" th:text="${post.organicClicks}">0</td>
+                                                        <td>
+                                                            <span class="seo-score-badge"
+                                                                  th:classappend="${post.seoScore >= 80 ? 'seo-score-high' : (post.seoScore >= 50 ? 'seo-score-medium' : 'seo-score-low')}"
+                                                                  th:text="${post.seoScore} + '/100'">0/100</span>
+                                                        </td>
+                                                    </tr>
+                                                    <tr th:if="${#lists.isEmpty(topBlogs)}">
+                                                        <td colspan="5" class="text-center text-muted py-4">No published blogs with traffic metrics yet.</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right: Indexing & Automation Health -->
+                            <div class="col-lg-5">
+                                <div class="card border rounded-4 shadow-sm mb-4">
+                                    <div class="card-header bg-light-subtle py-3">
+                                        <h6 class="fw-bold mb-0"><i class="fab fa-google text-danger me-2"></i> Search Engine Indexing Status</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <span><i class="fas fa-check-circle text-success me-2"></i> Indexed by Google &amp; Bing</span>
+                                            <span class="badge bg-success rounded-pill px-3 py-2">Verified</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <span><i class="fas fa-clock text-warning me-2"></i> Crawled - Indexing Pending</span>
+                                            <span class="badge bg-warning rounded-pill px-3 py-2">In Progress</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <span><i class="fas fa-magnifying-glass text-info me-2"></i> Discovered - Waiting Crawl</span>
+                                            <span class="badge bg-info rounded-pill px-3 py-2">Queued</span>
+                                        </div>
+                                        <hr>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="fw-semibold">Automated XML Sitemap Updates</span>
+                                            <span class="badge" th:classappend="${permissions.autoSitemapUpdate ? 'bg-success' : 'bg-secondary'}"
+                                                  th:text="${permissions.autoSitemapUpdate ? 'ACTIVE' : 'OFF'}">ACTIVE</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="card border rounded-4 shadow-sm bg-primary-subtle text-dark p-3">
+                                    <div class="d-flex align-items-start gap-3">
+                                        <i class="fas fa-wand-magic-sparkles fs-3 text-primary mt-1"></i>
+                                        <div>
+                                            <h6 class="fw-bold mb-1">AI SEO Engine Active</h6>
+                                            <p class="small mb-2 text-secondary">
+                                                All published and edited blogs automatically undergo NLP title synthesis, meta description optimization, and Schema.org Article generation.
+                                            </p>
+                                            <a th:href="@{/admin/blog-seo(tab='recommendations')}" class="btn btn-primary btn-sm rounded-pill px-3">
+                                                Review Pending Recommendations (<span th:text="${#lists.size(pendingRecommendations)}">0</span>)
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ================= TAB 2: BLOG POSTS MASTER ================= -->
+                    <div th:if="${activeTab == 'posts'}">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="fw-bold mb-0">Master Blog Post Index (<span th:text="${#lists.size(blogs)}">0</span>)</h6>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-outline-primary btn-sm rounded-pill" data-bs-toggle="modal" data-bs-target="#newBlogModal">
+                                    <i class="fas fa-plus me-1"></i> Create Blog Post
+                                </button>
+                                <button class="btn btn-primary btn-sm rounded-pill" data-bs-toggle="modal" data-bs-target="#aiBlogModal">
+                                    <i class="fas fa-robot me-1"></i> Generate with AI
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle border rounded-4">
+                                <thead class="table-light small">
+                                    <tr>
+                                        <th>SN</th>
+                                        <th>Title &amp; Category</th>
+                                        <th>Author &amp; Role</th>
+                                        <th>Validity / Expiry</th>
+                                        <th>SEO Score</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="b, iter : ${blogs}">
+                                        <td class="fw-bold text-muted" th:text="${iter.count}">1</td>
+                                        <td>
+                                            <div class="fw-semibold text-truncate" style="max-width: 280px;" th:text="${b.title}">Title</div>
+                                            <div class="small text-muted">
+                                                <span class="badge bg-light text-dark border me-1" th:text="${b.category}">Real Estate</span>
+                                                <span th:if="${b.isAiGenerated}" class="badge bg-info-subtle text-info"><i class="fas fa-robot me-1"></i>AI</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="small fw-semibold" th:text="${b.authorName != null ? b.authorName : 'Editorial'}">Author</div>
+                                            <span class="badge bg-secondary-subtle text-secondary small" th:text="${b.authorRole}">ADMIN</span>
+                                        </td>
+                                        <td>
+                                            <div th:if="${b.expiresAt != null}">
+                                                <div class="small fw-bold" th:classappend="${b.isExpired() ? 'text-danger' : 'text-success'}"
+                                                     th:text="${b.isExpired() ? 'EXPIRED' : #temporals.format(b.expiresAt, 'dd-MMM-yyyy')}">Date</div>
+                                                <div class="small text-muted" th:text="${b.validityDays} + ' Days Validity'">90 Days</div>
+                                            </div>
+                                            <div th:unless="${b.expiresAt != null}">
+                                                <span class="small text-muted">Not Published</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="seo-score-badge"
+                                                  th:classappend="${b.seoScore >= 80 ? 'seo-score-high' : (b.seoScore >= 50 ? 'seo-score-medium' : 'seo-score-low')}"
+                                                  th:text="${b.seoScore} + '/100'">0/100</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge rounded-pill"
+                                                  th:classappend="${b.isExpired() ? 'bg-danger' : ('PUBLISHED'.equals(b.status) ? 'bg-success' : ('PENDING_APPROVAL'.equals(b.status) ? 'bg-warning text-dark' : 'bg-secondary'))}"
+                                                  th:text="${b.isExpired() ? 'EXPIRED' : b.status}">STATUS</span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a th:href="@{/blogs/{slug}(slug=${b.slug})}" target="_blank" class="btn btn-outline-secondary" title="View Public Post">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+
+                                                <!-- Approve button for pending or draft -->
+                                                <form th:if="${!'PUBLISHED'.equals(b.status) or b.isExpired()}" th:action="@{/admin/blog-seo/posts/{id}/approve(id=${b.id})}" method="post" class="d-inline">
+                                                    <button type="submit" class="btn btn-outline-success" title="Approve &amp; Publish">
+                                                        <i class="fas fa-check"></i>
+                                                    </button>
+                                                </form>
+
+                                                <!-- Unpublish button -->
+                                                <form th:if="${'PUBLISHED'.equals(b.status) and !b.isExpired()}" th:action="@{/admin/blog-seo/posts/{id}/unpublish(id=${b.id})}" method="post" class="d-inline">
+                                                    <button type="submit" class="btn btn-outline-warning" title="Unpublish">
+                                                        <i class="fas fa-eye-slash"></i>
+                                                    </button>
+                                                </form>
+
+                                                <!-- Renew / Extend button -->
+                                                <form th:action="@{/admin/blog-seo/posts/{id}/renew(id=${b.id})}" method="post" class="d-inline">
+                                                    <button type="submit" class="btn btn-outline-info" title="Renew Validity (+Default Days)">
+                                                        <i class="fas fa-rotate"></i>
+                                                    </button>
+                                                </form>
+
+                                                <!-- Delete button -->
+                                                <form th:action="@{/admin/blog-seo/posts/{id}/delete(id=${b.id})}" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to permanently delete this blog post?');">
+                                                    <button type="submit" class="btn btn-outline-danger" title="Delete">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- ================= TAB 3: ROLE PERMISSIONS (SECTION B) ================= -->
+                    <div th:if="${activeTab == 'permissions'}">
+                        <div class="row justify-content-center">
+                            <div class="col-lg-8">
+                                <div class="card border rounded-4 shadow-sm">
+                                    <div class="card-header bg-light-subtle py-3">
+                                        <h6 class="fw-bold mb-0"><i class="fas fa-shield-halved text-primary me-2"></i> Section B: Blog Creation &amp; Publishing Permissions</h6>
+                                        <div class="small text-muted">Toggle master switches for user categories and AI generation authorities.</div>
+                                    </div>
+                                    <div class="card-body p-4">
+                                        <form th:action="@{/admin/blog-seo/permissions}" method="post">
+                                            <!-- Retain granular SEO settings from permissions -->
+                                            <input type="hidden" name="defaultValidityDays" th:value="${permissions.defaultValidityDays}" />
+                                            <input type="hidden" name="allowCustomValidity" th:value="${permissions.allowCustomValidity}" />
+                                            <input type="hidden" name="autoExpireAndUnpublish" th:value="${permissions.autoExpireAndUnpublish}" />
+                                            <input type="hidden" name="allowBlogRenewal" th:value="${permissions.allowBlogRenewal}" />
+                                            <input type="hidden" name="automaticSeoMasterSwitch" th:value="${permissions.automaticSeoMasterSwitch}" />
+                                            <input type="hidden" name="autoMetaTitleOpt" th:value="${permissions.autoMetaTitleOpt}" />
+                                            <input type="hidden" name="autoMetaDescOpt" th:value="${permissions.autoMetaDescOpt}" />
+                                            <input type="hidden" name="autoKeywordSuggestions" th:value="${permissions.autoKeywordSuggestions}" />
+                                            <input type="hidden" name="autoInternalLinking" th:value="${permissions.autoInternalLinking}" />
+                                            <input type="hidden" name="autoImageAltText" th:value="${permissions.autoImageAltText}" />
+                                            <input type="hidden" name="autoSchemaMarkup" th:value="${permissions.autoSchemaMarkup}" />
+                                            <input type="hidden" name="autoSitemapUpdate" th:value="${permissions.autoSitemapUpdate}" />
+                                            <input type="hidden" name="autoSeoContentAnalysis" th:value="${permissions.autoSeoContentAnalysis}" />
+                                            <input type="hidden" name="autoIndexingSubmission" th:value="${permissions.autoIndexingSubmission}" />
+                                            <input type="hidden" name="autoSeoMonitoring" th:value="${permissions.autoSeoMonitoring}" />
+
+                                            <div class="list-group list-group-flush">
+                                                <!-- Switch 1 -->
+                                                <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                                    <div>
+                                                        <div class="fw-semibold">1. Allow All Registered Users to Create Blogs</div>
+                                                        <div class="small text-muted">When switched OFF, regular users cannot submit or create new blogs.</div>
+                                                    </div>
+                                                    <div class="form-check form-switch m-0">
+                                                        <input class="form-check-input switch-custom" type="checkbox" name="allowAllUsersCreate" th:checked="${permissions.allowAllUsersCreate}">
+                                                    </div>
+                                                </div>
+
+                                                <!-- Switch 2 -->
+                                                <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                                    <div>
+                                                        <div class="fw-semibold">2. Allow Real Estate Agents to Create Blogs</div>
+                                                        <div class="small text-muted">Grants blog authoring capabilities to verified agents and employer accounts.</div>
+                                                    </div>
+                                                    <div class="form-check form-switch m-0">
+                                                        <input class="form-check-input switch-custom" type="checkbox" name="allowAgentsCreate" th:checked="${permissions.allowAgentsCreate}">
+                                                    </div>
+                                                </div>
+
+                                                <!-- Switch 3 -->
+                                                <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                                    <div>
+                                                        <div class="fw-semibold">3. Allow Property Owners to Create Blogs</div>
+                                                        <div class="small text-muted">Permits property owners to publish neighborhood guides and listings insight.</div>
+                                                    </div>
+                                                    <div class="form-check form-switch m-0">
+                                                        <input class="form-check-input switch-custom" type="checkbox" name="allowPropertyOwnersCreate" th:checked="${permissions.allowPropertyOwnersCreate}">
+                                                    </div>
+                                                </div>
+
+                                                <!-- Switch 4 -->
+                                                <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                                    <div>
+                                                        <div class="fw-semibold">4. Allow Administrators to Create Blogs</div>
+                                                        <div class="small text-muted">Permits admin team to draft and post official announcements and articles.</div>
+                                                    </div>
+                                                    <div class="form-check form-switch m-0">
+                                                        <input class="form-check-input switch-custom" type="checkbox" name="allowAdminsCreate" th:checked="${permissions.allowAdminsCreate}">
+                                                    </div>
+                                                </div>
+
+                                                <!-- Switch 5 -->
+                                                <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                                    <div>
+                                                        <div class="fw-semibold">5. Allow AI to Generate New Blogs Automatically</div>
+                                                        <div class="small text-muted">Enables AI NLP generation engine to draft articles on trending topics.</div>
+                                                    </div>
+                                                    <div class="form-check form-switch m-0">
+                                                        <input class="form-check-input switch-custom" type="checkbox" name="allowAiGenerate" th:checked="${permissions.allowAiGenerate}">
+                                                    </div>
+                                                </div>
+
+                                                <!-- Switch 6 -->
+                                                <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                                    <div>
+                                                        <div class="fw-semibold">6. Allow AI-Generated Blogs to Publish Automatically</div>
+                                                        <div class="small text-muted">If OFF, AI blogs remain in DRAFT / PENDING_APPROVAL status until admin approves.</div>
+                                                    </div>
+                                                    <div class="form-check form-switch m-0">
+                                                        <input class="form-check-input switch-custom" type="checkbox" name="allowAiAutoPublish" th:checked="${permissions.allowAiAutoPublish}">
+                                                    </div>
+                                                </div>
+
+                                                <!-- Switch 7 -->
+                                                <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                                    <div>
+                                                        <div class="fw-semibold">7. Require Administrator Approval for User Submissions</div>
+                                                        <div class="small text-muted">When ON, all user and agent blogs require explicit admin approval before going live.</div>
+                                                    </div>
+                                                    <div class="form-check form-switch m-0">
+                                                        <input class="form-check-input switch-custom" type="checkbox" name="requireAdminApproval" th:checked="${permissions.requireAdminApproval}">
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="text-end mt-4">
+                                                <button type="submit" class="btn btn-primary rounded-pill px-4">
+                                                    <i class="fas fa-save me-1"></i> Save Permissions Changes
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ================= TAB 4: USER-WISE LIMITS (SECTION C) ================= -->
+                    <div th:if="${activeTab == 'limits'}">
+                        <div class="row g-4">
+                            <!-- Category Limits Table -->
+                            <div class="col-lg-7">
+                                <div class="card border rounded-4 shadow-sm">
+                                    <div class="card-header bg-light-subtle py-3">
+                                        <h6 class="fw-bold mb-0"><i class="fas fa-list-ol text-primary me-2"></i> User Category Publishing Limits</h6>
+                                        <div class="small text-muted">Configure how many blogs each category can publish within configured days.</div>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover align-middle mb-0">
+                                                <thead class="table-light small">
+                                                    <tr>
+                                                        <th>User Category</th>
+                                                        <th>Maximum Blogs</th>
+                                                        <th>Period (Days)</th>
+                                                        <th>Action</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr th:each="lim : ${categoryLimits}">
+                                                        <td>
+                                                            <span class="badge bg-primary-subtle text-primary fw-bold" th:text="${lim.userCategory}">ADMIN</span>
+                                                        </td>
+                                                        <td>
+                                                            <form th:action="@{/admin/blog-seo/limits/category}" method="post" class="d-flex align-items-center gap-2">
+                                                                <input type="hidden" name="userCategory" th:value="${lim.userCategory}">
+                                                                <input type="number" name="maxBlogs" th:value="${lim.maxBlogs}" min="1" max="1000" class="form-control form-control-sm" style="width: 80px;" required>
+                                                                <span>Blogs</span>
+                                                        </td>
+                                                        <td>
+                                                                <input type="number" name="periodDays" th:value="${lim.periodDays}" min="1" max="365" class="form-control form-control-sm" style="width: 80px;" required>
+                                                                <span>Days</span>
+                                                        </td>
+                                                        <td>
+                                                                <button type="submit" class="btn btn-sm btn-outline-primary rounded-pill">
+                                                                    <i class="fas fa-save me-1"></i> Save
+                                                                </button>
+                                                            </form>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Custom User Limits & Form -->
+                            <div class="col-lg-5">
+                                <div class="card border rounded-4 shadow-sm mb-4">
+                                    <div class="card-header bg-light-subtle py-3">
+                                        <h6 class="fw-bold mb-0"><i class="fas fa-user-gear text-primary me-2"></i> Assign Custom User Limit</h6>
+                                        <div class="small text-muted">Override default category quota for an individual user.</div>
+                                    </div>
+                                    <div class="card-body">
+                                        <form th:action="@{/admin/blog-seo/limits/user}" method="post">
+                                            <div class="mb-3">
+                                                <label class="form-label small fw-semibold">Select User</label>
+                                                <select name="userId" class="form-select form-select-sm" required>
+                                                    <option value="" disabled selected>-- Choose User Account --</option>
+                                                    <option th:each="u : ${allUsers}" th:value="${u.id}" th:text="${u.username} + ' (' + ${u.email} + ')'">User</option>
+                                                </select>
+                                            </div>
+                                            <div class="row g-2 mb-3">
+                                                <div class="col-6">
+                                                    <label class="form-label small fw-semibold">Max Blogs</label>
+                                                    <input type="number" name="maxBlogs" value="15" min="1" max="1000" class="form-control form-control-sm" required>
+                                                </div>
+                                                <div class="col-6">
+                                                    <label class="form-label small fw-semibold">Period (Days)</label>
+                                                    <input type="number" name="periodDays" value="30" min="1" max="365" class="form-control form-control-sm" required>
+                                                </div>
+                                            </div>
+                                            <button type="submit" class="btn btn-primary btn-sm rounded-pill w-100">
+                                                <i class="fas fa-plus me-1"></i> Apply Custom Limit
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+
+                                <!-- Existing Custom Limits List -->
+                                <div class="card border rounded-4 shadow-sm" th:if="${#lists.size(customLimits) > 0}">
+                                    <div class="card-header bg-light-subtle py-2">
+                                        <span class="small fw-bold">Active Custom Overrides</span>
+                                    </div>
+                                    <ul class="list-group list-group-flush small">
+                                        <li class="list-group-item d-flex justify-content-between align-items-center" th:each="c : ${customLimits}">
+                                            <div>
+                                                <span class="fw-bold" th:text="${c.user != null ? c.user.username : 'Unknown'}">user</span>:
+                                                <span class="text-primary" th:text="${c.maxBlogs} + ' blogs / ' + ${c.periodDays} + ' days'">10 / 30d</span>
+                                            </div>
+                                            <form th:action="@{/admin/blog-seo/limits/user/{id}/delete(id=${c.id})}" method="post" class="d-inline">
+                                                <button type="submit" class="btn btn-sm btn-link text-danger p-0">Remove</button>
+                                            </form>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ================= TAB 5: VALIDITY & EXPIRY (SECTION D) ================= -->
+                    <div th:if="${activeTab == 'validity'}">
+                        <div class="row g-4">
+                            <div class="col-lg-6">
+                                <div class="card border rounded-4 shadow-sm">
+                                    <div class="card-header bg-light-subtle py-3">
+                                        <h6 class="fw-bold mb-0"><i class="fas fa-hourglass-half text-primary me-2"></i> Section D: Default Validity Settings</h6>
+                                        <div class="small text-muted">Manage global expiration and unpublishing rules.</div>
+                                    </div>
+                                    <div class="card-body p-4">
+                                        <form th:action="@{/admin/blog-seo/permissions}" method="post">
+                                            <!-- Retain permissions and SEO settings -->
+                                            <input type="hidden" name="allowAllUsersCreate" th:value="${permissions.allowAllUsersCreate}" />
+                                            <input type="hidden" name="allowAgentsCreate" th:value="${permissions.allowAgentsCreate}" />
+                                            <input type="hidden" name="allowPropertyOwnersCreate" th:value="${permissions.allowPropertyOwnersCreate}" />
+                                            <input type="hidden" name="allowAdminsCreate" th:value="${permissions.allowAdminsCreate}" />
+                                            <input type="hidden" name="allowAiGenerate" th:value="${permissions.allowAiGenerate}" />
+                                            <input type="hidden" name="allowAiAutoPublish" th:value="${permissions.allowAiAutoPublish}" />
+                                            <input type="hidden" name="requireAdminApproval" th:value="${permissions.requireAdminApproval}" />
+                                            <input type="hidden" name="automaticSeoMasterSwitch" th:value="${permissions.automaticSeoMasterSwitch}" />
+                                            <input type="hidden" name="autoMetaTitleOpt" th:value="${permissions.autoMetaTitleOpt}" />
+                                            <input type="hidden" name="autoMetaDescOpt" th:value="${permissions.autoMetaDescOpt}" />
+                                            <input type="hidden" name="autoKeywordSuggestions" th:value="${permissions.autoKeywordSuggestions}" />
+                                            <input type="hidden" name="autoInternalLinking" th:value="${permissions.autoInternalLinking}" />
+                                            <input type="hidden" name="autoImageAltText" th:value="${permissions.autoImageAltText}" />
+                                            <input type="hidden" name="autoSchemaMarkup" th:value="${permissions.autoSchemaMarkup}" />
+                                            <input type="hidden" name="autoSitemapUpdate" th:value="${permissions.autoSitemapUpdate}" />
+                                            <input type="hidden" name="autoSeoContentAnalysis" th:value="${permissions.autoSeoContentAnalysis}" />
+                                            <input type="hidden" name="autoIndexingSubmission" th:value="${permissions.autoIndexingSubmission}" />
+                                            <input type="hidden" name="autoSeoMonitoring" th:value="${permissions.autoSeoMonitoring}" />
+
+                                            <div class="mb-3">
+                                                <label class="form-label fw-semibold">Default Blog Validity</label>
+                                                <select name="defaultValidityDays" class="form-select">
+                                                    <option value="30" th:selected="${permissions.defaultValidityDays == 30}">30 Days (1 Month)</option>
+                                                    <option value="60" th:selected="${permissions.defaultValidityDays == 60}">60 Days (2 Months)</option>
+                                                    <option value="90" th:selected="${permissions.defaultValidityDays == 90}">90 Days (3 Months - Recommended)</option>
+                                                    <option value="180" th:selected="${permissions.defaultValidityDays == 180}">180 Days (6 Months)</option>
+                                                    <option value="365" th:selected="${permissions.defaultValidityDays == 365}">365 Days (1 Full Year)</option>
+                                                </select>
+                                                <div class="form-text small">Automatically applied to all newly published blogs.</div>
+                                            </div>
+
+                                            <div class="list-group list-group-flush mb-4">
+                                                <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                                    <div>
+                                                        <div class="fw-semibold">Allow Custom Validity Setting</div>
+                                                        <div class="small text-muted">Authors can select a custom duration within limits.</div>
+                                                    </div>
+                                                    <div class="form-check form-switch m-0">
+                                                        <input class="form-check-input switch-custom" type="checkbox" name="allowCustomValidity" th:checked="${permissions.allowCustomValidity}">
+                                                    </div>
+                                                </div>
+
+                                                <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                                    <div>
+                                                        <div class="fw-semibold">Automatic Blog Expiration &amp; Unpublishing</div>
+                                                        <div class="small text-muted">Automatically unpublish blogs when expiration date passes.</div>
+                                                    </div>
+                                                    <div class="form-check form-switch m-0">
+                                                        <input class="form-check-input switch-custom" type="checkbox" name="autoExpireAndUnpublish" th:checked="${permissions.autoExpireAndUnpublish}">
+                                                    </div>
+                                                </div>
+
+                                                <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                                    <div>
+                                                        <div class="fw-semibold">Allow Blog Renewal</div>
+                                                        <div class="small text-muted">Enable authors/admins to renew validity of expired blogs.</div>
+                                                    </div>
+                                                    <div class="form-check form-switch m-0">
+                                                        <input class="form-check-input switch-custom" type="checkbox" name="allowBlogRenewal" th:checked="${permissions.allowBlogRenewal}">
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <button type="submit" class="btn btn-primary rounded-pill px-4">
+                                                <i class="fas fa-save me-1"></i> Save Validity Rules
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Manual Validity Extension Tool -->
+                            <div class="col-lg-6">
+                                <div class="card border rounded-4 shadow-sm">
+                                    <div class="card-header bg-light-subtle py-3">
+                                        <h6 class="fw-bold mb-0"><i class="fas fa-calendar-plus text-primary me-2"></i> Manual Validity Extension by Administrator</h6>
+                                        <div class="small text-muted">Directly extend the expiration date for any active or expired blog.</div>
+                                    </div>
+                                    <div class="card-body p-4">
+                                        <p class="small text-muted">Select a blog post to grant additional active days. Expired blogs will automatically become live again.</p>
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-hover align-middle mb-0">
+                                                <thead class="table-light small">
+                                                    <tr>
+                                                        <th>Blog</th>
+                                                        <th>Current Expiry</th>
+                                                        <th>Extend</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr th:each="b : ${blogs}">
+                                                        <td>
+                                                            <div class="fw-semibold text-truncate" style="max-width: 180px;" th:text="${b.title}">Title</div>
+                                                            <span class="badge" th:classappend="${b.isExpired() ? 'bg-danger' : 'bg-success'}" th:text="${b.isExpired() ? 'EXPIRED' : 'ACTIVE'}">ACTIVE</span>
+                                                        </td>
+                                                        <td class="small" th:text="${b.expiresAt != null ? #temporals.format(b.expiresAt, 'dd-MMM-yyyy') : 'N/A'}">Date</td>
+                                                        <td>
+                                                            <form th:action="@{/admin/blog-seo/posts/{id}/extend(id=${b.id})}" method="post" class="d-flex align-items-center gap-1">
+                                                                <input type="number" name="additionalDays" value="30" min="1" max="365" class="form-control form-control-sm" style="width: 70px;" required>
+                                                                <button type="submit" class="btn btn-sm btn-outline-primary rounded-pill">
+                                                                    +Days
+                                                                </button>
+                                                            </form>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ================= TAB 6: AI SEO RECOMMENDATIONS (SECTION F) ================= -->
+                    <div th:if="${activeTab == 'recommendations'}">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h6 class="fw-bold mb-0">AI SEO Recommendations &amp; Automation Approvals (<span th:text="${#lists.size(recommendations)}">0</span>)</h6>
+                                <div class="small text-muted">Review NLP-generated meta tag suggestions, schema injection, and keyword expansions.</div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <form th:action="@{/admin/blog-seo/recommendations/approve-all}" method="post" onsubmit="return confirm('Approve and apply all pending AI SEO recommendations?');">
+                                    <button type="submit" class="btn btn-success btn-sm rounded-pill px-3 shadow-sm">
+                                        <i class="fas fa-check-double me-1"></i> Approve All Recommendations
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle border rounded-4">
+                                <thead class="table-light small">
+                                    <tr>
+                                        <th>SN</th>
+                                        <th>Blog Title</th>
+                                        <th>Current Information</th>
+                                        <th>AI Recommended Info</th>
+                                        <th>Action Required</th>
+                                        <th>Expected SEO Impact</th>
+                                        <th>Approval Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="r, iter : ${recommendations}">
+                                        <td class="fw-bold text-muted" th:text="${iter.count}">1</td>
+                                        <td>
+                                            <div class="fw-semibold text-truncate" style="max-width: 180px;" th:text="${r.blog != null ? r.blog.title : 'General'}">Blog</div>
+                                            <span class="badge bg-light text-dark border small" th:text="${r.actionType}">ACTION</span>
+                                        </td>
+                                        <td class="small text-muted" style="max-width: 200px;">
+                                            <div class="text-truncate" th:text="${r.description}">Current Info</div>
+                                        </td>
+                                        <td class="small fw-semibold text-primary" style="max-width: 220px;">
+                                            <div class="text-truncate" th:text="${r.title}">AI Suggestion</div>
+                                        </td>
+                                        <td class="small">
+                                            <span class="badge bg-primary-subtle text-primary" th:text="${r.actionType}">ACTION</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-success-subtle text-success fw-bold" th:text="${r.expectedBenefit}">+15% CTR</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge rounded-pill"
+                                                  th:classappend="${'EXECUTED'.equals(r.approvalStatus) ? 'bg-success' : ('REJECTED'.equals(r.approvalStatus) ? 'bg-danger' : 'bg-warning text-dark')}"
+                                                  th:text="${r.approvalStatus}">PENDING</span>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-1">
+                                                <!-- Ask AI Details Button -->
+                                                <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-2"
+                                                        th:onclick="'loadAiDetails(' + ${r.id} + ')'" title="Ask AI for Details">
+                                                    <i class="fas fa-circle-question"></i> AI Details
+                                                </button>
+
+                                                <!-- Approve Form -->
+                                                <form th:if="${'PENDING'.equals(r.approvalStatus)}" th:action="@{/admin/blog-seo/recommendations/{id}/approve(id=${r.id})}" method="post" class="d-inline">
+                                                    <button type="submit" class="btn btn-sm btn-success rounded-pill px-2" title="Approve">
+                                                        <i class="fas fa-check"></i>
+                                                    </button>
+                                                </form>
+
+                                                <!-- Reject Form -->
+                                                <form th:if="${'PENDING'.equals(r.approvalStatus)}" th:action="@{/admin/blog-seo/recommendations/{id}/reject(id=${r.id})}" method="post" class="d-inline">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2" title="Reject">
+                                                        <i class="fas fa-xmark"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr th:if="${#lists.isEmpty(recommendations)}">
+                                        <td colspan="8" class="text-center text-muted py-4">No AI SEO recommendations generated yet.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- ================= TAB 7: SEO AUTOMATION PERMISSIONS (SECTION G) ================= -->
+                    <div th:if="${activeTab == 'automation'}">
+                        <div class="row justify-content-center">
+                            <div class="col-lg-8">
+                                <div class="card border rounded-4 shadow-sm">
+                                    <div class="card-header bg-light-subtle py-3">
+                                        <h6 class="fw-bold mb-0"><i class="fas fa-robot text-primary me-2"></i> Section G: Granular SEO Automation Permissions</h6>
+                                        <div class="small text-muted">Turn ON/OFF specific automatic SEO operations performed by the AI engine.</div>
+                                    </div>
+                                    <div class="card-body p-4">
+                                        <form th:action="@{/admin/blog-seo/permissions}" method="post">
+                                            <!-- Retain base permissions -->
+                                            <input type="hidden" name="allowAllUsersCreate" th:value="${permissions.allowAllUsersCreate}" />
+                                            <input type="hidden" name="allowAgentsCreate" th:value="${permissions.allowAgentsCreate}" />
+                                            <input type="hidden" name="allowPropertyOwnersCreate" th:value="${permissions.allowPropertyOwnersCreate}" />
+                                            <input type="hidden" name="allowAdminsCreate" th:value="${permissions.allowAdminsCreate}" />
+                                            <input type="hidden" name="allowAiGenerate" th:value="${permissions.allowAiGenerate}" />
+                                            <input type="hidden" name="allowAiAutoPublish" th:value="${permissions.allowAiAutoPublish}" />
+                                            <input type="hidden" name="requireAdminApproval" th:value="${permissions.requireAdminApproval}" />
+                                            <input type="hidden" name="defaultValidityDays" th:value="${permissions.defaultValidityDays}" />
+                                            <input type="hidden" name="allowCustomValidity" th:value="${permissions.allowCustomValidity}" />
+                                            <input type="hidden" name="autoExpireAndUnpublish" th:value="${permissions.autoExpireAndUnpublish}" />
+                                            <input type="hidden" name="allowBlogRenewal" th:value="${permissions.allowBlogRenewal}" />
+
+                                            <!-- Master Toggle -->
+                                            <div class="p-3 bg-primary-subtle rounded-3 mb-4 d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <div class="fw-bold text-primary fs-6">Master Switch: Enable Automatic SEO Operations</div>
+                                                    <div class="small text-dark">When OFF, all automatic optimizations require manual approval.</div>
+                                                </div>
+                                                <div class="form-check form-switch m-0">
+                                                    <input class="form-check-input switch-custom" type="checkbox" name="automaticSeoMasterSwitch" th:checked="${permissions.automaticSeoMasterSwitch}">
+                                                </div>
+                                            </div>
+
+                                            <div class="list-group list-group-flush">
+                                                <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                                    <div>
+                                                        <div class="fw-semibold">1. Automatic SEO Meta Titles &amp; Descriptions</div>
+                                                        <div class="small text-muted">Automatically generates 50-60 character titles and 120-160 character descriptions.</div>
+                                                    </div>
+                                                    <div class="form-check form-switch m-0">
+                                                        <input class="form-check-input switch-custom" type="checkbox" name="autoMetaTitleOpt" th:checked="${permissions.autoMetaTitleOpt}">
+                                                    </div>
+                                                </div>
+
+                                                <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                                    <div>
+                                                        <div class="fw-semibold">2. Automatic Relevant Keywords Suggestions &amp; Tagging</div>
+                                                        <div class="small text-muted">Extracts primary and secondary LSI keywords directly from content text.</div>
+                                                    </div>
+                                                    <div class="form-check form-switch m-0">
+                                                        <input class="form-check-input switch-custom" type="checkbox" name="autoKeywordSuggestions" th:checked="${permissions.autoKeywordSuggestions}">
+                                                    </div>
+                                                </div>
+
+                                                <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                                    <div>
+                                                        <div class="fw-semibold">3. Automatic Internal Linking Integration</div>
+                                                        <div class="small text-muted">Links blog posts to relevant jobs, properties, and search catalog queries.</div>
+                                                    </div>
+                                                    <div class="form-check form-switch m-0">
+                                                        <input class="form-check-input switch-custom" type="checkbox" name="autoInternalLinking" th:checked="${permissions.autoInternalLinking}">
+                                                    </div>
+                                                </div>
+
+                                                <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                                    <div>
+                                                        <div class="fw-semibold">4. Automatic Image Alt Text Generation</div>
+                                                        <div class="small text-muted">Formulates accessible, keyword-rich alt tags for cover and embedded images.</div>
+                                                    </div>
+                                                    <div class="form-check form-switch m-0">
+                                                        <input class="form-check-input switch-custom" type="checkbox" name="autoImageAltText" th:checked="${permissions.autoImageAltText}">
+                                                    </div>
+                                                </div>
+
+                                                <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                                    <div>
+                                                        <div class="fw-semibold">5. Automatic Schema Markup (Structured Data) Generation</div>
+                                                        <div class="small text-muted">Injects Article Schema.org JSON-LD to empower Google rich snippets.</div>
+                                                    </div>
+                                                    <div class="form-check form-switch m-0">
+                                                        <input class="form-check-input switch-custom" type="checkbox" name="autoSchemaMarkup" th:checked="${permissions.autoSchemaMarkup}">
+                                                    </div>
+                                                </div>
+
+                                                <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                                    <div>
+                                                        <div class="fw-semibold">6. Automatic Sitemap Updates</div>
+                                                        <div class="small text-muted">Appends newly published URLs into search engine sitemap.xml.</div>
+                                                    </div>
+                                                    <div class="form-check form-switch m-0">
+                                                        <input class="form-check-input switch-custom" type="checkbox" name="autoSitemapUpdate" th:checked="${permissions.autoSitemapUpdate}">
+                                                    </div>
+                                                </div>
+
+                                                <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                                    <div>
+                                                        <div class="fw-semibold">7. Automatic Content Quality &amp; Readability Analysis</div>
+                                                        <div class="small text-muted">Computes Flesch Reading Ease scores and highlights thin or low-quality content.</div>
+                                                    </div>
+                                                    <div class="form-check form-switch m-0">
+                                                        <input class="form-check-input switch-custom" type="checkbox" name="autoSeoContentAnalysis" th:checked="${permissions.autoSeoContentAnalysis}">
+                                                    </div>
+                                                </div>
+
+                                                <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                                    <div>
+                                                        <div class="fw-semibold">8. Automatic Search Engine Indexing Submissions (Google &amp; Bing)</div>
+                                                        <div class="small text-muted">Submits verified URLs directly to Google Indexing &amp; Bing Webmaster APIs.</div>
+                                                    </div>
+                                                    <div class="form-check form-switch m-0">
+                                                        <input class="form-check-input switch-custom" type="checkbox" name="autoIndexingSubmission" th:checked="${permissions.autoIndexingSubmission}">
+                                                    </div>
+                                                </div>
+
+                                                <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                                    <div>
+                                                        <div class="fw-semibold">9. Automatic SEO Performance Monitoring</div>
+                                                        <div class="small text-muted">Monitors SERP position changes, click trends, and impressions data daily.</div>
+                                                    </div>
+                                                    <div class="form-check form-switch m-0">
+                                                        <input class="form-check-input switch-custom" type="checkbox" name="autoSeoMonitoring" th:checked="${permissions.autoSeoMonitoring}">
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="text-end mt-4">
+                                                <button type="submit" class="btn btn-primary rounded-pill px-4">
+                                                    <i class="fas fa-save me-1"></i> Save SEO Automation Settings
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- ================= MODAL: CREATE / EDIT BLOG POST ================= -->
+<div class="modal fade" id="newBlogModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4 shadow">
+            <div class="modal-header border-bottom py-3">
+                <h5 class="modal-title fw-bold"><i class="fas fa-pen-nib text-primary me-2"></i> Create New Blog Post</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form th:action="@{/admin/blog-seo/posts/save}" method="post">
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Blog Title <span class="text-danger">*</span></label>
+                        <input type="text" name="title" class="form-control" placeholder="e.g. 5 Critical Real Estate Trends Shaping 2026" required>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Category <span class="text-danger">*</span></label>
+                            <select name="category" class="form-select" required>
+                                <option value="Real Estate">Real Estate</option>
+                                <option value="Property Trends">Property Trends</option>
+                                <option value="Career & Employment">Career &amp; Employment</option>
+                                <option value="Technology">Technology</option>
+                                <option value="Search Insights">Search Insights</option>
+                                <option value="Finance & Investment">Finance &amp; Investment</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Validity (Days)</label>
+                            <input type="number" name="validityDays" th:value="${permissions.defaultValidityDays}" class="form-control" min="1" max="365">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Executive Summary</label>
+                        <textarea name="summary" rows="2" class="form-control" placeholder="Brief 1-2 sentence synopsis for social previews and search listings..."></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Content Body (HTML supported) <span class="text-danger">*</span></label>
+                        <textarea name="content" rows="6" class="form-control font-monospace" placeholder="<p>Write your detailed article body here...</p>" required></textarea>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Cover Image URL</label>
+                            <input type="url" name="coverImageUrl" class="form-control" placeholder="https://images.unsplash.com/...">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Cover Image Alt Text</label>
+                            <input type="text" name="coverImageAlt" class="form-control" placeholder="Descriptive label for Google Image SEO">
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Primary Keyword</label>
+                            <input type="text" name="primaryKeyword" class="form-control" placeholder="e.g. Real Estate Investment">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Publishing Status</label>
+                            <select name="status" class="form-select">
+                                <option value="PUBLISHED">PUBLISHED (Live Immediately)</option>
+                                <option value="DRAFT">DRAFT</option>
+                                <option value="PENDING_APPROVAL">PENDING_APPROVAL</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top py-3">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4">
+                        <i class="fas fa-check me-1"></i> Save &amp; Run AI SEO Audit
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ================= MODAL: AI BLOG GENERATOR ================= -->
+<div class="modal fade" id="aiBlogModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4 shadow">
+            <div class="modal-header border-bottom py-3">
+                <h5 class="modal-title fw-bold"><i class="fas fa-robot text-primary me-2"></i> AI Blog Generator</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form th:action="@{/admin/blog-seo/generate-ai-blog}" method="post">
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Topic / Core Focus <span class="text-danger">*</span></label>
+                        <input type="text" name="topic" class="form-control" placeholder="e.g. Commercial Office Space Demand in 2026" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Category</label>
+                        <select name="category" class="form-select">
+                            <option value="Real Estate">Real Estate</option>
+                            <option value="Property Trends">Property Trends</option>
+                            <option value="Career & Employment">Career &amp; Employment</option>
+                            <option value="Technology">Technology</option>
+                            <option value="Finance & Investment">Finance &amp; Investment</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Target Keywords (comma-separated)</label>
+                        <input type="text" name="keywords" class="form-control" placeholder="e.g. commercial leases, rental yields, urban offices">
+                    </div>
+                    <div class="p-3 bg-light rounded-3 small text-muted">
+                        <i class="fas fa-info-circle text-primary me-1"></i>
+                        The AI engine will automatically structure headings (H2, H3), optimize meta titles &amp; descriptions (50-60 / 120-160 chars), generate Schema.org JSON-LD, and recommend internal linking.
+                    </div>
+                </div>
+                <div class="modal-footer border-top py-3">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4">
+                        <i class="fas fa-wand-magic-sparkles me-1"></i> Generate Article with AI
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ================= MODAL: ASK AI FOR DETAILS ================= -->
+<div class="modal fade" id="aiDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 rounded-4 shadow">
+            <div class="modal-header border-bottom py-3">
+                <h5 class="modal-title fw-bold"><i class="fas fa-brain text-primary me-2"></i> AI SEO Recommendation Breakdown</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <h6 class="fw-bold text-primary mb-1" id="modalRecTitle">Title</h6>
+                <div class="text-muted small mb-3">Blog: <span id="modalRecBlog" class="fw-semibold text-dark"></span></div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <div class="p-3 bg-light rounded-3">
+                            <span class="small fw-bold text-muted d-block">Action Type</span>
+                            <span id="modalRecAction" class="badge bg-primary-subtle text-primary"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 bg-light rounded-3">
+                            <span class="small fw-bold text-muted d-block">Expected Impact</span>
+                            <span id="modalRecBenefit" class="fw-bold text-success"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="small fw-bold text-muted">SEO Rational &amp; Algorithmic Reason</label>
+                    <div id="modalRecReason" class="p-3 bg-light-subtle border rounded-3 small"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="small fw-bold text-muted">AI Strategic Explanation</label>
+                    <div id="modalRecExplanation" class="p-3 bg-light-subtle border rounded-3 small text-secondary"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="small fw-bold text-muted">Proposed Changes (JSON Payload)</label>
+                    <pre id="modalRecChange" class="p-3 bg-dark text-light rounded-3 small font-monospace m-0" style="white-space: pre-wrap;"></pre>
+                </div>
+            </div>
+            <div class="modal-footer border-top py-3">
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function loadAiDetails(id) {
+        fetch('/admin/blog-seo/recommendations/' + id + '/details')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('modalRecTitle').innerText = data.title || '';
+                document.getElementById('modalRecBlog').innerText = data.blogTitle || '';
+                document.getElementById('modalRecAction').innerText = data.actionType || '';
+                document.getElementById('modalRecBenefit').innerText = data.expectedBenefit || '';
+                document.getElementById('modalRecReason').innerText = data.reason || '';
+                document.getElementById('modalRecExplanation').innerText = data.aiExplanation || '';
+                document.getElementById('modalRecChange').innerText = data.proposedChange || '{}';
+
+                const modal = new bootstrap.Modal(document.getElementById('aiDetailsModal'));
+                modal.show();
+            })
+            .catch(err => {
+                alert('Failed to retrieve AI recommendation details: ' + err);
+            });
+    }
+</script>
+</body>
+</html>

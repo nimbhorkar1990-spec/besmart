@@ -163,3 +163,4 @@ public class YandexSearchProvider implements SearchProvider {
         }
     }
 }
+
