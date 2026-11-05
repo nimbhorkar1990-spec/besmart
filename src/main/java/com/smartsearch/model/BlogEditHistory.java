@@ -175,3 +175,4 @@ public class BlogEditHistory {
         this.newSeoScore = newSeoScore;
     }
 }
+

@@ -13,3 +13,4 @@ public interface BlogEditHistoryRepository extends JpaRepository<BlogEditHistory
 
     List<BlogEditHistory> findAllByOrderByEditedAtDesc();
 }
+

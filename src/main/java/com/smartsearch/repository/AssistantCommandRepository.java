@@ -13,3 +13,4 @@ public interface AssistantCommandRepository extends JpaRepository<AssistantComma
 
     List<AssistantCommand> findByStatusOrderByCreatedAtDesc(String status);
 }
+

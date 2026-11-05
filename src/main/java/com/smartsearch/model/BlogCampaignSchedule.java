@@ -149,3 +149,4 @@ public class BlogCampaignSchedule {
         this.generatedAt = generatedAt;
     }
 }
+

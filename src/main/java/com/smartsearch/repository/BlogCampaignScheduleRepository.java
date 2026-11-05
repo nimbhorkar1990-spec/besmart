@@ -18,3 +18,4 @@ public interface BlogCampaignScheduleRepository extends JpaRepository<BlogCampai
 
     List<BlogCampaignSchedule> findAllByOrderByScheduledDateAscDayNumberAsc();
 }
+

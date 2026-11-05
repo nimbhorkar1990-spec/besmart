@@ -316,18 +316,10 @@
                         <div id="commandInterfaceSection" class="card border rounded-4 shadow-sm mb-4">
                             <div class="card-header bg-light-subtle py-3 d-flex justify-content-between align-items-center">
                                 <h5 class="fw-bold mb-0"><i class="fas fa-terminal text-primary me-2"></i> Section A: Assistant Command Interface</h5>
-                                <span class="badge bg-primary-subtle text-primary">Natural Language &amp; Structured Controls</span>
+                                <span class="badge bg-primary-subtle text-primary">Structured AI Controls</span>
                             </div>
                             <div class="card-body p-4">
                                 <form th:action="@{/admin/blog-seo/assistant/command}" method="post">
-
-                                    <!-- Natural Language Prompt Box -->
-                                    <div class="mb-4">
-                                        <label class="form-label fw-bold">Admin Natural Language Command <span class="text-danger">*</span></label>
-                                        <textarea name="commandText" rows="3" class="form-control form-control-lg font-monospace"
-                                                  placeholder="e.g. Write 10 blogs daily for the next 10 days focusing on real estate investment in Pune. Target property buyers and investors. Focus on Google search visibility. Include relevant images, SEO-friendly titles, meta descriptions, internal links and backlinks to my website. Avoid duplicate topics." required></textarea>
-                                        <div class="form-text small">AI parses your prompt and automatically synchronizes with the structured controls below.</div>
-                                    </div>
 
                                     <div class="accordion mb-4" id="assistantAccordion">
 
@@ -342,8 +334,8 @@
                                                 <div class="accordion-body">
                                                     <div class="row g-3">
                                                         <div class="col-md-6">
-                                                            <label class="form-label small fw-semibold">Blog Title / Topic Focus</label>
-                                                            <input type="text" name="title" class="form-control" placeholder="e.g. Real Estate Investment in Pune">
+                                                            <label class="form-label small fw-semibold">Blog Title / Topic Focus <span class="text-danger">*</span></label>
+                                                            <input type="text" name="title" class="form-control" placeholder="e.g. Real Estate Investment in Pune" required>
                                                         </div>
                                                         <div class="col-md-6">
                                                             <label class="form-label small fw-semibold">Category</label>
@@ -745,7 +737,7 @@
                                         <thead class="table-light">
                                             <tr>
                                                 <th>SN</th>
-                                                <th>Admin Command</th>
+                                                <th>Topic / Campaign Focus</th>
                                                 <th>Submitted At</th>
                                                 <th>Requested</th>
                                                 <th>Generated</th>
@@ -758,7 +750,7 @@
                                             <tr th:each="c, iter : ${assistantCommands}">
                                                 <td class="fw-bold text-muted" th:text="${iter.count}">1</td>
                                                 <td>
-                                                    <div class="fw-semibold text-truncate" style="max-width: 280px;" th:text="${c.commandText}">Command</div>
+                                                    <div class="fw-semibold text-truncate" style="max-width: 280px;" th:text="${c.title != null and !c.title.isEmpty() ? c.title : c.commandText}">Topic</div>
                                                     <div class="small text-muted">
                                                         <span class="badge bg-light text-dark border me-1" th:text="${c.category}">Category</span>
                                                         <span th:if="${c.isRecurringSchedule}" class="badge bg-warning text-dark"><i class="fas fa-calendar-days me-1"></i>10-Day Plan</span>
@@ -2006,11 +1998,19 @@
             .then(data => {
                 window.location.href = '/admin/blog-seo?tab=assistant#commandInterfaceSection';
                 setTimeout(() => {
-                    const txt = document.querySelector('textarea[name="commandText"]');
-                    if (txt) {
-                        txt.value = data.commandText || '';
-                        txt.focus();
+                    const titleInput = document.querySelector('input[name="title"]');
+                    if (titleInput) {
+                        titleInput.value = data.title || '';
+                        titleInput.focus();
                     }
+                    const catSelect = document.querySelector('select[name="category"]');
+                    if (catSelect && data.category) catSelect.value = data.category;
+                    const audInput = document.querySelector('input[name="targetAudience"]');
+                    if (audInput && data.targetAudience) audInput.value = data.targetAudience;
+                    const locInput = document.querySelector('input[name="location"]');
+                    if (locInput && data.location) locInput.value = data.location;
+                    const kwInput = document.querySelector('input[name="focusKeywords"]');
+                    if (kwInput && data.focusKeywords) kwInput.value = data.focusKeywords;
                 }, 400);
             });
     }

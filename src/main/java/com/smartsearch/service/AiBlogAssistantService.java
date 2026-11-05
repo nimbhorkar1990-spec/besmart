@@ -51,6 +51,14 @@ public class AiBlogAssistantService {
             throw new IllegalStateException("AI Blog Generation is disabled in Blog Management & SEO Authorities.");
         }
 
+        if (command.getCommandText() == null || command.getCommandText().trim().isEmpty()) {
+            String topic = command.getTitle() != null && !command.getTitle().trim().isEmpty() ? command.getTitle() : "Real Estate & Market Trends";
+            String cat = command.getCategory() != null ? command.getCategory() : "Real Estate";
+            String aud = command.getTargetAudience() != null ? command.getTargetAudience() : "Property Buyers & Investors";
+            String loc = command.getLocation() != null ? command.getLocation() : "Pune";
+            command.setCommandText(String.format("Generate high-quality blog campaign for '%s' in %s targeting %s (%s)", topic, loc, aud, cat));
+        }
+
         command.setStatus("IN_PROGRESS");
         command.setCreatedAt(LocalDateTime.now());
         AssistantCommand savedCommand = commandRepository.save(command);
@@ -444,3 +452,4 @@ public class AiBlogAssistantService {
         return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;").replace("'", "&#39;");
     }
 }
+

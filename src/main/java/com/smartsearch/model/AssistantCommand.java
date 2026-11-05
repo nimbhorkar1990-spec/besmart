@@ -12,7 +12,7 @@ public class AssistantCommand {
     private Long id;
 
     @Lob
-    @Column(columnDefinition = "TEXT", nullable = false)
+    @Column(columnDefinition = "TEXT")
     private String commandText;
 
     // Content Requirements
@@ -386,3 +386,4 @@ public class AssistantCommand {
         this.completedAt = completedAt;
     }
 }
+
