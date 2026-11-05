@@ -23,14 +23,17 @@ public class MultiSearchAggregatorService {
     private final List<SearchProvider> providers;
     private final ApiUsageLogRepository apiUsageLogRepository;
     private final SearchProviderConfigRepository providerConfigRepository;
+    private final com.smartsearch.service.SystemSettingService settingService;
     private final ExecutorService executor;
 
     public MultiSearchAggregatorService(List<SearchProvider> providers,
                                         ApiUsageLogRepository apiUsageLogRepository,
-                                        SearchProviderConfigRepository providerConfigRepository) {
+                                        SearchProviderConfigRepository providerConfigRepository,
+                                        com.smartsearch.service.SystemSettingService settingService) {
         this.providers = providers;
         this.apiUsageLogRepository = apiUsageLogRepository;
         this.providerConfigRepository = providerConfigRepository;
+        this.settingService = settingService;
         this.executor = Executors.newFixedThreadPool(Math.max(8, providers.size() * 2));
     }
 
@@ -204,6 +207,9 @@ public class MultiSearchAggregatorService {
 
             providerConfigRepository.findByProviderId(providerId).ifPresent(cfg -> {
                 cfg.recordCall(status == 200, error);
+                if (status == 200 && count > 0) {
+                    cfg.recordContribution(count);
+                }
                 providerConfigRepository.save(cfg);
             });
         } catch (Exception e) {

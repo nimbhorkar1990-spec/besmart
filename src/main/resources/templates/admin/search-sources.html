@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Engine Sources Management - SmartSearch Admin</title>
+    <link rel="icon" type="image/svg+xml" th:href="@{/images/logo-icon.svg}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/main.css}">
+    <link rel="stylesheet" th:href="@{/css/dark-mode.css}">
+    <link rel="stylesheet" th:href="@{/css/themes.css}">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+    <style>
+        .stat-card-glow {
+            border: 1px solid rgba(13, 110, 253, 0.15);
+            background: linear-gradient(145deg, var(--bg-card, #ffffff), rgba(13, 110, 253, 0.03));
+            border-radius: 1rem;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .stat-card-glow:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06);
+        }
+        .provider-logo-pill {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+        .nav-tabs-sources .nav-link {
+            font-weight: 600;
+            color: #555;
+            padding: 0.75rem 1.25rem;
+            border: none;
+            border-bottom: 3px solid transparent;
+            border-radius: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .nav-tabs-sources .nav-link.active {
+            color: #0d6efd;
+            border-bottom-color: #0d6efd;
+            background: transparent;
+        }
+        .world-map-svg path {
+            fill: #e2e8f0;
+            stroke: #ffffff;
+            stroke-width: 0.8;
+            transition: fill 0.2s ease, transform 0.2s ease;
+            cursor: pointer;
+        }
+        .world-map-svg path.covered {
+            fill: #93c5fd;
+        }
+        .world-map-svg path.active-country {
+            fill: #2563eb !important;
+        }
+        .world-map-svg path:hover {
+            fill: #3b82f6 !important;
+        }
+        .coverage-badge-full {
+            background-color: rgba(25, 135, 84, 0.12);
+            color: #198754;
+            border: 1px solid rgba(25, 135, 84, 0.25);
+        }
+        .coverage-badge-regional {
+            background-color: rgba(13, 110, 253, 0.12);
+            color: #0d6efd;
+            border: 1px solid rgba(13, 110, 253, 0.25);
+        }
+        .recommendation-card {
+            border: 1px solid rgba(0,0,0,0.08);
+            border-radius: 1rem;
+            transition: all 0.25s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .recommendation-card:hover {
+            border-color: #0d6efd;
+            box-shadow: 0 12px 28px rgba(13, 110, 253, 0.08);
+            transform: translateY(-3px);
+        }
+    </style>
+</head>
+<body>
+
+<div class="admin-layout-wrapper">
+    <!-- Admin Sidebar Navigation -->
+    <aside class="admin-sidebar">
+        <div class="admin-sidebar-header">
+            <a th:href="@{/}" class="d-flex align-items-center text-decoration-none">
+                <img th:src="@{/images/logo.svg}" alt="SmartSearch" height="30">
+            </a>
+            <span class="badge bg-danger-subtle text-danger small">Admin</span>
+        </div>
+
+        <ul class="admin-nav-menu">
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/dashboard}" class="admin-nav-link">
+                    <i class="fas fa-gauge-high"></i> Dashboard
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/search-sources}" class="admin-nav-link active">
+                    <i class="fas fa-globe-americas"></i> Search Sources
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/crawler}" class="admin-nav-link">
+                    <i class="fas fa-network-wired"></i> Web Crawler &amp; Queues
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/indexer}" class="admin-nav-link">
+                    <i class="fas fa-spider"></i> Website Indexer
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/analytics}" class="admin-nav-link">
+                    <i class="fas fa-chart-line"></i> Search Analytics
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/users}" class="admin-nav-link">
+                    <i class="fas fa-users"></i> Users Management
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/settings}" class="admin-nav-link">
+                    <i class="fas fa-sliders"></i> Search &amp; API Settings
+                </a>
+            </li>
+            <li class="admin-nav-item">
+                <a th:href="@{/admin/system}" class="admin-nav-link">
+                    <i class="fas fa-server"></i> System Health
+                </a>
+            </li>
+            <li class="admin-nav-item mt-4 pt-3 border-top">
+                <a th:href="@{/}" class="admin-nav-link">
+                    <i class="fas fa-arrow-left"></i> Back to Search
+                </a>
+            </li>
+        </ul>
+    </aside>
+
+    <!-- Admin Main Body -->
+    <div class="admin-content-main">
+        <header class="admin-topbar">
+            <div>
+                <h4 class="fw-bold mb-0">Search Engine Sources Management</h4>
+                <div class="text-muted small">Global Multi-Engine Orchestrator · Worldwide Coverage · Live Connection Testing</div>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <button type="button" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#addProviderModal">
+                    <i class="fas fa-plus-circle me-1"></i> Add New Search Engine
+                </button>
+                <div th:replace="~{fragments/header :: themeSelector}"></div>
+            </div>
+        </header>
+
+        <div class="admin-body">
+            <!-- Flash Alerts -->
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fas fa-circle-check me-2"></i><span th:text="${successMessage}">Success</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-circle-exclamation me-2"></i><span th:text="${errorMessage}">Error</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <!-- Global KPI Summary Metrics (Requirement G) -->
+            <div class="row g-3 mb-4">
+                <div class="col-sm-6 col-xl-3">
+                    <div class="p-3 stat-card-glow h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted small fw-semibold text-uppercase">Integrated Engines</span>
+                            <span class="badge bg-primary-subtle text-primary"><i class="fas fa-globe"></i> Global</span>
+                        </div>
+                        <div class="d-flex align-items-baseline gap-2">
+                            <h2 class="fw-bold mb-0" th:text="${activeProviders}">5</h2>
+                            <span class="text-muted fs-6" th:text="'/ ' + ${totalProviders} + ' registered'">/ 8</span>
+                        </div>
+                        <div class="small text-success mt-2">
+                            <i class="fas fa-signal me-1"></i>
+                            <span th:text="${connectedProviders}">4</span> Verified Online
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-xl-3">
+                    <div class="p-3 stat-card-glow h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted small fw-semibold text-uppercase">External Search Queries</span>
+                            <span class="badge bg-info-subtle text-info"><i class="fas fa-magnifying-glass"></i> Live</span>
+                        </div>
+                        <div class="d-flex align-items-baseline gap-2">
+                            <h2 class="fw-bold mb-0" th:text="${#numbers.formatInteger(totalCalls, 0, 'COMMA')}">1,248</h2>
+                            <span class="text-muted fs-6">calls</span>
+                        </div>
+                        <div class="small text-muted mt-2">
+                            <span class="fw-semibold text-success" th:text="${successCalls}">1,200</span> ok ·
+                            <span class="fw-semibold text-danger" th:text="${failureCalls}">48</span> err
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-xl-3">
+                    <div class="p-3 stat-card-glow h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted small fw-semibold text-uppercase">Result Contribution</span>
+                            <span class="badge bg-success-subtle text-success"><i class="fas fa-layer-group"></i> Fed to Users</span>
+                        </div>
+                        <div class="d-flex align-items-baseline gap-2">
+                            <h2 class="fw-bold mb-0" th:text="${#numbers.formatInteger(totalContributed, 0, 'COMMA')}">8,450</h2>
+                            <span class="text-muted fs-6">results</span>
+                        </div>
+                        <div class="small text-success mt-2">
+                            <i class="fas fa-arrows-split-up-and-left me-1"></i> Multi-Engine Flywheel Active
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-xl-3">
+                    <div class="p-3 stat-card-glow h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted small fw-semibold text-uppercase">API Health &amp; Reliability</span>
+                            <span class="badge bg-warning-subtle text-warning"><i class="fas fa-shield-heart"></i> SLA</span>
+                        </div>
+                        <div class="d-flex align-items-baseline gap-2">
+                            <h2 class="fw-bold mb-0" th:text="${successRate} + '%'">98.4%</h2>
+                            <span class="text-muted fs-6">uptime</span>
+                        </div>
+                        <div class="small text-muted mt-2">
+                            <i class="fas fa-clock-rotate-left me-1"></i> Dynamic Auto-Failover Enabled
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabbed Navigation Bar -->
+            <ul class="nav nav-tabs nav-tabs-sources mb-4 border-bottom" id="sourcesTab" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link" th:classappend="${activeTab == 'sources' || activeTab == null} ? 'active' : ''" 
+                       id="tab-sources-btn" data-bs-toggle="tab" href="#tab-sources" role="tab">
+                        <i class="fas fa-server"></i> Search Sources Overview
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:classappend="${activeTab == 'recommend'} ? 'active' : ''" 
+                       id="tab-recommend-btn" data-bs-toggle="tab" href="#tab-recommend" role="tab">
+                        <i class="fas fa-compass"></i> Discover &amp; Recommend
+                        <span class="badge rounded-pill bg-primary ms-1" th:text="${recommendations.size()}">7</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:classappend="${activeTab == 'coverage'} ? 'active' : ''" 
+                       id="tab-coverage-btn" data-bs-toggle="tab" href="#tab-coverage" role="tab">
+                        <i class="fas fa-earth-americas"></i> Worldwide Coverage
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:classappend="${activeTab == 'priority'} ? 'active' : ''" 
+                       id="tab-priority-btn" data-bs-toggle="tab" href="#tab-priority" role="tab">
+                        <i class="fas fa-arrow-down-1-9"></i> Priority &amp; Routing Rules
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:classappend="${activeTab == 'analytics'} ? 'active' : ''" 
+                       id="tab-analytics-btn" data-bs-toggle="tab" href="#tab-analytics" role="tab">
+                        <i class="fas fa-chart-pie"></i> Performance Analytics
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:classappend="${activeTab == 'logs'} ? 'active' : ''" 
+                       id="tab-logs-btn" data-bs-toggle="tab" href="#tab-logs" role="tab">
+                        <i class="fas fa-clipboard-list"></i> Activity Audit Log
+                    </a>
+                </li>
+            </ul>
+
+            <!-- Tab Contents -->
+            <div class="tab-content" id="sourcesTabContent">
+
+                <!-- ============================================================== -->
+                <!-- A. SEARCH ENGINE SOURCES DASHBOARD (Section A)                 -->
+                <!-- ============================================================== -->
+                <div class="tab-pane fade" th:classappend="${activeTab == 'sources' || activeTab == null} ? 'show active' : ''" 
+                     id="tab-sources" role="tabpanel">
+
+                    <div class="admin-card mb-4">
+                        <div class="admin-card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <div>
+                                <h5 class="admin-card-title mb-0">
+                                    <i class="fas fa-network-wired text-primary me-2"></i>Integrated Search Engines &amp; External Providers
+                                </h5>
+                                <div class="text-muted small">Live status, API connectivity, request metrics and global coverage</div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-light text-dark border"><i class="fas fa-bolt text-warning me-1"></i>Automatic Failover Active</span>
+                                <button type="button" class="btn btn-outline-primary btn-sm rounded-pill" data-bs-toggle="modal" data-bs-target="#addProviderModal">
+                                    <i class="fas fa-plus me-1"></i> Add Search Engine
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light small text-uppercase fw-semibold">
+                                    <tr>
+                                        <th style="width: 40px;">SN</th>
+                                        <th>Search Engine Name</th>
+                                        <th>Integration Status</th>
+                                        <th>Connection Status</th>
+                                        <th>API Status</th>
+                                        <th>Search Requests</th>
+                                        <th>Result Contribution</th>
+                                        <th>Global Coverage</th>
+                                        <th class="text-end">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="p, iter : ${providers}">
+                                        <!-- SN -->
+                                        <td class="text-muted fw-semibold" th:text="${iter.count}">1</td>
+
+                                        <!-- Search Engine Name -->
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="provider-logo-pill" 
+                                                     th:classappend="${p.providerId == 'GOOGLE'} ? 'bg-primary-subtle text-primary' : 
+                                                                    (${p.providerId == 'BING'} ? 'bg-info-subtle text-info' : 
+                                                                    (${p.providerId == 'YAHOO'} ? 'bg-purple-subtle text-purple' : 
+                                                                    (${p.providerId == 'DUCKDUCKGO'} ? 'bg-danger-subtle text-danger' : 
+                                                                    (${p.providerId == 'BRAVE'} ? 'bg-warning-subtle text-warning' : 
+                                                                    (${p.providerId == 'MOJEEK'} ? 'bg-success-subtle text-success' : 
+                                                                    (${p.providerId == 'YANDEX'} ? 'bg-danger-subtle text-danger' : 'bg-secondary-subtle text-secondary'))))))">
+                                                    <span th:text="${#strings.substring(p.displayName, 0, 1)}">G</span>
+                                                </div>
+                                                <div>
+                                                    <div class="fw-semibold">
+                                                        <span th:text="${p.displayName}">Google Search</span>
+                                                        <span th:if="${p.isFallback}" class="badge bg-secondary-subtle text-secondary ms-1 small" style="font-size: 0.65rem;">Fallback</span>
+                                                        <span th:if="${p.isCustom}" class="badge bg-dark-subtle text-dark ms-1 small" style="font-size: 0.65rem;">Custom</span>
+                                                    </div>
+                                                    <div class="small text-muted font-monospace" style="font-size: 0.75rem;">
+                                                        <a th:if="${p.websiteUrl != null}" th:href="${p.websiteUrl}" target="_blank" rel="noopener noreferrer" class="text-decoration-none text-muted">
+                                                            <span th:text="${p.websiteUrl}">https://www.google.com</span> <i class="fas fa-arrow-up-right-from-square" style="font-size: 0.65rem;"></i>
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+
+                                        <!-- Integration Status -->
+                                        <td>
+                                            <span th:if="${p.enabled}" class="badge bg-success-subtle text-success border border-success">
+                                                <i class="fas fa-check-circle me-1"></i> Active
+                                            </span>
+                                            <span th:if="${!p.enabled}" class="badge bg-secondary-subtle text-secondary border">
+                                                <i class="fas fa-ban me-1"></i> Inactive
+                                            </span>
+                                        </td>
+
+                                        <!-- Connection Status -->
+                                        <td>
+                                            <span th:if="${p.connectionStatus == 'CONNECTED'}" class="badge bg-success-subtle text-success border border-success-subtle">
+                                                <i class="fas fa-signal me-1"></i> Connected
+                                                <span th:if="${p.lastPingLatencyMs != null}" class="fw-normal" th:text="'(' + ${p.lastPingLatencyMs} + 'ms)'"></span>
+                                            </span>
+                                            <span th:if="${p.connectionStatus == 'DISCONNECTED'}" class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                                                <i class="fas fa-circle-xmark me-1"></i> Disconnected
+                                            </span>
+                                            <span th:if="${p.connectionStatus == 'UNTESTED' || p.connectionStatus == null}" class="badge bg-warning-subtle text-warning border border-warning-subtle">
+                                                <i class="fas fa-question-circle me-1"></i> Untested
+                                            </span>
+                                            <span th:if="${p.connectionStatus == 'ERROR'}" class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                                                <i class="fas fa-triangle-exclamation me-1"></i> Error
+                                            </span>
+                                        </td>
+
+                                        <!-- API Status -->
+                                        <td>
+                                            <span th:if="${p.apiStatus == 'READY' || p.apiStatus == 'ACTIVE'}" class="badge bg-success text-white">
+                                                <i class="fas fa-key me-1"></i> Ready
+                                            </span>
+                                            <span th:if="${p.apiStatus == 'KEY_REQUIRED'}" class="badge bg-warning text-dark">
+                                                <i class="fas fa-lock me-1"></i> Key Required
+                                            </span>
+                                            <span th:if="${p.apiStatus == 'RATE_LIMITED'}" class="badge bg-danger text-white">
+                                                <i class="fas fa-gauge me-1"></i> Rate Limited
+                                            </span>
+                                            <span th:if="${p.apiStatus == 'ERROR'}" class="badge bg-danger text-white">
+                                                <i class="fas fa-circle-exclamation me-1"></i> Issue Detected
+                                            </span>
+                                        </td>
+
+                                        <!-- Search Requests -->
+                                        <td>
+                                            <div class="fw-semibold" th:text="${#numbers.formatInteger(p.totalCalls, 0, 'COMMA')}">1,240</div>
+                                            <div class="small text-muted" style="font-size: 0.75rem;">
+                                                <span class="text-success" th:text="${p.successCalls}">1,200</span> ok /
+                                                <span class="text-danger" th:text="${p.failureCalls}">40</span> fail
+                                            </div>
+                                        </td>
+
+                                        <!-- Result Contribution -->
+                                        <td>
+                                            <div class="fw-bold text-primary" th:text="${#numbers.formatInteger(p.resultsContributed, 0, 'COMMA')} + ' items'">3,400 items</div>
+                                            <div class="progress mt-1" style="height: 4px; width: 80px;">
+                                                <div class="progress-bar bg-primary" role="progressbar" 
+                                                     th:style="'width: ' + (${totalContributed > 0 ? (p.resultsContributed * 100 / totalContributed) : 0}) + '%;'"></div>
+                                            </div>
+                                        </td>
+
+                                        <!-- Global Coverage -->
+                                        <td>
+                                            <span class="badge bg-light text-dark border" th:text="${p.supportedRegions != null ? p.supportedRegions : 'Worldwide'}">Worldwide</span>
+                                            <div class="small text-muted" style="font-size: 0.7rem;" th:text="${p.supportedLanguages != null ? p.supportedLanguages : 'All Languages'}">100+ Languages</div>
+                                        </td>
+
+                                        <!-- Actions -->
+                                        <td class="text-end">
+                                            <div class="btn-group btn-group-sm">
+                                                <!-- Live Test Connection Form -->
+                                                <form th:action="@{/admin/search-sources/test-connection-form}" method="post" class="d-inline">
+                                                    <input type="hidden" name="providerId" th:value="${p.providerId}">
+                                                    <button type="submit" class="btn btn-outline-secondary btn-sm" title="Live Test API Connection">
+                                                        <i class="fas fa-plug text-primary"></i> <span class="d-none d-lg-inline">Test</span>
+                                                    </button>
+                                                </form>
+
+                                                <!-- Configure Button (Modal Trigger) -->
+                                                <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" 
+                                                        th:data-bs-target="'#editModal' + ${p.id}" title="Edit Configuration">
+                                                    <i class="fas fa-sliders"></i>
+                                                </button>
+
+                                                <!-- Toggle Enable/Disable Form -->
+                                                <form th:action="@{/admin/search-sources/toggle}" method="post" class="d-inline">
+                                                    <input type="hidden" name="id" th:value="${p.id}">
+                                                    <input type="hidden" name="enabled" th:value="${!p.enabled}">
+                                                    <button type="submit" class="btn btn-sm" 
+                                                            th:classappend="${p.enabled} ? 'btn-outline-warning' : 'btn-outline-success'"
+                                                            th:title="${p.enabled} ? 'Deactivate Provider' : 'Activate Provider'">
+                                                        <i th:class="${p.enabled} ? 'fas fa-pause' : 'fas fa-play'"></i>
+                                                    </button>
+                                                </form>
+
+                                                <!-- Delete button (for custom providers only) -->
+                                                <form th:if="${p.isCustom}" th:action="@{/admin/search-sources/delete}" method="post" class="d-inline"
+                                                      onsubmit="return confirm('Delete custom search engine ' + this.dataset.name + '?');" th:data-name="${p.displayName}">
+                                                    <input type="hidden" name="id" th:value="${p.id}">
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete Custom Engine">
+                                                        <i class="fas fa-trash-can"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+
+                                            <!-- ========================================== -->
+                                            <!-- Provider Edit Configuration Modal          -->
+                                            <!-- ========================================== -->
+                                            <div class="modal fade" th:id="'editModal' + ${p.id}" tabindex="-1" aria-hidden="true">
+                                                <div class="modal-dialog modal-lg text-start">
+                                                    <div class="modal-content">
+                                                        <form th:action="@{/admin/search-sources/update}" method="post">
+                                                            <input type="hidden" name="id" th:value="${p.id}">
+                                                            <div class="modal-header">
+                                                                <h6 class="modal-title fw-bold">
+                                                                    <i class="fas fa-gear text-primary me-2"></i>Configure <span th:text="${p.displayName}">Provider</span>
+                                                                </h6>
+                                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <div class="row g-3">
+                                                                    <div class="col-md-6">
+                                                                        <label class="form-label small fw-semibold">Search Engine Display Name</label>
+                                                                        <input type="text" name="displayName" class="form-control form-control-sm" th:value="${p.displayName}" required>
+                                                                    </div>
+                                                                    <div class="col-md-6">
+                                                                        <label class="form-label small fw-semibold">Official Website URL</label>
+                                                                        <input type="url" name="websiteUrl" class="form-control form-control-sm font-monospace" th:value="${p.websiteUrl}">
+                                                                    </div>
+                                                                    <div class="col-md-12">
+                                                                        <label class="form-label small fw-semibold">Search API Endpoint URL</label>
+                                                                        <input type="text" name="endpointUrl" class="form-control form-control-sm font-monospace" th:value="${p.endpointUrl}" required>
+                                                                    </div>
+                                                                    <div class="col-md-6">
+                                                                        <label class="form-label small fw-semibold">API Key / Access Token</label>
+                                                                        <input type="password" name="apiKey" class="form-control form-control-sm font-monospace" th:value="${p.apiKey}" placeholder="Enter API key or access token">
+                                                                        <div class="form-text small" th:if="${p.providerId == 'YAHOO' || p.providerId == 'DUCKDUCKGO' || p.providerId == 'WIKIPEDIA'}">
+                                                                            Leave blank to use free zero-config / syndicated interface.
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="col-md-6" th:if="${p.providerId == 'GOOGLE'}">
+                                                                        <label class="form-label small fw-semibold">Google Search Engine ID (cx)</label>
+                                                                        <input type="text" name="searchEngineId" class="form-control form-control-sm font-monospace" th:value="${p.searchEngineId}">
+                                                                    </div>
+                                                                    <div class="col-md-6">
+                                                                        <label class="form-label small fw-semibold">Authentication Method</label>
+                                                                        <select name="authMethod" class="form-select form-select-sm">
+                                                                            <option value="OPEN_INTERFACE" th:selected="${p.authMethod == 'OPEN_INTERFACE'}">Open Interface / Public (No Key)</option>
+                                                                            <option value="API_KEY_QUERY" th:selected="${p.authMethod == 'API_KEY_QUERY'}">API Key via Query Parameter (?key=...)</option>
+                                                                            <option value="API_KEY_HEADER" th:selected="${p.authMethod == 'API_KEY_HEADER'}">API Key via HTTP Header</option>
+                                                                            <option value="BEARER_TOKEN" th:selected="${p.authMethod == 'BEARER_TOKEN'}">Bearer Token (Authorization: Bearer ...)</option>
+                                                                        </select>
+                                                                    </div>
+                                                                    <div class="col-md-6">
+                                                                        <label class="form-label small fw-semibold">Header Name (if header auth)</label>
+                                                                        <input type="text" name="authHeaderName" class="form-control form-control-sm font-monospace" th:value="${p.authHeaderName}" placeholder="e.g. X-Subscription-Token">
+                                                                    </div>
+                                                                    <div class="col-md-4">
+                                                                        <label class="form-label small fw-semibold">Priority Order</label>
+                                                                        <select name="priority" class="form-select form-select-sm">
+                                                                            <option value="1" th:selected="${p.priority == 1}">#1 (Highest - Primary)</option>
+                                                                            <option value="2" th:selected="${p.priority == 2}">#2 (High)</option>
+                                                                            <option value="3" th:selected="${p.priority == 3}">#3 (Medium-High)</option>
+                                                                            <option value="4" th:selected="${p.priority == 4}">#4 (Medium)</option>
+                                                                            <option value="5" th:selected="${p.priority == 5}">#5 (Medium-Low)</option>
+                                                                            <option value="6" th:selected="${p.priority == 6}">#6 (Standard)</option>
+                                                                            <option value="7" th:selected="${p.priority == 7}">#7 (Secondary)</option>
+                                                                            <option value="8" th:selected="${p.priority == 8}">#8 (Fallback Tier)</option>
+                                                                            <option value="9" th:selected="${p.priority == 9}">#9 (Deep Fallback)</option>
+                                                                            <option value="10" th:selected="${p.priority == 10}">#10 (Last Resort)</option>
+                                                                        </select>
+                                                                    </div>
+                                                                    <div class="col-md-4">
+                                                                        <label class="form-label small fw-semibold">Max Results per Query</label>
+                                                                        <input type="number" name="resultLimit" class="form-control form-control-sm" th:value="${p.resultLimit}" min="1" max="50">
+                                                                    </div>
+                                                                    <div class="col-md-4">
+                                                                        <label class="form-label small fw-semibold">Connection Timeout (ms)</label>
+                                                                        <input type="number" name="timeoutMs" class="form-control form-control-sm" th:value="${p.timeoutMs}" min="500" max="10000" step="500">
+                                                                    </div>
+                                                                    <div class="col-md-6">
+                                                                        <label class="form-label small fw-semibold">Supported Countries &amp; Regions</label>
+                                                                        <input type="text" name="supportedRegions" class="form-control form-control-sm" th:value="${p.supportedRegions}">
+                                                                    </div>
+                                                                    <div class="col-md-6">
+                                                                        <label class="form-label small fw-semibold">Supported Languages</label>
+                                                                        <input type="text" name="supportedLanguages" class="form-control form-control-sm" th:value="${p.supportedLanguages}">
+                                                                    </div>
+                                                                    <div class="col-md-12">
+                                                                        <label class="form-label small fw-semibold">API Documentation URL</label>
+                                                                        <input type="url" name="docUrl" class="form-control form-control-sm font-monospace" th:value="${p.docUrl}">
+                                                                    </div>
+                                                                    <div class="col-md-6">
+                                                                        <div class="form-check form-switch mt-2">
+                                                                            <input class="form-check-input" type="checkbox" name="enabled" value="true" th:id="'en' + ${p.id}" th:checked="${p.enabled}">
+                                                                            <label class="form-check-label fw-semibold" th:for="'en' + ${p.id}">Enable in Search Aggregator</label>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="col-md-6">
+                                                                        <div class="form-check form-switch mt-2">
+                                                                            <input class="form-check-input" type="checkbox" name="isFallback" value="true" th:id="'fb' + ${p.id}" th:checked="${p.isFallback}">
+                                                                            <label class="form-check-label fw-semibold" th:for="'fb' + ${p.id}">Designate as Fallback Engine</label>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                                                                <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============================================================== -->
+                <!-- C. DISCOVER & RECOMMEND SEARCH ENGINES (Section C)             -->
+                <!-- ============================================================== -->
+                <div class="tab-pane fade" th:classappend="${activeTab == 'recommend'} ? 'show active' : ''" 
+                     id="tab-recommend" role="tabpanel">
+
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h5 class="fw-bold mb-1"><i class="fas fa-compass text-primary me-2"></i>Global Search Engine Recommendations</h5>
+                            <p class="text-muted small mb-0">Discover verified search engine APIs worldwide, curated by index quality, privacy policy, and API accessibility.</p>
+                        </div>
+                    </div>
+
+                    <div class="row g-4">
+                        <div class="col-md-6 col-xl-4" th:each="rec : ${recommendations}">
+                            <div class="recommendation-card p-4 h-100 d-flex flex-column bg-white">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="provider-logo-pill bg-primary-subtle text-primary">
+                                            <span th:text="${#strings.substring(rec.name, 0, 1)}">M</span>
+                                        </div>
+                                        <div>
+                                            <h6 class="fw-bold mb-0" th:text="${rec.name}">Mojeek</h6>
+                                            <a th:href="${rec.websiteUrl}" target="_blank" rel="noopener noreferrer" class="small text-muted text-decoration-none">
+                                                <span th:text="${rec.websiteUrl}">https://www.mojeek.com</span> <i class="fas fa-arrow-up-right-from-square" style="font-size: 0.65rem;"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <span class="badge" 
+                                          th:classappend="${rec.pricingModel == 'FREE'} ? 'bg-success-subtle text-success border border-success-subtle' : 
+                                                         (${rec.pricingModel == 'FREEMIUM'} ? 'bg-primary-subtle text-primary border border-primary-subtle' : 'bg-warning-subtle text-warning border border-warning-subtle')"
+                                          th:text="${rec.pricingModel}">FREEMIUM</span>
+                                </div>
+
+                                <p class="small text-muted flex-grow-1" th:text="${rec.description}">
+                                    Independent search engine crawler.
+                                </p>
+
+                                <div class="mb-3 small">
+                                    <div class="d-flex justify-content-between py-1 border-bottom">
+                                        <span class="text-muted">Global Coverage:</span>
+                                        <span class="fw-semibold text-end" th:text="${rec.globalCoverage}">Worldwide</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between py-1 border-bottom">
+                                        <span class="text-muted">Languages:</span>
+                                        <span class="fw-semibold text-end" th:text="${rec.supportedLanguages}">Multilingual</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between py-1 border-bottom">
+                                        <span class="text-muted">Quality Rating:</span>
+                                        <span class="fw-bold text-warning">
+                                            <i class="fas fa-star text-warning"></i> <span th:text="${rec.qualityRating}">4.8</span>/5.0
+                                        </span>
+                                    </div>
+                                    <div class="d-flex justify-content-between py-1">
+                                        <span class="text-muted">Official API:</span>
+                                        <span class="badge bg-success-subtle text-success"><i class="fas fa-check me-1"></i>Official REST API</span>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex align-items-center justify-content-between gap-2 pt-2 border-top">
+                                    <a th:href="${rec.docUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                                        <i class="fas fa-book-open me-1"></i> API Docs
+                                    </a>
+
+                                    <form th:action="@{/admin/search-sources/add-recommended}" method="post" class="m-0">
+                                        <input type="hidden" name="providerId" th:value="${rec.providerId}">
+                                        <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">
+                                            <i class="fas fa-plus me-1"></i> Add to My Search Engine
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============================================================== -->
+                <!-- D. WORLDWIDE SEARCH ENGINE COVERAGE (Section D)               -->
+                <!-- ============================================================== -->
+                <div class="tab-pane fade" th:classappend="${activeTab == 'coverage'} ? 'show active' : ''" 
+                     id="tab-coverage" role="tabpanel">
+
+                    <div class="row g-4">
+                        <!-- Global Map Vector & Visualizer -->
+                        <div class="col-lg-8">
+                            <div class="admin-card p-4">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <div>
+                                        <h5 class="fw-bold mb-1"><i class="fas fa-earth-americas text-primary me-2"></i>Interactive Global Search Coverage</h5>
+                                        <p class="text-muted small mb-0">Select any country to inspect active search engine connectors, regional latency, and linguistic support.</p>
+                                    </div>
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                                        <i class="fas fa-globe me-1"></i> 220+ Countries Reachable
+                                    </span>
+                                </div>
+
+                                <!-- Vector World Map SVG -->
+                                <div class="p-3 bg-light rounded-4 text-center border mb-3">
+                                    <svg viewBox="0 0 1000 500" class="world-map-svg w-100" style="max-height: 380px;">
+                                        <!-- Simplified Continent Outlines & Country Nodes -->
+                                        <g id="continents">
+                                            <!-- North America -->
+                                            <path d="M150,120 Q180,90 260,80 Q320,100 280,180 Q220,240 180,260 Q140,220 120,180 Z" class="covered" data-country="US" title="North America (US & Canada)"></path>
+                                            <!-- South America -->
+                                            <path d="M260,280 Q320,300 340,360 Q320,440 280,480 Q240,400 240,320 Z" class="covered" data-country="BR" title="South America"></path>
+                                            <!-- Europe -->
+                                            <path d="M480,90 Q560,80 580,130 Q540,180 480,180 Q450,140 480,90 Z" class="covered" data-country="GB" title="Europe"></path>
+                                            <!-- Africa -->
+                                            <path d="M470,200 Q560,200 580,280 Q560,380 500,420 Q440,340 450,240 Z" class="covered" data-country="ZA" title="Africa"></path>
+                                            <!-- Asia -->
+                                            <path d="M600,90 Q780,80 880,140 Q840,260 720,280 Q640,240 600,160 Z" class="covered" data-country="IN" title="Asia"></path>
+                                            <!-- Australia -->
+                                            <path d="M780,340 Q860,330 890,380 Q860,440 800,430 Q760,390 780,340 Z" class="covered" data-country="AU" title="Australia & Oceania"></path>
+                                        </g>
+                                    </svg>
+                                    <div class="small text-muted mt-2">
+                                        <span class="me-3"><i class="fas fa-square text-primary me-1"></i> Verified Live Coverage</span>
+                                        <span class="me-3"><i class="fas fa-square text-info me-1"></i> Regional Fallback</span>
+                                        <span><i class="fas fa-square text-secondary me-1"></i> Unrestricted Open Web</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Country Detail Inspector Sidebar -->
+                        <div class="col-lg-4">
+                            <div class="admin-card p-4 h-100">
+                                <h6 class="fw-bold mb-3"><i class="fas fa-flag-checkered text-primary me-2"></i>Country Provider Inspector</h6>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold">Select Country / Territory</label>
+                                    <select class="form-select form-select-sm" id="countrySelector" onchange="inspectCountry(this.value)">
+                                        <option th:each="c : ${countries}" th:value="${c.code}" th:text="${c.flag} + ' ' + ${c.name} + ' (' + ${c.region} + ')'"></option>
+                                    </select>
+                                </div>
+
+                                <div id="countryInspectorDetails" class="p-3 bg-light rounded-4 border">
+                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                        <span id="inspFlag" class="fs-3">🇺🇸</span>
+                                        <div>
+                                            <h6 id="inspName" class="fw-bold mb-0">United States</h6>
+                                            <span id="inspRegion" class="badge bg-primary-subtle text-primary small">North America</span>
+                                        </div>
+                                    </div>
+
+                                    <hr class="my-2">
+
+                                    <div class="small mb-2">
+                                        <span class="text-muted">Primary Search Provider:</span>
+                                        <div id="inspPrimary" class="fw-semibold text-dark">Google / Bing / DuckDuckGo</div>
+                                    </div>
+
+                                    <div class="small mb-2">
+                                        <span class="text-muted">Supported Languages:</span>
+                                        <div id="inspLanguages" class="fw-semibold text-dark">English, Spanish</div>
+                                    </div>
+
+                                    <div class="small mb-2">
+                                        <span class="text-muted">Average Regional Latency:</span>
+                                        <div id="inspLatency" class="fw-bold text-success">28 ms</div>
+                                    </div>
+
+                                    <div class="small mb-3">
+                                        <span class="text-muted">Coverage Status:</span>
+                                        <div><span id="inspStatus" class="badge coverage-badge-full">Verified Full Coverage</span></div>
+                                    </div>
+
+                                    <div class="small">
+                                        <span class="text-muted d-block mb-1">Active Connectors in Region:</span>
+                                        <div id="inspProviders" class="d-flex flex-wrap gap-1">
+                                            <span class="badge bg-white text-dark border">Google</span>
+                                            <span class="badge bg-white text-dark border">Bing</span>
+                                            <span class="badge bg-white text-dark border">DuckDuckGo</span>
+                                            <span class="badge bg-white text-dark border">Yahoo</span>
+                                            <span class="badge bg-white text-dark border">Brave</span>
+                                            <span class="badge bg-white text-dark border">Wikipedia</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Global Coverage Table -->
+                    <div class="admin-card mt-4">
+                        <div class="admin-card-header">
+                            <h5 class="admin-card-title mb-0"><i class="fas fa-list-check text-primary me-2"></i>Global Country Routing Matrix</h5>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0 small">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Country</th>
+                                        <th>Region</th>
+                                        <th>Connected Search Engines</th>
+                                        <th>Primary Regional Engine</th>
+                                        <th>Regional Latency</th>
+                                        <th>Linguistic Reach</th>
+                                        <th>Coverage Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="c : ${countries}">
+                                        <td>
+                                            <span class="fs-5 me-1" th:text="${c.flag}">🇺🇸</span>
+                                            <span class="fw-semibold" th:text="${c.name}">United States</span>
+                                        </td>
+                                        <td class="text-muted" th:text="${c.region}">North America</td>
+                                        <td>
+                                            <div class="d-flex flex-wrap gap-1">
+                                                <span th:each="pr : ${c.providers}" class="badge bg-light text-dark border" th:text="${pr}">Google</span>
+                                            </div>
+                                        </td>
+                                        <td class="fw-semibold text-primary" th:text="${c.primaryEngine}">Google / Bing</td>
+                                        <td>
+                                            <span class="badge bg-success-subtle text-success" th:text="${c.latencyMs} + ' ms'">28 ms</span>
+                                        </td>
+                                        <td class="text-muted" th:text="${c.languages}">English</td>
+                                        <td>
+                                            <span class="badge coverage-badge-full" th:text="${c.status}">Verified Full Coverage</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============================================================== -->
+                <!-- E. PRIORITY & ROUTING RULES (Section E)                       -->
+                <!-- ============================================================== -->
+                <div class="tab-pane fade" th:classappend="${activeTab == 'priority'} ? 'show active' : ''" 
+                     id="tab-priority" role="tabpanel">
+
+                    <div class="row g-4">
+                        <div class="col-lg-6">
+                            <div class="admin-card p-4 h-100">
+                                <h5 class="fw-bold mb-3"><i class="fas fa-sliders text-primary me-2"></i>Global Query Routing Configuration</h5>
+                                <p class="text-muted small">Control concurrency limits, automated fallback thresholds, and dynamic indexing rules across all connected search engines.</p>
+
+                                <form th:action="@{/admin/search-sources/update-routing}" method="post">
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-semibold">Max Concurrent Providers Queried Per Search</label>
+                                        <input type="number" name="maxProvidersPerQuery" class="form-control" th:value="${maxProvidersPerQuery}" min="1" max="15">
+                                        <div class="form-text small">Limits parallel API dispatches to protect rate limits while ensuring rich multi-source results.</div>
+                                    </div>
+
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" name="externalSearchEnabled" value="true" id="extSearchSwitch" th:checked="${externalSearchEnabled}">
+                                        <label class="form-check-label fw-semibold" for="extSearchSwitch">Enable Live External Multi-Engine Aggregation</label>
+                                        <div class="form-text small">When disabled, search results will be served exclusively from the local Apache Lucene index.</div>
+                                    </div>
+
+                                    <div class="form-check form-switch mb-4">
+                                        <input class="form-check-input" type="checkbox" name="autoCrawlerIndexing" value="true" id="autoCrawlSwitch" th:checked="${autoCrawlerIndexing}">
+                                        <label class="form-check-label fw-semibold" for="autoCrawlSwitch">Autonomous Web Crawler &amp; Auto-Indexing Flywheel</label>
+                                        <div class="form-text small">Automatically enqueue URLs discovered by Google, Bing, Yahoo, DuckDuckGo into background crawler.</div>
+                                    </div>
+
+                                    <button type="submit" class="btn btn-primary rounded-pill px-4">
+                                        <i class="fas fa-save me-1"></i> Save Routing Rules
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-6">
+                            <div class="admin-card p-4 h-100">
+                                <h5 class="fw-bold mb-3"><i class="fas fa-shield-halved text-success me-2"></i>Dynamic Failover &amp; Fallback Architecture</h5>
+                                <p class="text-muted small">How BeSmart ensures 100% uptime for end users even during external API downtime:</p>
+
+                                <div class="timeline-stepper small">
+                                    <div class="p-3 mb-2 bg-light rounded-3 border">
+                                        <div class="fw-bold text-dark"><i class="fas fa-1 text-primary me-2"></i>Primary Tier Concurrent Dispatch</div>
+                                        <p class="text-muted mb-0 mt-1">Queries are dispatched concurrently to top-priority providers (Google, Bing, Yahoo, DuckDuckGo, Brave) with isolated 3.5s timeouts.</p>
+                                    </div>
+                                    <div class="p-3 mb-2 bg-light rounded-3 border">
+                                        <div class="fw-bold text-dark"><i class="fas fa-2 text-warning me-2"></i>Automated Circuit Breaker &amp; Failover</div>
+                                        <p class="text-muted mb-0 mt-1">If a primary provider returns HTTP 429, 500, or times out, it is isolated immediately. Pre-configured fallback providers (Wikipedia, Open RSS, SearXNG) seamlessly fulfill remaining slots.</p>
+                                    </div>
+                                    <div class="p-3 mb-2 bg-light rounded-3 border">
+                                        <div class="fw-bold text-dark"><i class="fas fa-3 text-success me-2"></i>Local Lucene Autonomous Buffer</div>
+                                        <p class="text-muted mb-0 mt-1">Any link ever served by external engines is permanently cached and indexed into your local Apache Lucene database, ensuring zero downtime.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============================================================== -->
+                <!-- G. PERFORMANCE & ANALYTICS (Section G)                         -->
+                <!-- ============================================================== -->
+                <div class="tab-pane fade" th:classappend="${activeTab == 'analytics'} ? 'show active' : ''" 
+                     id="tab-analytics" role="tabpanel">
+
+                    <div class="row g-4 mb-4">
+                        <div class="col-lg-8">
+                            <div class="admin-card p-4">
+                                <h5 class="fw-bold mb-3"><i class="fas fa-chart-column text-primary me-2"></i>Provider Search Traffic &amp; Query Volume</h5>
+                                <canvas id="providerTrafficChart" height="130"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="admin-card p-4">
+                                <h5 class="fw-bold mb-3"><i class="fas fa-chart-pie text-success me-2"></i>Result Share (%)</h5>
+                                <canvas id="providerShareChart" height="240"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Provider Telemetry Table -->
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <h5 class="admin-card-title mb-0"><i class="fas fa-microchip text-primary me-2"></i>Real-Time Provider Telemetry &amp; Latencies</h5>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0 small">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Provider</th>
+                                        <th>Total Invocations</th>
+                                        <th>Success Rate</th>
+                                        <th>Last Latency</th>
+                                        <th>Contributed Items</th>
+                                        <th>Last Active Query</th>
+                                        <th>Last Known Error</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="p : ${providers}">
+                                        <td class="fw-semibold" th:text="${p.displayName}">Google</td>
+                                        <td th:text="${p.totalCalls}">120</td>
+                                        <td>
+                                            <span class="badge" th:classappend="${p.totalCalls > 0 && p.failureCalls == 0} ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'"
+                                                  th:text="${p.totalCalls > 0 ? #numbers.formatDecimal((p.successCalls * 100.0 / p.totalCalls), 1, 1) + '%' : '100%'}">100%</span>
+                                        </td>
+                                        <td>
+                                            <span class="font-monospace" th:text="${p.lastPingLatencyMs != null ? p.lastPingLatencyMs + ' ms' : 'N/A'}">140 ms</span>
+                                        </td>
+                                        <td class="fw-bold text-primary" th:text="${p.resultsContributed}">450</td>
+                                        <td class="text-muted" th:text="${p.lastCalledAt != null ? #temporals.format(p.lastCalledAt, 'yyyy-MM-dd HH:mm') : 'Never'}">Never</td>
+                                        <td>
+                                            <span th:if="${p.lastError != null && !p.lastError.isEmpty()}" class="badge bg-danger-subtle text-danger" th:text="${p.lastError}">Error</span>
+                                            <span th:if="${p.lastError == null || p.lastError.isEmpty()}" class="text-success"><i class="fas fa-check-circle me-1"></i>Healthy</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============================================================== -->
+                <!-- H. ADMINISTRATOR ACTIVITY AUDIT LOG (Section H, I)             -->
+                <!-- ============================================================== -->
+                <div class="tab-pane fade" th:classappend="${activeTab == 'logs'} ? 'show active' : ''" 
+                     id="tab-logs" role="tabpanel">
+
+                    <div class="admin-card">
+                        <div class="admin-card-header d-flex justify-content-between align-items-center">
+                            <h5 class="admin-card-title mb-0"><i class="fas fa-shield-halved text-danger me-2"></i>Administrator Activity Audit Trail</h5>
+                            <span class="badge bg-secondary-subtle text-secondary">Immutable System Log</span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0 small">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>Administrator</th>
+                                        <th>Action Taken</th>
+                                        <th>Target Provider</th>
+                                        <th>Operational Details</th>
+                                        <th>IP Address</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="log : ${activityLogs}">
+                                        <td class="text-muted font-monospace" th:text="${#temporals.format(log.timestamp, 'yyyy-MM-dd HH:mm:ss')}">2026-11-05 16:00:00</td>
+                                        <td class="fw-semibold">
+                                            <i class="fas fa-user-shield text-primary me-1"></i>
+                                            <span th:text="${log.adminUsername}">admin</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge" 
+                                                  th:classappend="${#strings.contains(log.action, 'ACTIVATED') || #strings.contains(log.action, 'ADDED')} ? 'bg-success-subtle text-success' : 
+                                                                 (${#strings.contains(log.action, 'DELETED')} ? 'bg-danger-subtle text-danger' : 'bg-primary-subtle text-primary')"
+                                                  th:text="${log.action}">PROVIDER_UPDATED</span>
+                                        </td>
+                                        <td class="fw-semibold font-monospace" th:text="${log.targetProviderId}">GOOGLE</td>
+                                        <td th:text="${log.details}">Updated provider settings.</td>
+                                        <td class="text-muted font-monospace" th:text="${log.ipAddress}">127.0.0.1</td>
+                                    </tr>
+                                    <tr th:if="${activityLogs.isEmpty()}">
+                                        <td colspan="6" class="text-center text-muted py-4">No administrative actions logged yet.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- MODAL: ADD NEW SEARCH ENGINE (Section B)                       -->
+<!-- ============================================================== -->
+<div class="modal fade" id="addProviderModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg text-start">
+        <div class="modal-content">
+            <form th:action="@{/admin/search-sources/add}" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">
+                        <i class="fas fa-plus-circle text-primary me-2"></i>Add New Search Engine Source
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info py-2 px-3 small rounded-3 mb-3">
+                        <i class="fas fa-info-circle me-1"></i>
+                        New search engines are registered in <strong>PENDING_SETUP</strong> status. An API adapter and connection test must pass before results are fed to users.
+                    </div>
+
+                    <div class="row g-3">
+                        <!-- 1. Search Engine Name -->
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">1. Search Engine Name <span class="text-danger">*</span></label>
+                            <input type="text" name="displayName" class="form-control form-control-sm" placeholder="e.g. Mojeek Independent Search" required>
+                        </div>
+
+                        <!-- 2. Website URL -->
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">2. Website URL</label>
+                            <input type="url" name="websiteUrl" class="form-control form-control-sm font-monospace" placeholder="https://www.example.com">
+                        </div>
+
+                        <!-- 3. API Endpoint -->
+                        <div class="col-md-12">
+                            <label class="form-label small fw-semibold">3. Search API Endpoint URL <span class="text-danger">*</span></label>
+                            <input type="text" name="endpointUrl" class="form-control form-control-sm font-monospace" placeholder="https://api.example.com/v1/search" required>
+                        </div>
+
+                        <!-- 4. API Key / Credentials -->
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">4. API Key / Auth Token</label>
+                            <input type="password" name="apiKey" class="form-control form-control-sm font-monospace" placeholder="Enter authorized API key">
+                        </div>
+
+                        <!-- 5. Integration Method -->
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">5. Integration Method</label>
+                            <select name="authMethod" class="form-select form-select-sm">
+                                <option value="API_KEY_QUERY">REST JSON (API Key in Query Param ?key=...)</option>
+                                <option value="API_KEY_HEADER">REST JSON (API Key in HTTP Header)</option>
+                                <option value="BEARER_TOKEN">REST JSON (Bearer Token: Authorization: Bearer)</option>
+                                <option value="OPEN_INTERFACE">OpenSearch / Open RSS / Public Gateway</option>
+                            </select>
+                        </div>
+
+                        <!-- Header Name (conditional) -->
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Auth Header Name (if header method)</label>
+                            <input type="text" name="authHeaderName" class="form-control form-control-sm font-monospace" placeholder="e.g. X-Subscription-Token or X-API-KEY">
+                        </div>
+
+                        <!-- Pricing Tier -->
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Pricing Model</label>
+                            <select name="pricingTier" class="form-select form-select-sm">
+                                <option value="FREEMIUM">Freemium (Free tier + paid upgrade)</option>
+                                <option value="FREE">Free / Open Source</option>
+                                <option value="PAID">Commercial / Paid Tier</option>
+                            </select>
+                        </div>
+
+                        <!-- 6. Supported Countries / Regions -->
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">6. Supported Countries &amp; Regions</label>
+                            <input type="text" name="supportedRegions" class="form-control form-control-sm" value="Worldwide (Global Coverage)">
+                        </div>
+
+                        <!-- 7. Supported Languages -->
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">7. Supported Languages</label>
+                            <input type="text" name="supportedLanguages" class="form-control form-control-sm" value="English, Multilingual">
+                        </div>
+
+                        <!-- 8. Search Priority -->
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">8. Search Priority (1-10)</label>
+                            <select name="priority" class="form-select form-select-sm">
+                                <option value="1">1 (Highest - Primary Source)</option>
+                                <option value="2">2 (High)</option>
+                                <option value="3">3 (Medium-High)</option>
+                                <option value="4">4 (Medium)</option>
+                                <option value="5">5 (Medium-Low)</option>
+                                <option value="6" selected>6 (Standard)</option>
+                                <option value="7">7 (Secondary)</option>
+                                <option value="8">8 (Fallback Tier)</option>
+                            </select>
+                        </div>
+
+                        <!-- 9. Search Result Limit -->
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">9. Result Limit per Query</label>
+                            <input type="number" name="resultLimit" class="form-control form-control-sm" value="10" min="1" max="50">
+                        </div>
+
+                        <!-- 10. Connection Timeout -->
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">10. Connection Timeout (ms)</label>
+                            <input type="number" name="timeoutMs" class="form-control form-control-sm" value="3000" min="500" max="10000" step="500">
+                        </div>
+
+                        <!-- 12. API Documentation URL -->
+                        <div class="col-md-12">
+                            <label class="form-label small fw-semibold">12. Official API Documentation URL</label>
+                            <input type="url" name="docUrl" class="form-control form-control-sm font-monospace" placeholder="https://docs.example.com/api">
+                        </div>
+
+                        <!-- 11. Enable Status -->
+                        <div class="col-md-12">
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" name="enabled" value="true" id="newEnabledSwitch" checked>
+                                <label class="form-check-label fw-semibold" for="newEnabledSwitch">11. Enable Provider upon successful connection test</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4 shadow-sm">
+                        <i class="fas fa-check me-1"></i> Register Search Engine
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<script th:src="@{/js/main.js}"></script>
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const countryData = /*[[${countries}]]*/ [];
+    const providersList = /*[[${providers}]]*/ [];
+
+    function inspectCountry(code) {
+        const found = countryData.find(c => c.code === code);
+        if (!found) return;
+
+        document.getElementById('inspFlag').textContent = found.flag;
+        document.getElementById('inspName').textContent = found.name;
+        document.getElementById('inspRegion').textContent = found.region;
+        document.getElementById('inspPrimary').textContent = found.primaryEngine;
+        document.getElementById('inspLanguages').textContent = found.languages;
+        document.getElementById('inspLatency').textContent = found.latencyMs + ' ms';
+        document.getElementById('inspStatus').textContent = found.status;
+
+        const container = document.getElementById('inspProviders');
+        container.innerHTML = '';
+        found.providers.forEach(p => {
+            const span = document.createElement('span');
+            span.className = 'badge bg-white text-dark border';
+            span.textContent = p;
+            container.appendChild(span);
+        });
+
+        // Highlight SVG path
+        document.querySelectorAll('.world-map-svg path').forEach(p => {
+            if (p.getAttribute('data-country') === code) {
+                p.classList.add('active-country');
+            } else {
+                p.classList.remove('active-country');
+            }
+        });
+    }
+
+    // Attach click listeners to SVG paths
+    document.querySelectorAll('.world-map-svg path').forEach(path => {
+        path.addEventListener('click', function() {
+            const code = this.getAttribute('data-country');
+            if (code) {
+                const select = document.getElementById('countrySelector');
+                select.value = code;
+                inspectCountry(code);
+            }
+        });
+    });
+
+    // Initialize Charts on tab switch
+    let chartsInitialized = false;
+    document.getElementById('tab-analytics-btn').addEventListener('shown.bs.tab', function () {
+        if (chartsInitialized) return;
+        chartsInitialized = true;
+
+        const labels = providersList.map(p => p.displayName);
+        const calls = providersList.map(p => p.totalCalls || 0);
+        const contributions = providersList.map(p => p.resultsContributed || 0);
+
+        // Chart 1: Search Traffic
+        const ctxTraffic = document.getElementById('providerTrafficChart');
+        if (ctxTraffic) {
+            new Chart(ctxTraffic, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Search Requests Processed',
+                        data: calls,
+                        backgroundColor: 'rgba(13, 110, 253, 0.7)',
+                        borderColor: '#0d6efd',
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        // Chart 2: Contribution Share
+        const ctxShare = document.getElementById('providerShareChart');
+        if (ctxShare) {
+            new Chart(ctxShare, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: contributions.map(function(c) { return (c != null && c != 0) ? c : 1; }),
+                        backgroundColor: [
+                            '#4285f4', '#00a4ef', '#7b1fa2', '#de5833', '#fb542b',
+                            '#198754', '#20c997', '#ffc107', '#6c757d'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } }
+                    }
+                }
+            });
+        }
+    });
+    /*]]>*/
+</script>
+
+</body>
+</html>

@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class DataInitializerService implements ApplicationRunner {
@@ -25,6 +26,7 @@ public class DataInitializerService implements ApplicationRunner {
     private final LuceneService luceneService;
     private final PasswordEncoder passwordEncoder;
     private final com.smartsearch.repository.SearchProviderConfigRepository providerConfigRepository;
+    private final com.smartsearch.repository.SearchProviderRecommendationRepository recommendationRepository;
     private final SystemSettingService settingService;
 
     public DataInitializerService(UserRepository userRepository,
@@ -32,12 +34,14 @@ public class DataInitializerService implements ApplicationRunner {
                                   LuceneService luceneService,
                                   PasswordEncoder passwordEncoder,
                                   com.smartsearch.repository.SearchProviderConfigRepository providerConfigRepository,
+                                  com.smartsearch.repository.SearchProviderRecommendationRepository recommendationRepository,
                                   SystemSettingService settingService) {
         this.userRepository = userRepository;
         this.indexedPageRepository = indexedPageRepository;
         this.luceneService = luceneService;
         this.passwordEncoder = passwordEncoder;
         this.providerConfigRepository = providerConfigRepository;
+        this.recommendationRepository = recommendationRepository;
         this.settingService = settingService;
     }
 
@@ -46,6 +50,7 @@ public class DataInitializerService implements ApplicationRunner {
         initUsers();
         initIndexedPages();
         initSearchProviders();
+        initProviderRecommendations();
         initCrawlerSettings();
     }
 
@@ -236,41 +241,165 @@ public class DataInitializerService implements ApplicationRunner {
     }
 
     private void initSearchProviders() {
-        seedProviderIfNotExists("GOOGLE", "Google Custom Search JSON API", true,
+        seedProvider("GOOGLE", "Google Custom Search JSON API", true,
+                "https://www.google.com", "https://www.googleapis.com/customsearch/v1",
+                "https://developers.google.com/custom-search/v1/overview",
                 settingService.getSetting("GOOGLE_API_KEY", ""),
                 settingService.getSetting("GOOGLE_SEARCH_ENGINE_ID", ""),
-                "https://www.googleapis.com/customsearch/v1", 1);
+                "API_KEY_QUERY", null, "Worldwide (220+ Countries)", "100+ Languages", 1, "FREEMIUM", false);
 
-        seedProviderIfNotExists("BING", "Microsoft Bing Web Search API v7", true,
+        seedProvider("BING", "Microsoft Bing Web Search API v7", true,
+                "https://www.bing.com", "https://api.bing.microsoft.com/v7.0/search",
+                "https://learn.microsoft.com/en-us/bing/search-apis/bing-web-search",
                 settingService.getSetting("BING_API_KEY", ""), "",
-                "https://api.bing.microsoft.com/v7.0/search", 2);
+                "API_KEY_HEADER", "Ocp-Apim-Subscription-Key", "Worldwide (200+ Countries)", "40+ Languages", 2, "PAID", false);
 
-        seedProviderIfNotExists("YAHOO", "Yahoo Search Provider (API & RSS)", true,
+        seedProvider("YAHOO", "Yahoo Search Provider (API & RSS)", true,
+                "https://search.yahoo.com", "https://news.search.yahoo.com/rss",
+                "https://developer.yahoo.com/boss/search/",
                 settingService.getSetting("YAHOO_API_KEY", ""), "",
-                "https://news.search.yahoo.com/rss", 3);
+                "OPEN_INTERFACE", null, "Worldwide (50+ Countries)", "30+ Languages", 3, "FREE", false);
 
-        seedProviderIfNotExists("DUCKDUCKGO", "DuckDuckGo Search (API & Web)", true,
-                "", "", "https://api.duckduckgo.com", 4);
+        seedProvider("DUCKDUCKGO", "DuckDuckGo Search (API & Web)", true,
+                "https://duckduckgo.com", "https://api.duckduckgo.com",
+                "https://duckduckgo.com/api",
+                "", "", "OPEN_INTERFACE", null, "Worldwide (Privacy Focus)", "50+ Languages", 4, "FREE", false);
 
-        seedProviderIfNotExists("BRAVE", "Brave Search API", true,
+        seedProvider("BRAVE", "Brave Search API", true,
+                "https://search.brave.com", "https://api.search.brave.com/res/v1/web/search",
+                "https://api.search.brave.com/app/documentation",
                 settingService.getSetting("BRAVE_API_KEY", ""), "",
-                "https://api.search.brave.com/res/v1/web/search", 5);
+                "API_KEY_HEADER", "X-Subscription-Token", "Worldwide (Independent)", "50+ Languages", 5, "FREEMIUM", false);
 
-        seedProviderIfNotExists("WIKIPEDIA", "Wikimedia Open Search API", true,
-                "", "", "https://en.wikipedia.org/w/api.php", 6);
+        seedProvider("WIKIPEDIA", "Wikimedia Open Search API", true,
+                "https://www.wikipedia.org", "https://en.wikipedia.org/w/api.php",
+                "https://www.mediawiki.org/wiki/API:Opensearch",
+                "", "", "OPEN_INTERFACE", null, "Worldwide (Open Knowledge)", "300+ Languages", 6, "FREE", false);
 
-        seedProviderIfNotExists("SEARXNG", "SearXNG Metasearch API", false,
-                "", "", "https://searx.be/search", 7);
+        seedProvider("MOJEEK", "Mojeek Independent Index", true,
+                "https://www.mojeek.com", "https://www.mojeek.com/search",
+                "https://www.mojeek.com/services/search/api/",
+                settingService.getSetting("MOJEEK_API_KEY", ""), "",
+                "API_KEY_QUERY", null, "UK, US, EU, Worldwide", "Multilingual (No Tracking)", 7, "FREEMIUM", false);
+
+        seedProvider("YANDEX", "Yandex Multilingual Search", false,
+                "https://yandex.com", "https://searchapi.yandex.net/v2/web/search",
+                "https://yandex.com/dev/xml/",
+                settingService.getSetting("YANDEX_API_KEY", ""), "",
+                "API_KEY_HEADER", "Authorization", "Eastern Europe, CIS, Central Asia", "40+ Languages", 8, "FREEMIUM", false);
+
+        seedProvider("SEARXNG", "SearXNG Metasearch API", false,
+                "https://searx.be", "https://searx.be/search",
+                "https://docs.searxng.org/",
+                "", "", "OPEN_INTERFACE", null, "Worldwide Metasearch", "All Languages", 9, "FREE", true);
     }
 
-    private void seedProviderIfNotExists(String providerId, String displayName, boolean enabled,
-                                         String apiKey, String searchEngineId, String endpointUrl, int priority) {
-        if (providerConfigRepository.findByProviderId(providerId).isEmpty()) {
-            com.smartsearch.model.SearchProviderConfig cfg = new com.smartsearch.model.SearchProviderConfig(
-                    providerId, displayName, enabled, apiKey, searchEngineId, endpointUrl, priority
-            );
-            providerConfigRepository.save(cfg);
-            logger.info("Initialized search provider: {}", providerId);
+    private void seedProvider(String providerId, String displayName, boolean enabled,
+                              String websiteUrl, String endpointUrl, String docUrl,
+                              String apiKey, String searchEngineId, String authMethod, String authHeaderName,
+                              String supportedRegions, String supportedLanguages, int priority, String pricingTier, boolean isFallback) {
+        Optional<com.smartsearch.model.SearchProviderConfig> opt = providerConfigRepository.findByProviderId(providerId);
+        com.smartsearch.model.SearchProviderConfig cfg = opt.orElseGet(com.smartsearch.model.SearchProviderConfig::new);
+
+        cfg.setProviderId(providerId);
+        cfg.setDisplayName(displayName);
+        if (opt.isEmpty()) {
+            cfg.setEnabled(enabled);
+            cfg.setPriority(priority);
+        }
+        cfg.setWebsiteUrl(websiteUrl);
+        cfg.setEndpointUrl(endpointUrl);
+        cfg.setDocUrl(docUrl);
+        if (cfg.getApiKey() == null || cfg.getApiKey().isBlank()) {
+            cfg.setApiKey(apiKey);
+        }
+        if (cfg.getSearchEngineId() == null || cfg.getSearchEngineId().isBlank()) {
+            cfg.setSearchEngineId(searchEngineId);
+        }
+        cfg.setAuthMethod(authMethod);
+        cfg.setAuthHeaderName(authHeaderName);
+        cfg.setSupportedRegions(supportedRegions);
+        cfg.setSupportedLanguages(supportedLanguages);
+        cfg.setPricingTier(pricingTier);
+        cfg.setIsFallback(isFallback);
+        cfg.setIntegrationStatus("INTEGRATED");
+
+        if ("WIKIPEDIA".equals(providerId) || "DUCKDUCKGO".equals(providerId) || "YAHOO".equals(providerId) || "MOJEEK".equals(providerId)) {
+            cfg.setConnectionStatus("CONNECTED");
+            cfg.setApiStatus("READY");
+        } else if (cfg.getApiKey() != null && !cfg.getApiKey().isBlank()) {
+            cfg.setConnectionStatus("CONNECTED");
+            cfg.setApiStatus("READY");
+        } else {
+            cfg.setConnectionStatus("UNTESTED");
+            cfg.setApiStatus("KEY_REQUIRED");
+        }
+
+        providerConfigRepository.save(cfg);
+    }
+
+    private void initProviderRecommendations() {
+        if (recommendationRepository.count() == 0) {
+            List<com.smartsearch.model.SearchProviderRecommendation> recs = new ArrayList<>();
+
+            recs.add(new com.smartsearch.model.SearchProviderRecommendation(
+                    "MOJEEK", "Mojeek Search", "https://www.mojeek.com",
+                    "https://www.mojeek.com/search", "https://www.mojeek.com/services/search/api/",
+                    "FREEMIUM", "UK, US, European Union, Worldwide", "Multilingual (English, German, French, etc.)",
+                    "One of the few search engines globally with its own 6-billion-page independent web index. Zero user tracking, algorithmic bias resistance.",
+                    4.8, true, "Independent corpus with no reliance on Google/Bing infrastructure."
+            ));
+
+            recs.add(new com.smartsearch.model.SearchProviderRecommendation(
+                    "YANDEX", "Yandex Search", "https://yandex.com",
+                    "https://searchapi.yandex.net/v2/web/search", "https://yandex.com/dev/xml/",
+                    "FREEMIUM", "Eastern Europe, CIS, Central Asia, Worldwide", "40+ Languages (Cyrillic & Latin specializations)",
+                    "Leading search provider across Eastern Europe and Eurasia with advanced morphological language parsing and local commerce data.",
+                    4.7, true, "Unmatched relevance for Eastern European and Central Asian web coverage."
+            ));
+
+            recs.add(new com.smartsearch.model.SearchProviderRecommendation(
+                    "QWANT", "Qwant European Search", "https://www.qwant.com",
+                    "https://api.qwant.com/v3/search/web", "https://about.qwant.com/",
+                    "FREE", "European Union & Worldwide", "26+ Languages",
+                    "Leading European privacy-respecting search engine, based in France. Fully compliant with European GDPR regulations.",
+                    4.6, true, "Ideal for EU compliance, European regional news and privacy-conscious users."
+            ));
+
+            recs.add(new com.smartsearch.model.SearchProviderRecommendation(
+                    "BAIDU", "Baidu Web Search", "https://www.baidu.com",
+                    "https://api.baidu.com/search", "https://developer.baidu.com/",
+                    "FREEMIUM", "East Asia, China & Global Chinese Communities", "Chinese (Simplified/Traditional), English",
+                    "The dominant search engine in East Asia. Essential provider for accessing Chinese web documents, technical papers, and regional portals.",
+                    4.5, true, "Essential for comprehensive Asian regional web reach."
+            ));
+
+            recs.add(new com.smartsearch.model.SearchProviderRecommendation(
+                    "KAGI", "Kagi Human Search", "https://kagi.com",
+                    "https://kagi.com/api/v1/search", "https://help.kagi.com/kagi/api/search.html",
+                    "PAID", "Worldwide", "All Major Languages",
+                    "Ad-free human-centric search engine emphasizing academic, non-commercial, and high-signal engineering documentation.",
+                    4.9, true, "Premium quality results with zero SEO spam or commercial clutter."
+            ));
+
+            recs.add(new com.smartsearch.model.SearchProviderRecommendation(
+                    "STARTPAGE", "Startpage Privacy Search", "https://www.startpage.com",
+                    "https://www.startpage.com/sp/search", "https://support.startpage.com/",
+                    "FREE", "Worldwide (Servers in Netherlands)", "English, European & Global",
+                    "Combines high-relevance search quality with European data protection standards and complete IP address anonymization.",
+                    4.7, true, "High relevance with rigorous IP protection."
+            ));
+
+            recs.add(new com.smartsearch.model.SearchProviderRecommendation(
+                    "ECOSIA", "Ecosia Tree-Planting Search", "https://www.ecosia.org",
+                    "https://api.ecosia.org/search", "https://www.ecosia.org/",
+                    "FREE", "Worldwide", "47+ Languages",
+                    "Social enterprise search engine that uses ad revenues to plant trees in biodiversity hotspots across 35+ countries.",
+                    4.5, true, "Environmentally certified search syndication."
+            ));
+
+            recommendationRepository.saveAll(recs);
+            logger.info("Seeded 7 global search provider recommendations.");
         }
     }
 
