@@ -198,3 +198,4 @@ public class AiSeoRecommendation {
         this.reviewedBy = reviewedBy;
     }
 }
+

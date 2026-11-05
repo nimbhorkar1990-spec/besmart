@@ -68,3 +68,4 @@ public class BlogPublicController {
         return "blog/detail";
     }
 }
+

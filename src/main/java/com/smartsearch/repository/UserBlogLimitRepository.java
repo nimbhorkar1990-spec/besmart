@@ -19,3 +19,4 @@ public interface UserBlogLimitRepository extends JpaRepository<UserBlogLimit, Lo
 
     List<UserBlogLimit> findByIsCustomForUserTrue();
 }
+

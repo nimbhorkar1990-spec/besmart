@@ -71,6 +71,32 @@ public class BlogPost {
     @Column(nullable = false)
     private Long organicImpressions = 0L;
 
+    // --- Enhanced Media & Campaign Target Fields ---
+
+    @Column(length = 150)
+    private String targetAudience = "All Readers & Property Seekers";
+
+    @Column(length = 500)
+    private String videoUrl;
+
+    @Lob
+    @Column(columnDefinition = "TEXT")
+    private String videoEmbedCode;
+
+    @Column(length = 255)
+    private String targetWebsite;
+
+    @Column(length = 500)
+    private String backlinkUrl;
+
+    @Column(length = 50)
+    private String language = "English";
+
+    @Column(length = 150)
+    private String targetLocation;
+
+    private Long commandId;
+
     // --- SEO Metadata Fields ---
 
     @Column(length = 100)
@@ -401,4 +427,69 @@ public class BlogPost {
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
     }
+
+    public String getTargetAudience() {
+        return targetAudience;
+    }
+
+    public void setTargetAudience(String targetAudience) {
+        this.targetAudience = targetAudience;
+    }
+
+    public String getVideoUrl() {
+        return videoUrl;
+    }
+
+    public void setVideoUrl(String videoUrl) {
+        this.videoUrl = videoUrl;
+    }
+
+    public String getVideoEmbedCode() {
+        return videoEmbedCode;
+    }
+
+    public void setVideoEmbedCode(String videoEmbedCode) {
+        this.videoEmbedCode = videoEmbedCode;
+    }
+
+    public String getTargetWebsite() {
+        return targetWebsite;
+    }
+
+    public void setTargetWebsite(String targetWebsite) {
+        this.targetWebsite = targetWebsite;
+    }
+
+    public String getBacklinkUrl() {
+        return backlinkUrl;
+    }
+
+    public void setBacklinkUrl(String backlinkUrl) {
+        this.backlinkUrl = backlinkUrl;
+    }
+
+    public String getLanguage() {
+        return language;
+    }
+
+    public void setLanguage(String language) {
+        this.language = language;
+    }
+
+    public String getTargetLocation() {
+        return targetLocation;
+    }
+
+    public void setTargetLocation(String targetLocation) {
+        this.targetLocation = targetLocation;
+    }
+
+    public Long getCommandId() {
+        return commandId;
+    }
+
+    public void setCommandId(Long commandId) {
+        this.commandId = commandId;
+    }
 }
+

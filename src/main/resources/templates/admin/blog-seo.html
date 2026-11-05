@@ -53,6 +53,23 @@
             width: 3rem;
             height: 1.5rem;
         }
+        .btn-assistant-glow {
+            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+            color: #000;
+            font-weight: 700;
+            border: none;
+            box-shadow: 0 4px 15px rgba(253, 126, 20, 0.3);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .btn-assistant-glow:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(253, 126, 20, 0.4);
+            color: #000;
+        }
+        .ai-card-glow {
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            background: linear-gradient(145deg, #ffffff, rgba(255, 193, 7, 0.04));
+        }
     </style>
 </head>
 <body class="admin-body">
@@ -132,14 +149,17 @@
         <header class="admin-topbar">
             <div>
                 <h4 class="fw-bold mb-0">Blog Management &amp; SEO Authorities</h4>
-                <div class="text-muted small">Permissions Control · Publishing Quotas · Expiration Lifecycle · AI-Powered SEO Automation</div>
+                <div class="text-muted small">Permissions Control · Universal Admin Edit · AI Command Assistant · 10-Day Campaigns</div>
             </div>
             <div class="d-flex align-items-center gap-2">
+                <!-- Task Two: Prominent Assistant Button -->
+                <a th:href="@{/admin/blog-seo(tab='assistant')}" class="btn btn-assistant-glow btn-sm rounded-pill px-3 shadow-sm d-flex align-items-center gap-1">
+                    <i class="fas fa-wand-magic-sparkles text-dark"></i>
+                    <span>Assistant</span>
+                    <span class="badge bg-dark text-warning rounded-pill ms-1" style="font-size: 0.7rem;">AI</span>
+                </a>
                 <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#newBlogModal">
                     <i class="fas fa-plus me-1"></i> New Blog Post
-                </button>
-                <button type="button" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#aiBlogModal">
-                    <i class="fas fa-robot me-1"></i> AI Blog Generator
                 </button>
             </div>
         </header>
@@ -158,7 +178,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
 
-            <!-- Section H: Performance KPI Cards -->
+            <!-- KPI Cards -->
             <div class="row g-3 mb-4">
                 <div class="col-6 col-lg-3">
                     <div class="stat-card-glow p-3 h-100 shadow-sm">
@@ -221,6 +241,13 @@
             <div class="card border-0 shadow-sm rounded-4 mb-4">
                 <div class="card-header bg-transparent border-bottom px-3 pt-3 pb-0">
                     <ul class="nav nav-tabs nav-tabs-sources border-0 overflow-x-auto flex-nowrap" id="blogSeoTabs" role="tablist">
+                        <!-- AI Assistant Tab -->
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" th:classappend="${activeTab == 'assistant' ? 'active' : ''}" id="tab-assistant-link" th:href="@{/admin/blog-seo(tab='assistant')}">
+                                <i class="fas fa-wand-magic-sparkles text-warning"></i> AI Assistant
+                                <span class="badge bg-warning text-dark rounded-pill ms-1" style="font-size: 0.7rem;">PRO</span>
+                            </a>
+                        </li>
                         <li class="nav-item" role="presentation">
                             <a class="nav-link" th:classappend="${activeTab == 'dashboard' or activeTab == null ? 'active' : ''}" id="tab-dashboard-link" th:href="@{/admin/blog-seo(tab='dashboard')}">
                                 <i class="fas fa-chart-pie"></i> SEO Dashboard
@@ -248,7 +275,7 @@
                         </li>
                         <li class="nav-item" role="presentation">
                             <a class="nav-link" th:classappend="${activeTab == 'recommendations' ? 'active' : ''}" id="tab-recommendations-link" th:href="@{/admin/blog-seo(tab='recommendations')}">
-                                <i class="fas fa-wand-magic-sparkles"></i> AI Recommendations (F)
+                                <i class="fas fa-lightbulb"></i> AI Recommendations (F)
                                 <span class="badge bg-danger rounded-pill" th:if="${#lists.size(pendingRecommendations) > 0}" th:text="${#lists.size(pendingRecommendations)}">0</span>
                             </a>
                         </li>
@@ -262,8 +289,510 @@
 
                 <div class="card-body p-4">
 
+                    <!-- ================= TAB: AI BLOG ASSISTANT (TASK TWO) ================= -->
+                    <div th:if="${activeTab == 'assistant'}">
+
+                        <!-- Assistant Banner -->
+                        <div class="card border-0 rounded-4 shadow-sm p-4 mb-4 text-white" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #06b6d4 100%);">
+                            <div class="row align-items-center">
+                                <div class="col-lg-8">
+                                    <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold mb-2">
+                                        <i class="fas fa-wand-magic-sparkles me-1"></i> Command-Based Blogging AI
+                                    </span>
+                                    <h3 class="fw-bold mb-2">AI Blog Assistant &amp; Strategic Campaign Orchestrator</h3>
+                                    <p class="opacity-90 mb-0">
+                                        Provide natural-language instructions or configure multi-blog 10-day schedules. The Assistant understands search intent, produces structured articles, verifies media permissions, and injects Schema.org markup.
+                                    </p>
+                                </div>
+                                <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                                    <a href="#commandInterfaceSection" class="btn btn-warning rounded-pill px-4 fw-bold shadow">
+                                        <i class="fas fa-terminal me-1"></i> New Command
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section A: Assistant Command Interface -->
+                        <div id="commandInterfaceSection" class="card border rounded-4 shadow-sm mb-4">
+                            <div class="card-header bg-light-subtle py-3 d-flex justify-content-between align-items-center">
+                                <h5 class="fw-bold mb-0"><i class="fas fa-terminal text-primary me-2"></i> Section A: Assistant Command Interface</h5>
+                                <span class="badge bg-primary-subtle text-primary">Natural Language &amp; Structured Controls</span>
+                            </div>
+                            <div class="card-body p-4">
+                                <form th:action="@{/admin/blog-seo/assistant/command}" method="post">
+
+                                    <!-- Natural Language Prompt Box -->
+                                    <div class="mb-4">
+                                        <label class="form-label fw-bold">Admin Natural Language Command <span class="text-danger">*</span></label>
+                                        <textarea name="commandText" rows="3" class="form-control form-control-lg font-monospace"
+                                                  placeholder="e.g. Write 10 blogs daily for the next 10 days focusing on real estate investment in Pune. Target property buyers and investors. Focus on Google search visibility. Include relevant images, SEO-friendly titles, meta descriptions, internal links and backlinks to my website. Avoid duplicate topics." required></textarea>
+                                        <div class="form-text small">AI parses your prompt and automatically synchronizes with the structured controls below.</div>
+                                    </div>
+
+                                    <div class="accordion mb-4" id="assistantAccordion">
+
+                                        <!-- Group 1: Content Requirements -->
+                                        <div class="accordion-item border rounded-3 mb-2">
+                                            <h2 class="accordion-header">
+                                                <button class="accordion-button fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseContent">
+                                                    <i class="fas fa-file-pen text-primary me-2"></i> 1. Blog Content Requirements
+                                                </button>
+                                            </h2>
+                                            <div id="collapseContent" class="accordion-collapse collapse show">
+                                                <div class="accordion-body">
+                                                    <div class="row g-3">
+                                                        <div class="col-md-6">
+                                                            <label class="form-label small fw-semibold">Blog Title / Topic Focus</label>
+                                                            <input type="text" name="title" class="form-control" placeholder="e.g. Real Estate Investment in Pune">
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <label class="form-label small fw-semibold">Category</label>
+                                                            <select name="category" class="form-select">
+                                                                <option value="Real Estate">Real Estate</option>
+                                                                <option value="Property Trends">Property Trends</option>
+                                                                <option value="Career & Employment">Career &amp; Employment</option>
+                                                                <option value="Technology">Technology</option>
+                                                                <option value="Finance & Investment">Finance &amp; Investment</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small fw-semibold">Target Audience</label>
+                                                            <input type="text" name="targetAudience" value="Property Buyers & Investors" class="form-control">
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small fw-semibold">Language</label>
+                                                            <select name="language" class="form-select">
+                                                                <option value="English">English</option>
+                                                                <option value="Hindi">Hindi</option>
+                                                                <option value="Marathi">Marathi</option>
+                                                                <option value="Spanish">Spanish</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small fw-semibold">Location / Target Country</label>
+                                                            <input type="text" name="location" value="Pune, India" class="form-control">
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <label class="form-label small fw-semibold">Focus Keywords (comma-separated)</label>
+                                                            <input type="text" name="focusKeywords" placeholder="e.g. Pune Property Investment, RERA Projects, Rental Yields" class="form-control">
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <label class="form-label small fw-semibold">Other Topics to Focus On</label>
+                                                            <input type="text" name="otherTopics" placeholder="e.g. Metro rail connectivity, IT SEZ growth corridors" class="form-control">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Group 2: Media Permissions -->
+                                        <div class="accordion-item border rounded-3 mb-2">
+                                            <h2 class="accordion-header">
+                                                <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMedia">
+                                                    <i class="fas fa-photo-film text-info me-2"></i> 2. Blog Media Permissions
+                                                </button>
+                                            </h2>
+                                            <div id="collapseMedia" class="accordion-collapse collapse">
+                                                <div class="accordion-body">
+                                                    <div class="row g-3">
+                                                        <div class="col-md-6">
+                                                            <div class="p-3 bg-light rounded-3 d-flex justify-content-between align-items-center">
+                                                                <div>
+                                                                    <div class="fw-semibold">Allow Blog Images</div>
+                                                                    <div class="small text-muted">Include high-resolution featured images</div>
+                                                                </div>
+                                                                <div class="form-check form-switch m-0">
+                                                                    <input class="form-check-input switch-custom" type="checkbox" name="allowImages" checked>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <div class="p-3 bg-light rounded-3 d-flex justify-content-between align-items-center">
+                                                                <div>
+                                                                    <div class="fw-semibold">Allow Blog Videos</div>
+                                                                    <div class="small text-muted">Include video walkthroughs or embeds</div>
+                                                                </div>
+                                                                <div class="form-check form-switch m-0">
+                                                                    <input class="form-check-input switch-custom" type="checkbox" name="allowVideos" checked>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <div class="p-3 bg-light rounded-3 d-flex justify-content-between align-items-center">
+                                                                <div>
+                                                                    <div class="fw-semibold">Allow AI to Generate Featured Images</div>
+                                                                    <div class="small text-muted">Generate contextually matched visuals</div>
+                                                                </div>
+                                                                <div class="form-check form-switch m-0">
+                                                                    <input class="form-check-input switch-custom" type="checkbox" name="allowAiImages" checked>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <div class="p-3 bg-light rounded-3 d-flex justify-content-between align-items-center">
+                                                                <div>
+                                                                    <div class="fw-semibold">Allow Relevant Video Embedding</div>
+                                                                    <div class="small text-muted">Embed YouTube or MP4 analysis clips</div>
+                                                                </div>
+                                                                <div class="form-check form-switch m-0">
+                                                                    <input class="form-check-input switch-custom" type="checkbox" name="allowVideoEmbed" checked>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Group 3: SEO Requirements -->
+                                        <div class="accordion-item border rounded-3 mb-2">
+                                            <h2 class="accordion-header">
+                                                <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSeo">
+                                                    <i class="fas fa-magnifying-glass-chart text-success me-2"></i> 3. SEO &amp; Website Promotion Requirements
+                                                </button>
+                                            </h2>
+                                            <div id="collapseSeo" class="accordion-collapse collapse">
+                                                <div class="accordion-body">
+                                                    <div class="row g-3">
+                                                        <div class="col-md-6">
+                                                            <label class="form-label small fw-semibold">Blog Target / Main Objective</label>
+                                                            <input type="text" name="blogTarget" value="Organic Traffic & Search Visibility" class="form-control">
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <label class="form-label small fw-semibold">Blog Backlink (Destination URL)</label>
+                                                            <input type="url" name="backlinkUrl" placeholder="https://mywebsite.com or /search?q=pune" class="form-control">
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <label class="form-label small fw-semibold">Website Focus to Promote</label>
+                                                            <input type="text" name="websiteFocus" placeholder="e.g. SmartSearch Real Estate Portal" class="form-control">
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <label class="form-label small fw-semibold">Website Ranking Focus</label>
+                                                            <input type="text" name="websiteRankingFocus" placeholder="e.g. Google India & Bing SERPs" class="form-control">
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <label class="form-label small fw-semibold">Target Search Engines</label>
+                                                            <input type="text" name="targetEngines" value="Google, Bing, Yahoo, DuckDuckGo, Brave" class="form-control">
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <label class="form-label small fw-semibold">Additional SEO Instructions</label>
+                                                            <input type="text" name="seoInstructions" placeholder="e.g. Maintain keyword density under 2.5%, insert H2 questions" class="form-control">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Group 4: Multiple Blog Generation Instructions -->
+                                        <div class="accordion-item border rounded-3">
+                                            <h2 class="accordion-header">
+                                                <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSchedule">
+                                                    <i class="fas fa-calendar-days text-warning me-2"></i> 4. Multiple Blog Generation &amp; 10-Day Campaigns
+                                                </button>
+                                            </h2>
+                                            <div id="collapseSchedule" class="accordion-collapse collapse">
+                                                <div class="accordion-body">
+                                                    <div class="p-3 bg-light rounded-3 mb-3">
+                                                        <label class="fw-bold mb-2 d-block">
+                                                            Would you like AI to write 5–10 blogs daily on the same purpose/topic for the next 10 days?
+                                                        </label>
+                                                        <div class="d-flex gap-4">
+                                                            <div class="form-check">
+                                                                <input class="form-check-input" type="radio" name="isRecurringSchedule" id="recScheduleYes" value="true" onchange="toggleScheduleOptions(true)">
+                                                                <label class="form-check-label fw-bold text-primary" for="recScheduleYes">
+                                                                    YES (Create 10-Day Content Calendar)
+                                                                </label>
+                                                            </div>
+                                                            <div class="form-check">
+                                                                <input class="form-check-input" type="radio" name="isRecurringSchedule" id="recScheduleNo" value="false" checked onchange="toggleScheduleOptions(false)">
+                                                                <label class="form-check-label" for="recScheduleNo">
+                                                                    NO (Generate immediate individual blogs)
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Conditional 10-Day Options -->
+                                                    <div id="scheduleConfigBox" style="display: none;" class="p-3 border rounded-3 bg-white">
+                                                        <label class="form-label small fw-bold">Select Daily Volume for Next 10 Days:</label>
+                                                        <div class="d-flex gap-3 mb-2">
+                                                            <div class="form-check">
+                                                                <input class="form-check-input" type="radio" name="blogsPerDay" id="bpd5" value="5" checked>
+                                                                <label class="form-check-label fw-semibold" for="bpd5">
+                                                                    5 Blogs Daily (Total 50 Unique Blogs across 10 progressive intents)
+                                                                </label>
+                                                            </div>
+                                                            <div class="form-check">
+                                                                <input class="form-check-input" type="radio" name="blogsPerDay" id="bpd10" value="10">
+                                                                <label class="form-check-label fw-semibold" for="bpd10">
+                                                                    10 Blogs Daily (Total 100 Unique Blogs across 10 progressive intents)
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="small text-muted">
+                                                            <i class="fas fa-info-circle me-1 text-primary"></i>
+                                                            Every day has an original search intent, unique headings, and zero keyword cannibalization. Administrator approval is required before recurring generation commences.
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    </div>
+
+                                    <div class="text-end">
+                                        <button type="submit" class="btn btn-assistant-glow btn-lg rounded-pill px-5">
+                                            <i class="fas fa-wand-magic-sparkles me-2"></i> Execute AI Assistant Command
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Section B: 10-Day Content Campaign Calendar (If Schedules Exist) -->
+                        <div class="card border rounded-4 shadow-sm mb-4" th:if="${#lists.size(allSchedules) > 0}">
+                            <div class="card-header bg-light-subtle py-3 d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="fw-bold mb-0"><i class="fas fa-calendar-check text-success me-2"></i> 10-Day Campaign Content Calendar</h6>
+                                    <div class="small text-muted">Review unique planned titles, search intents, and lifecycle status across the 10-day roadmap.</div>
+                                </div>
+                                <div class="d-flex gap-2" th:if="${#lists.size(assistantCommands) > 0}">
+                                    <form th:action="@{/admin/blog-seo/assistant/schedule/{id}/approve(id=${assistantCommands[0].id})}" method="post" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-success rounded-pill px-3" title="Approve Campaign Schedule">
+                                            <i class="fas fa-check me-1"></i> Approve Schedule
+                                        </button>
+                                    </form>
+                                    <form th:action="@{/admin/blog-seo/assistant/schedule/{id}/pause(id=${assistantCommands[0].id})}" method="post" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-outline-warning rounded-pill px-3">
+                                            <i class="fas fa-pause me-1"></i> Pause
+                                        </button>
+                                    </form>
+                                    <form th:action="@{/admin/blog-seo/assistant/schedule/{id}/cancel(id=${assistantCommands[0].id})}" method="post" class="d-inline" onsubmit="return confirm('Cancel this 10-day content calendar?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">
+                                            <i class="fas fa-stop me-1"></i> Cancel
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive" style="max-height: 380px;">
+                                    <table class="table table-hover align-middle mb-0 small">
+                                        <thead class="table-light sticky-top">
+                                            <tr>
+                                                <th>Day</th>
+                                                <th>Scheduled Date</th>
+                                                <th>Planned Blog Title</th>
+                                                <th>Daily Search Intent Focus</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr th:each="s : ${allSchedules}">
+                                                <td><span class="badge bg-primary rounded-pill px-2" th:text="'Day ' + ${s.dayNumber}">Day 1</span></td>
+                                                <td class="fw-semibold" th:text="${#temporals.format(s.scheduledDate, 'dd-MMM-yyyy')}">Date</td>
+                                                <td class="fw-semibold text-truncate" style="max-width: 320px;" th:text="${s.plannedTitle}">Title</td>
+                                                <td><span class="badge bg-light text-dark border" th:text="${s.targetIntent}">Intent</span></td>
+                                                <td>
+                                                    <span class="badge rounded-pill"
+                                                          th:classappend="${'APPROVED'.equals(s.status) ? 'bg-success' : ('SCHEDULED'.equals(s.status) ? 'bg-info text-dark' : 'bg-secondary')}"
+                                                          th:text="${s.status}">SCHEDULED</span>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section C: AI Blog Review & Approval System -->
+                        <div class="card border rounded-4 shadow-sm mb-4">
+                            <div class="card-header bg-light-subtle py-3 d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="fw-bold mb-0"><i class="fas fa-clipboard-check text-primary me-2"></i> Section C: AI Blog Review &amp; Approval System</h6>
+                                    <div class="small text-muted">Review, edit, regenerate, and approve AI-generated blogs before publishing.</div>
+                                </div>
+                                <span class="badge bg-primary rounded-pill px-3 py-2">
+                                    <span th:text="${aiGeneratedBlogs}">0</span> AI Articles
+                                </span>
+                            </div>
+                            <div class="card-body p-4">
+                                <div class="row g-4">
+                                    <div class="col-lg-6" th:each="b : ${blogs}" th:if="${b.isAiGenerated}">
+                                        <div class="card h-100 border rounded-4 shadow-sm p-3 ai-card-glow">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <span class="badge bg-primary-subtle text-primary fw-bold" th:text="${b.category}">Category</span>
+                                                <span class="seo-score-badge"
+                                                      th:classappend="${b.seoScore >= 80 ? 'seo-score-high' : 'seo-score-medium'}"
+                                                      th:text="'SEO: ' + ${b.seoScore} + '/100'">SEO: 92/100</span>
+                                            </div>
+
+                                            <h6 class="fw-bold mb-1 text-truncate" th:text="${b.title}">Title</h6>
+                                            <p class="small text-muted mb-2 text-truncate" th:text="${b.summary}">Summary</p>
+
+                                            <div class="small mb-3 p-2 bg-white rounded-3 border">
+                                                <div><strong>Target Website:</strong> <span class="text-primary" th:text="${b.targetWebsite != null ? b.targetWebsite : 'SmartSearch Portal'}">Site</span></div>
+                                                <div><strong>Focus Keyword:</strong> <span class="badge bg-light text-dark border" th:text="${b.primaryKeyword}">Keyword</span></div>
+                                                <div><strong>Status:</strong>
+                                                    <span class="badge rounded-pill"
+                                                          th:classappend="${'PUBLISHED'.equals(b.status) ? 'bg-success' : 'bg-warning text-dark'}"
+                                                          th:text="${b.status}">DRAFT</span>
+                                                </div>
+                                            </div>
+
+                                            <div class="mt-auto d-flex flex-wrap gap-1">
+                                                <a th:href="@{/blogs/{slug}(slug=${b.slug})}" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                                                    <i class="fas fa-eye me-1"></i> Preview
+                                                </a>
+                                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" th:onclick="'loadBlogForEdit(' + ${b.id} + ')'">
+                                                    <i class="fas fa-pen me-1"></i> Edit
+                                                </button>
+                                                <form th:action="@{/admin/blog-seo/assistant/blogs/{id}/regenerate(id=${b.id})}" method="post" class="d-inline">
+                                                    <button type="submit" class="btn btn-sm btn-outline-info rounded-pill px-2" title="Regenerate with fresh angles">
+                                                        <i class="fas fa-rotate me-1"></i> Regenerate
+                                                    </button>
+                                                </form>
+                                                <form th:if="${!'PUBLISHED'.equals(b.status)}" th:action="@{/admin/blog-seo/assistant/blogs/{id}/approve(id=${b.id})}" method="post" class="d-inline">
+                                                    <button type="submit" class="btn btn-sm btn-success rounded-pill px-3" title="Approve &amp; Publish">
+                                                        <i class="fas fa-check me-1"></i> Approve
+                                                    </button>
+                                                </form>
+                                                <form th:if="${!'UNPUBLISHED'.equals(b.status)}" th:action="@{/admin/blog-seo/assistant/blogs/{id}/reject(id=${b.id})}" method="post" class="d-inline">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2" title="Reject Blog">
+                                                        <i class="fas fa-xmark"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 text-center py-4 text-muted" th:if="${aiGeneratedBlogs == 0}">
+                                        <i class="fas fa-robot fa-3x mb-2 opacity-25"></i>
+                                        <p>No AI-generated blogs awaiting review. Run a command above to produce articles!</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section D: AI SEO Strategy & Website Ranking Focus -->
+                        <div class="card border rounded-4 shadow-sm mb-4">
+                            <div class="card-header bg-light-subtle py-3">
+                                <h6 class="fw-bold mb-0"><i class="fas fa-chart-line text-success me-2"></i> Section D: AI SEO Strategy &amp; Website Ranking Focus</h6>
+                                <div class="small text-muted">Data-driven analysis of your target website, content gap detection, and backlink recommendations.</div>
+                            </div>
+                            <div class="card-body p-4">
+                                <div class="row g-4">
+                                    <div class="col-md-6">
+                                        <h6 class="fw-bold text-danger"><i class="fas fa-triangle-exclamation me-1"></i> Content Gaps Identified</h6>
+                                        <ul class="list-group list-group-flush small">
+                                            <li class="list-group-item px-0" th:each="gap : ${assistantStrategy.contentGaps}">
+                                                <i class="fas fa-circle-arrow-right text-danger me-2"></i>
+                                                <span th:text="${gap}">Gap description</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <h6 class="fw-bold text-success"><i class="fas fa-bullseye me-1"></i> High-Potential Search Keywords</h6>
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-hover small">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Keyword</th>
+                                                        <th>Intent</th>
+                                                        <th>Potential Lift</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr th:each="kw : ${assistantStrategy.targetKeywords}">
+                                                        <td class="fw-semibold text-primary" th:text="${kw.keyword}">Keyword</td>
+                                                        <td><span class="badge bg-light text-dark border" th:text="${kw.intent}">Intent</span></td>
+                                                        <td class="fw-bold text-success" th:text="${kw.potentialLift}">+28% CTR</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12 border-top pt-3">
+                                        <h6 class="fw-bold text-primary"><i class="fas fa-link me-1"></i> Recommended Backlink &amp; Syndication Strategy</h6>
+                                        <ul class="small mb-2 text-muted">
+                                            <li th:each="bstr : ${assistantStrategy.backlinkStrategies}" th:text="${bstr}">Strategy</li>
+                                        </ul>
+                                        <div class="p-3 bg-light rounded-3 small text-muted">
+                                            <i class="fas fa-shield-halved text-primary me-1"></i>
+                                            <strong>Algorithmic Rationale:</strong>
+                                            <span th:text="${assistantStrategy.recommendationRationale}">Rationale</span>
+                                            <div class="mt-1 fst-italic text-secondary" style="font-size: 0.75rem;">
+                                                * Note: Google rankings and search visibility depend on search engine crawler evaluation. Specific search rankings cannot be artificially guaranteed.
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section F: Assistant Command History & Monitoring Table -->
+                        <div class="card border rounded-4 shadow-sm">
+                            <div class="card-header bg-light-subtle py-3 d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="fw-bold mb-0"><i class="fas fa-clock-rotate-left text-primary me-2"></i> Section F: Assistant Command History &amp; Monitoring</h6>
+                                    <div class="small text-muted">Audit trail of all administrator instructions, generated blog counts, and execution states.</div>
+                                </div>
+                                <span class="badge bg-secondary-subtle text-secondary" th:text="${#lists.size(assistantCommands)} + ' Commands'">0</span>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0 small">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>SN</th>
+                                                <th>Admin Command</th>
+                                                <th>Submitted At</th>
+                                                <th>Requested</th>
+                                                <th>Generated</th>
+                                                <th>Approved</th>
+                                                <th>Status</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr th:each="c, iter : ${assistantCommands}">
+                                                <td class="fw-bold text-muted" th:text="${iter.count}">1</td>
+                                                <td>
+                                                    <div class="fw-semibold text-truncate" style="max-width: 280px;" th:text="${c.commandText}">Command</div>
+                                                    <div class="small text-muted">
+                                                        <span class="badge bg-light text-dark border me-1" th:text="${c.category}">Category</span>
+                                                        <span th:if="${c.isRecurringSchedule}" class="badge bg-warning text-dark"><i class="fas fa-calendar-days me-1"></i>10-Day Plan</span>
+                                                    </div>
+                                                </td>
+                                                <td th:text="${#temporals.format(c.createdAt, 'dd-MMM-yyyy HH:mm')}">Date</td>
+                                                <td class="fw-bold text-primary" th:text="${c.blogsRequested}">1</td>
+                                                <td class="fw-bold text-success" th:text="${c.blogsGenerated}">1</td>
+                                                <td class="fw-bold text-info" th:text="${c.blogsApproved}">0</td>
+                                                <td>
+                                                    <span class="badge rounded-pill"
+                                                          th:classappend="${'COMPLETED'.equals(c.status) ? 'bg-success' : ('IN_PROGRESS'.equals(c.status) ? 'bg-warning text-dark' : 'bg-secondary')}"
+                                                          th:text="${c.status}">STATUS</span>
+                                                </td>
+                                                <td>
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill"
+                                                            th:onclick="'reuseCommand(' + ${c.id} + ')'" title="Reuse this command">
+                                                        <i class="fas fa-recycle me-1"></i> Reuse
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            <tr th:if="${#lists.isEmpty(assistantCommands)}">
+                                                <td colspan="8" class="text-center text-muted py-4">No assistant commands recorded yet.</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
                     <!-- ================= TAB 1: SEO DASHBOARD ================= -->
-                    <div th:if="${activeTab == 'dashboard' or activeTab == null}">
+                    <div th:if="${activeTab == 'dashboard'}">
                         <div class="row g-4">
                             <!-- Left: Top Performing Blogs -->
                             <div class="col-lg-7">
@@ -341,12 +870,12 @@
                                     <div class="d-flex align-items-start gap-3">
                                         <i class="fas fa-wand-magic-sparkles fs-3 text-primary mt-1"></i>
                                         <div>
-                                            <h6 class="fw-bold mb-1">AI SEO Engine Active</h6>
+                                            <h6 class="fw-bold mb-1">AI Assistant &amp; SEO Engine Active</h6>
                                             <p class="small mb-2 text-secondary">
                                                 All published and edited blogs automatically undergo NLP title synthesis, meta description optimization, and Schema.org Article generation.
                                             </p>
-                                            <a th:href="@{/admin/blog-seo(tab='recommendations')}" class="btn btn-primary btn-sm rounded-pill px-3">
-                                                Review Pending Recommendations (<span th:text="${#lists.size(pendingRecommendations)}">0</span>)
+                                            <a th:href="@{/admin/blog-seo(tab='assistant')}" class="btn btn-primary btn-sm rounded-pill px-3">
+                                                Open AI Assistant
                                             </a>
                                         </div>
                                     </div>
@@ -355,16 +884,16 @@
                         </div>
                     </div>
 
-                    <!-- ================= TAB 2: BLOG POSTS MASTER ================= -->
+                    <!-- ================= TAB 2: BLOG POSTS MASTER (TASK ONE) ================= -->
                     <div th:if="${activeTab == 'posts'}">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h6 class="fw-bold mb-0">Master Blog Post Index (<span th:text="${#lists.size(blogs)}">0</span>)</h6>
                             <div class="d-flex gap-2">
-                                <button class="btn btn-outline-primary btn-sm rounded-pill" data-bs-toggle="modal" data-bs-target="#newBlogModal">
+                                <a th:href="@{/admin/blog-seo(tab='assistant')}" class="btn btn-assistant-glow btn-sm rounded-pill px-3">
+                                    <i class="fas fa-wand-magic-sparkles me-1"></i> Assistant
+                                </a>
+                                <button class="btn btn-primary btn-sm rounded-pill" data-bs-toggle="modal" data-bs-target="#newBlogModal">
                                     <i class="fas fa-plus me-1"></i> Create Blog Post
-                                </button>
-                                <button class="btn btn-primary btn-sm rounded-pill" data-bs-toggle="modal" data-bs-target="#aiBlogModal">
-                                    <i class="fas fa-robot me-1"></i> Generate with AI
                                 </button>
                             </div>
                         </div>
@@ -376,17 +905,18 @@
                                         <th>SN</th>
                                         <th>Title &amp; Category</th>
                                         <th>Author &amp; Role</th>
+                                        <th>Target Audience</th>
                                         <th>Validity / Expiry</th>
                                         <th>SEO Score</th>
                                         <th>Status</th>
-                                        <th>Actions</th>
+                                        <th>Admin Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr th:each="b, iter : ${blogs}">
                                         <td class="fw-bold text-muted" th:text="${iter.count}">1</td>
                                         <td>
-                                            <div class="fw-semibold text-truncate" style="max-width: 280px;" th:text="${b.title}">Title</div>
+                                            <div class="fw-semibold text-truncate" style="max-width: 240px;" th:text="${b.title}">Title</div>
                                             <div class="small text-muted">
                                                 <span class="badge bg-light text-dark border me-1" th:text="${b.category}">Real Estate</span>
                                                 <span th:if="${b.isAiGenerated}" class="badge bg-info-subtle text-info"><i class="fas fa-robot me-1"></i>AI</span>
@@ -396,6 +926,7 @@
                                             <div class="small fw-semibold" th:text="${b.authorName != null ? b.authorName : 'Editorial'}">Author</div>
                                             <span class="badge bg-secondary-subtle text-secondary small" th:text="${b.authorRole}">ADMIN</span>
                                         </td>
+                                        <td class="small text-muted" th:text="${b.targetAudience != null ? b.targetAudience : 'All Readers'}">Audience</td>
                                         <td>
                                             <div th:if="${b.expiresAt != null}">
                                                 <div class="small fw-bold" th:classappend="${b.isExpired() ? 'text-danger' : 'text-success'}"
@@ -418,9 +949,20 @@
                                         </td>
                                         <td>
                                             <div class="btn-group btn-group-sm">
+                                                <!-- View Public Post -->
                                                 <a th:href="@{/blogs/{slug}(slug=${b.slug})}" target="_blank" class="btn btn-outline-secondary" title="View Public Post">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
+
+                                                <!-- Task One Requirement 1: Complete Admin Edit Button for EVERY blog -->
+                                                <button type="button" class="btn btn-outline-primary" th:onclick="'loadBlogForEdit(' + ${b.id} + ')'" title="Admin Edit Blog (Full Permissions)">
+                                                    <i class="fas fa-pen-to-square"></i>
+                                                </button>
+
+                                                <!-- Task One Requirement 9: View Edit History / Audit Trail -->
+                                                <button type="button" class="btn btn-outline-dark" th:onclick="'loadBlogHistory(' + ${b.id} + ')'" title="View Edit Audit Trail">
+                                                    <i class="fas fa-history"></i>
+                                                </button>
 
                                                 <!-- Approve button for pending or draft -->
                                                 <form th:if="${!'PUBLISHED'.equals(b.status) or b.isExpired()}" th:action="@{/admin/blog-seo/posts/{id}/approve(id=${b.id})}" method="post" class="d-inline">
@@ -433,13 +975,6 @@
                                                 <form th:if="${'PUBLISHED'.equals(b.status) and !b.isExpired()}" th:action="@{/admin/blog-seo/posts/{id}/unpublish(id=${b.id})}" method="post" class="d-inline">
                                                     <button type="submit" class="btn btn-outline-warning" title="Unpublish">
                                                         <i class="fas fa-eye-slash"></i>
-                                                    </button>
-                                                </form>
-
-                                                <!-- Renew / Extend button -->
-                                                <form th:action="@{/admin/blog-seo/posts/{id}/renew(id=${b.id})}" method="post" class="d-inline">
-                                                    <button type="submit" class="btn btn-outline-info" title="Renew Validity (+Default Days)">
-                                                        <i class="fas fa-rotate"></i>
                                                     </button>
                                                 </form>
 
@@ -486,7 +1021,6 @@
                                             <input type="hidden" name="autoSeoMonitoring" th:value="${permissions.autoSeoMonitoring}" />
 
                                             <div class="list-group list-group-flush">
-                                                <!-- Switch 1 -->
                                                 <div class="list-group-item d-flex justify-content-between align-items-center py-3">
                                                     <div>
                                                         <div class="fw-semibold">1. Allow All Registered Users to Create Blogs</div>
@@ -497,7 +1031,6 @@
                                                     </div>
                                                 </div>
 
-                                                <!-- Switch 2 -->
                                                 <div class="list-group-item d-flex justify-content-between align-items-center py-3">
                                                     <div>
                                                         <div class="fw-semibold">2. Allow Real Estate Agents to Create Blogs</div>
@@ -508,7 +1041,6 @@
                                                     </div>
                                                 </div>
 
-                                                <!-- Switch 3 -->
                                                 <div class="list-group-item d-flex justify-content-between align-items-center py-3">
                                                     <div>
                                                         <div class="fw-semibold">3. Allow Property Owners to Create Blogs</div>
@@ -519,7 +1051,6 @@
                                                     </div>
                                                 </div>
 
-                                                <!-- Switch 4 -->
                                                 <div class="list-group-item d-flex justify-content-between align-items-center py-3">
                                                     <div>
                                                         <div class="fw-semibold">4. Allow Administrators to Create Blogs</div>
@@ -530,7 +1061,6 @@
                                                     </div>
                                                 </div>
 
-                                                <!-- Switch 5 -->
                                                 <div class="list-group-item d-flex justify-content-between align-items-center py-3">
                                                     <div>
                                                         <div class="fw-semibold">5. Allow AI to Generate New Blogs Automatically</div>
@@ -541,7 +1071,6 @@
                                                     </div>
                                                 </div>
 
-                                                <!-- Switch 6 -->
                                                 <div class="list-group-item d-flex justify-content-between align-items-center py-3">
                                                     <div>
                                                         <div class="fw-semibold">6. Allow AI-Generated Blogs to Publish Automatically</div>
@@ -552,7 +1081,6 @@
                                                     </div>
                                                 </div>
 
-                                                <!-- Switch 7 -->
                                                 <div class="list-group-item d-flex justify-content-between align-items-center py-3">
                                                     <div>
                                                         <div class="fw-semibold">7. Require Administrator Approval for User Submissions</div>
@@ -579,7 +1107,6 @@
                     <!-- ================= TAB 4: USER-WISE LIMITS (SECTION C) ================= -->
                     <div th:if="${activeTab == 'limits'}">
                         <div class="row g-4">
-                            <!-- Category Limits Table -->
                             <div class="col-lg-7">
                                 <div class="card border rounded-4 shadow-sm">
                                     <div class="card-header bg-light-subtle py-3">
@@ -626,7 +1153,6 @@
                                 </div>
                             </div>
 
-                            <!-- Custom User Limits & Form -->
                             <div class="col-lg-5">
                                 <div class="card border rounded-4 shadow-sm mb-4">
                                     <div class="card-header bg-light-subtle py-3">
@@ -659,7 +1185,6 @@
                                     </div>
                                 </div>
 
-                                <!-- Existing Custom Limits List -->
                                 <div class="card border rounded-4 shadow-sm" th:if="${#lists.size(customLimits) > 0}">
                                     <div class="card-header bg-light-subtle py-2">
                                         <span class="small fw-bold">Active Custom Overrides</span>
@@ -691,7 +1216,6 @@
                                     </div>
                                     <div class="card-body p-4">
                                         <form th:action="@{/admin/blog-seo/permissions}" method="post">
-                                            <!-- Retain permissions and SEO settings -->
                                             <input type="hidden" name="allowAllUsersCreate" th:value="${permissions.allowAllUsersCreate}" />
                                             <input type="hidden" name="allowAgentsCreate" th:value="${permissions.allowAgentsCreate}" />
                                             <input type="hidden" name="allowPropertyOwnersCreate" th:value="${permissions.allowPropertyOwnersCreate}" />
@@ -763,7 +1287,6 @@
                                 </div>
                             </div>
 
-                            <!-- Manual Validity Extension Tool -->
                             <div class="col-lg-6">
                                 <div class="card border rounded-4 shadow-sm">
                                     <div class="card-header bg-light-subtle py-3">
@@ -862,20 +1385,15 @@
                                         </td>
                                         <td>
                                             <div class="d-flex align-items-center gap-1">
-                                                <!-- Ask AI Details Button -->
                                                 <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-2"
                                                         th:onclick="'loadAiDetails(' + ${r.id} + ')'" title="Ask AI for Details">
                                                     <i class="fas fa-circle-question"></i> AI Details
                                                 </button>
-
-                                                <!-- Approve Form -->
                                                 <form th:if="${'PENDING'.equals(r.approvalStatus)}" th:action="@{/admin/blog-seo/recommendations/{id}/approve(id=${r.id})}" method="post" class="d-inline">
                                                     <button type="submit" class="btn btn-sm btn-success rounded-pill px-2" title="Approve">
                                                         <i class="fas fa-check"></i>
                                                     </button>
                                                 </form>
-
-                                                <!-- Reject Form -->
                                                 <form th:if="${'PENDING'.equals(r.approvalStatus)}" th:action="@{/admin/blog-seo/recommendations/{id}/reject(id=${r.id})}" method="post" class="d-inline">
                                                     <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2" title="Reject">
                                                         <i class="fas fa-xmark"></i>
@@ -903,7 +1421,6 @@
                                     </div>
                                     <div class="card-body p-4">
                                         <form th:action="@{/admin/blog-seo/permissions}" method="post">
-                                            <!-- Retain base permissions -->
                                             <input type="hidden" name="allowAllUsersCreate" th:value="${permissions.allowAllUsersCreate}" />
                                             <input type="hidden" name="allowAgentsCreate" th:value="${permissions.allowAgentsCreate}" />
                                             <input type="hidden" name="allowPropertyOwnersCreate" th:value="${permissions.allowPropertyOwnersCreate}" />
@@ -1037,7 +1554,222 @@
     </div>
 </div>
 
-<!-- ================= MODAL: CREATE / EDIT BLOG POST ================= -->
+<!-- ================= TASK ONE: UNIVERSAL ADMIN EDIT BLOG MODAL ================= -->
+<div class="modal fade" id="editBlogModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 rounded-4 shadow">
+            <div class="modal-header border-bottom py-3 bg-light-subtle">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-primary text-white rounded-pill px-3 py-2">
+                        <i class="fas fa-shield-halved me-1"></i> Admin Full Authority Edit
+                    </span>
+                    <h5 class="modal-title fw-bold mb-0">Edit Blog Post #<span id="editBlogIdText"></span></h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form th:action="@{/admin/blog-seo/posts/edit}" method="post">
+                <input type="hidden" name="id" id="editBlogId">
+
+                <div class="modal-body p-4">
+                    <!-- Original Author Details Banner -->
+                    <div class="p-3 bg-light rounded-3 mb-4 d-flex justify-content-between align-items-center small">
+                        <div>
+                            <span class="text-muted">Original Author:</span>
+                            <strong id="editAuthorName" class="text-dark"></strong>
+                            (<span id="editAuthorRole" class="badge bg-secondary-subtle text-secondary"></span>)
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span>SEO Score:</span>
+                            <span id="editSeoScoreBadge" class="seo-score-badge seo-score-high"></span>
+                        </div>
+                    </div>
+
+                    <!-- 1. Title & Slug -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold">Blog Title <span class="text-danger">*</span></label>
+                            <input type="text" name="title" id="editTitle" class="form-control" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">URL Slug</label>
+                            <input type="text" name="slug" id="editSlug" class="form-control">
+                        </div>
+                    </div>
+
+                    <!-- 2. Category, Target Audience & Location -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Category <span class="text-danger">*</span></label>
+                            <select name="category" id="editCategory" class="form-select" required>
+                                <option value="Real Estate">Real Estate</option>
+                                <option value="Property Trends">Property Trends</option>
+                                <option value="Career & Employment">Career &amp; Employment</option>
+                                <option value="Technology">Technology</option>
+                                <option value="Search Insights">Search Insights</option>
+                                <option value="Finance & Investment">Finance &amp; Investment</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Target Audience</label>
+                            <input type="text" name="targetAudience" id="editTargetAudience" class="form-control" placeholder="e.g. Property Buyers & Investors">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Target Location</label>
+                            <input type="text" name="targetLocation" id="editTargetLocation" class="form-control" placeholder="e.g. Pune, India">
+                        </div>
+                    </div>
+
+                    <!-- 3. Summary & Full Content -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Executive Summary / Excerpt</label>
+                        <textarea name="summary" id="editSummary" rows="2" class="form-control"></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Blog Description &amp; Content (HTML supported) <span class="text-danger">*</span></label>
+                        <textarea name="content" id="editContent" rows="8" class="form-control font-monospace" required></textarea>
+                    </div>
+
+                    <!-- 4. Media: Images & Videos -->
+                    <div class="card border rounded-3 p-3 mb-3 bg-light-subtle">
+                        <h6 class="fw-bold mb-3"><i class="fas fa-photo-film text-primary me-2"></i> Media: Images &amp; Videos</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Cover Image URL</label>
+                                <input type="url" name="coverImageUrl" id="editCoverImageUrl" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Cover Image Alt Text</label>
+                                <input type="text" name="coverImageAlt" id="editCoverImageAlt" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Video URL</label>
+                                <input type="url" name="videoUrl" id="editVideoUrl" class="form-control form-control-sm" placeholder="https://youtube.com/watch?v=...">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Video Embed Code (iframe)</label>
+                                <input type="text" name="videoEmbedCode" id="editVideoEmbedCode" class="form-control form-control-sm font-monospace" placeholder="<iframe ...></iframe>">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 5. SEO Meta Tags & Keywords -->
+                    <div class="card border rounded-3 p-3 mb-3 bg-light-subtle">
+                        <h6 class="fw-bold mb-3"><i class="fas fa-magnifying-glass-chart text-success me-2"></i> SEO Meta Tags &amp; Backlinks</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">SEO Meta Title (50-60 characters)</label>
+                                <input type="text" name="metaTitle" id="editMetaTitle" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">SEO Meta Description (120-160 characters)</label>
+                                <input type="text" name="metaDescription" id="editMetaDescription" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Primary Focus Keyword</label>
+                                <input type="text" name="primaryKeyword" id="editPrimaryKeyword" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Secondary Keywords</label>
+                                <input type="text" name="secondaryKeywords" id="editSecondaryKeywords" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Backlink Destination URL</label>
+                                <input type="url" name="backlinkUrl" id="editBacklinkUrl" class="form-control form-control-sm" placeholder="https://...">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Target Website Anchor Focus</label>
+                                <input type="text" name="targetWebsite" id="editTargetWebsite" class="form-control form-control-sm" placeholder="e.g. SmartSearch Portal">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 6. Status, Validity & Change Reason -->
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Publishing Status</label>
+                            <select name="status" id="editStatus" class="form-select">
+                                <option value="PUBLISHED">PUBLISHED (Live)</option>
+                                <option value="DRAFT">DRAFT</option>
+                                <option value="PENDING_APPROVAL">PENDING_APPROVAL</option>
+                                <option value="UNPUBLISHED">UNPUBLISHED</option>
+                                <option value="EXPIRED">EXPIRED</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Validity (Days)</label>
+                            <input type="number" name="validityDays" id="editValidityDays" class="form-control" min="1" max="365">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Change Summary / Reason</label>
+                            <input type="text" name="changeSummary" class="form-control" placeholder="e.g. Updated keyword density and meta description">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-top py-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <a id="editPreviewBtn" href="#" target="_blank" class="btn btn-outline-secondary rounded-pill px-3">
+                            <i class="fas fa-arrow-up-right-from-square me-1"></i> Preview Blog
+                        </a>
+                        <button type="button" class="btn btn-outline-dark rounded-pill px-3 ms-2" onclick="showHistoryFromEditModal()">
+                            <i class="fas fa-history me-1"></i> View Edit History
+                        </button>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary rounded-pill px-4 shadow">
+                            <i class="fas fa-save me-1"></i> Save Changes &amp; Run AI SEO
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ================= MODAL: AUDIT TRAIL / EDIT HISTORY ================= -->
+<div class="modal fade" id="blogHistoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 rounded-4 shadow">
+            <div class="modal-header border-bottom py-3">
+                <h5 class="modal-title fw-bold"><i class="fas fa-history text-primary me-2"></i> Blog Edit History &amp; Audit Trail</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div id="historyLoading" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <div class="small text-muted mt-2">Loading audit trail...</div>
+                </div>
+                <div id="historyContent" style="display: none;">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle small mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Edited At</th>
+                                    <th>Admin / Editor</th>
+                                    <th>Summary of Changes</th>
+                                    <th>SEO Score Diff</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="historyEmpty" style="display: none;" class="text-center py-4 text-muted">
+                    <i class="fas fa-file-circle-check fa-3x mb-2 opacity-25"></i>
+                    <p>No previous edits on record. This blog post is in its original revision.</p>
+                </div>
+            </div>
+            <div class="modal-footer border-top py-3">
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================= MODAL: CREATE MANUAL BLOG POST ================= -->
 <div class="modal fade" id="newBlogModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 rounded-4 shadow">
@@ -1117,50 +1849,6 @@
     </div>
 </div>
 
-<!-- ================= MODAL: AI BLOG GENERATOR ================= -->
-<div class="modal fade" id="aiBlogModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 rounded-4 shadow">
-            <div class="modal-header border-bottom py-3">
-                <h5 class="modal-title fw-bold"><i class="fas fa-robot text-primary me-2"></i> AI Blog Generator</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form th:action="@{/admin/blog-seo/generate-ai-blog}" method="post">
-                <div class="modal-body p-4">
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Topic / Core Focus <span class="text-danger">*</span></label>
-                        <input type="text" name="topic" class="form-control" placeholder="e.g. Commercial Office Space Demand in 2026" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Category</label>
-                        <select name="category" class="form-select">
-                            <option value="Real Estate">Real Estate</option>
-                            <option value="Property Trends">Property Trends</option>
-                            <option value="Career & Employment">Career &amp; Employment</option>
-                            <option value="Technology">Technology</option>
-                            <option value="Finance & Investment">Finance &amp; Investment</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Target Keywords (comma-separated)</label>
-                        <input type="text" name="keywords" class="form-control" placeholder="e.g. commercial leases, rental yields, urban offices">
-                    </div>
-                    <div class="p-3 bg-light rounded-3 small text-muted">
-                        <i class="fas fa-info-circle text-primary me-1"></i>
-                        The AI engine will automatically structure headings (H2, H3), optimize meta titles &amp; descriptions (50-60 / 120-160 chars), generate Schema.org JSON-LD, and recommend internal linking.
-                    </div>
-                </div>
-                <div class="modal-footer border-top py-3">
-                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary rounded-pill px-4">
-                        <i class="fas fa-wand-magic-sparkles me-1"></i> Generate Article with AI
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
 <!-- ================= MODAL: ASK AI FOR DETAILS ================= -->
 <div class="modal fade" id="aiDetailsModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -1189,7 +1877,7 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="small fw-bold text-muted">SEO Rational &amp; Algorithmic Reason</label>
+                    <label class="small fw-bold text-muted">SEO Rationale &amp; Algorithmic Reason</label>
                     <div id="modalRecReason" class="p-3 bg-light-subtle border rounded-3 small"></div>
                 </div>
 
@@ -1212,6 +1900,121 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+    let currentEditingBlogId = null;
+
+    function toggleScheduleOptions(isYes) {
+        const box = document.getElementById('scheduleConfigBox');
+        if (box) {
+            box.style.display = isYes ? 'block' : 'none';
+        }
+    }
+
+    function loadBlogForEdit(id) {
+        currentEditingBlogId = id;
+        fetch('/admin/blog-seo/posts/' + id + '/edit')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('editBlogId').value = data.id || '';
+                document.getElementById('editBlogIdText').innerText = data.id || '';
+                document.getElementById('editAuthorName').innerText = data.authorName || 'Editorial';
+                document.getElementById('editAuthorRole').innerText = data.authorRole || 'ADMIN';
+
+                const scoreBadge = document.getElementById('editSeoScoreBadge');
+                scoreBadge.innerText = (data.seoScore || 0) + '/100';
+
+                document.getElementById('editTitle').value = data.title || '';
+                document.getElementById('editSlug').value = data.slug || '';
+                document.getElementById('editCategory').value = data.category || 'Real Estate';
+                document.getElementById('editTargetAudience').value = data.targetAudience || '';
+                document.getElementById('editTargetLocation').value = data.targetLocation || '';
+                document.getElementById('editSummary').value = data.summary || '';
+                document.getElementById('editContent').value = data.content || '';
+                document.getElementById('editCoverImageUrl').value = data.coverImageUrl || '';
+                document.getElementById('editCoverImageAlt').value = data.coverImageAlt || '';
+                document.getElementById('editVideoUrl').value = data.videoUrl || '';
+                document.getElementById('editVideoEmbedCode').value = data.videoEmbedCode || '';
+                document.getElementById('editMetaTitle').value = data.metaTitle || '';
+                document.getElementById('editMetaDescription').value = data.metaDescription || '';
+                document.getElementById('editPrimaryKeyword').value = data.primaryKeyword || '';
+                document.getElementById('editSecondaryKeywords').value = data.secondaryKeywords || '';
+                document.getElementById('editBacklinkUrl').value = data.backlinkUrl || '';
+                document.getElementById('editTargetWebsite').value = data.targetWebsite || '';
+                document.getElementById('editStatus').value = data.status || 'PUBLISHED';
+                document.getElementById('editValidityDays').value = data.validityDays || 90;
+
+                const previewBtn = document.getElementById('editPreviewBtn');
+                if (data.slug) {
+                    previewBtn.href = '/blogs/' + data.slug;
+                    previewBtn.style.display = 'inline-block';
+                } else {
+                    previewBtn.style.display = 'none';
+                }
+
+                const modal = new bootstrap.Modal(document.getElementById('editBlogModal'));
+                modal.show();
+            })
+            .catch(err => {
+                alert('Failed to retrieve blog for editing: ' + err);
+            });
+    }
+
+    function loadBlogHistory(id) {
+        document.getElementById('historyLoading').style.display = 'block';
+        document.getElementById('historyContent').style.display = 'none';
+        document.getElementById('historyEmpty').style.display = 'none';
+
+        const modal = new bootstrap.Modal(document.getElementById('blogHistoryModal'));
+        modal.show();
+
+        fetch('/admin/blog-seo/posts/' + id + '/history')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('historyLoading').style.display = 'none';
+                if (!data || data.length === 0) {
+                    document.getElementById('historyEmpty').style.display = 'block';
+                    return;
+                }
+                const tbody = document.getElementById('historyTableBody');
+                tbody.innerHTML = '';
+                data.forEach(h => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="text-nowrap">${h.editedAt ? h.editedAt.replace('T', ' ').substring(0, 16) : ''}</td>
+                        <td class="fw-semibold text-primary">${h.editorUsername}</td>
+                        <td>${h.changeSummary || 'Details updated'}</td>
+                        <td><span class="badge bg-light text-dark border">${h.previousSeoScore} &rarr; ${h.newSeoScore}</span></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                document.getElementById('historyContent').style.display = 'block';
+            })
+            .catch(err => {
+                document.getElementById('historyLoading').style.display = 'none';
+                alert('Failed to load edit history: ' + err);
+            });
+    }
+
+    function showHistoryFromEditModal() {
+        if (currentEditingBlogId) {
+            loadBlogHistory(currentEditingBlogId);
+        }
+    }
+
+    function reuseCommand(cmdId) {
+        fetch('/admin/blog-seo/assistant/commands/' + cmdId)
+            .then(res => res.json())
+            .then(data => {
+                window.location.href = '/admin/blog-seo?tab=assistant#commandInterfaceSection';
+                setTimeout(() => {
+                    const txt = document.querySelector('textarea[name="commandText"]');
+                    if (txt) {
+                        txt.value = data.commandText || '';
+                        txt.focus();
+                    }
+                }, 400);
+            });
+    }
+
     function loadAiDetails(id) {
         fetch('/admin/blog-seo/recommendations/' + id + '/details')
             .then(res => res.json())

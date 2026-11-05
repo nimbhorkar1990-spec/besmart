@@ -80,6 +80,25 @@ public class BlogPublishingPermission {
     @Column(nullable = false)
     private Boolean autoSeoMonitoring = true;
 
+    // --- Task Two: Section E Assistant Automation & Control Permissions ---
+    @Column(nullable = false)
+    private Boolean allowAiImageGeneration = true;
+
+    @Column(nullable = false)
+    private Boolean allowAiVideoIntegration = true;
+
+    @Column(nullable = false)
+    private Boolean allowAiKeywordResearch = true;
+
+    @Column(nullable = false)
+    private Boolean allowAiInternalLinking = true;
+
+    @Column(nullable = false)
+    private Boolean allowAiBacklinkRecommendations = true;
+
+    @Column(nullable = false)
+    private Boolean allowAiScheduledGeneration = true;
+
     private LocalDateTime updatedAt;
 
     public BlogPublishingPermission() {
@@ -288,6 +307,54 @@ public class BlogPublishingPermission {
         this.autoSeoMonitoring = autoSeoMonitoring;
     }
 
+    public Boolean getAllowAiImageGeneration() {
+        return allowAiImageGeneration;
+    }
+
+    public void setAllowAiImageGeneration(Boolean allowAiImageGeneration) {
+        this.allowAiImageGeneration = allowAiImageGeneration;
+    }
+
+    public Boolean getAllowAiVideoIntegration() {
+        return allowAiVideoIntegration;
+    }
+
+    public void setAllowAiVideoIntegration(Boolean allowAiVideoIntegration) {
+        this.allowAiVideoIntegration = allowAiVideoIntegration;
+    }
+
+    public Boolean getAllowAiKeywordResearch() {
+        return allowAiKeywordResearch;
+    }
+
+    public void setAllowAiKeywordResearch(Boolean allowAiKeywordResearch) {
+        this.allowAiKeywordResearch = allowAiKeywordResearch;
+    }
+
+    public Boolean getAllowAiInternalLinking() {
+        return allowAiInternalLinking;
+    }
+
+    public void setAllowAiInternalLinking(Boolean allowAiInternalLinking) {
+        this.allowAiInternalLinking = allowAiInternalLinking;
+    }
+
+    public Boolean getAllowAiBacklinkRecommendations() {
+        return allowAiBacklinkRecommendations;
+    }
+
+    public void setAllowAiBacklinkRecommendations(Boolean allowAiBacklinkRecommendations) {
+        this.allowAiBacklinkRecommendations = allowAiBacklinkRecommendations;
+    }
+
+    public Boolean getAllowAiScheduledGeneration() {
+        return allowAiScheduledGeneration;
+    }
+
+    public void setAllowAiScheduledGeneration(Boolean allowAiScheduledGeneration) {
+        this.allowAiScheduledGeneration = allowAiScheduledGeneration;
+    }
+
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
     }
@@ -296,3 +363,4 @@ public class BlogPublishingPermission {
         this.updatedAt = updatedAt;
     }
 }
+

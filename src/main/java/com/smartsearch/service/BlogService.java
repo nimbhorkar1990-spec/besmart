@@ -30,6 +30,7 @@ public class BlogService {
     private final UserBlogLimitRepository limitRepository;
     private final UserRepository userRepository;
     private final AdminActivityLogRepository adminLogRepository;
+    private final BlogEditHistoryRepository editHistoryRepository;
     private final AiBlogSeoService aiSeoService;
 
     @Autowired
@@ -38,12 +39,14 @@ public class BlogService {
                        UserBlogLimitRepository limitRepository,
                        UserRepository userRepository,
                        AdminActivityLogRepository adminLogRepository,
+                       BlogEditHistoryRepository editHistoryRepository,
                        @Lazy AiBlogSeoService aiSeoService) {
         this.blogRepository = blogRepository;
         this.permissionRepository = permissionRepository;
         this.limitRepository = limitRepository;
         this.userRepository = userRepository;
         this.adminLogRepository = adminLogRepository;
+        this.editHistoryRepository = editHistoryRepository;
         this.aiSeoService = aiSeoService;
     }
 
@@ -239,12 +242,20 @@ public class BlogService {
     }
 
     public BlogPost updateBlog(BlogPost blog, String editorUsername) {
+        return updateBlog(blog, editorUsername, "Administrator edited blog content & SEO metadata");
+    }
+
+    public BlogPost updateBlog(BlogPost blog, String editorUsername, String changeSummary) {
         BlogPost existing = blogRepository.findById(blog.getId())
                 .orElseThrow(() -> new IllegalArgumentException("Blog post not found with ID: " + blog.getId()));
 
+        String prevTitle = existing.getTitle();
+        String prevContent = existing.getContent();
+        int prevSeoScore = existing.getSeoScore() != null ? existing.getSeoScore() : 0;
+
         existing.setTitle(blog.getTitle());
-        if (blog.getSlug() != null && !blog.getSlug().equals(existing.getSlug())) {
-            existing.setSlug(generateUniqueSlug(blog.getSlug()));
+        if (blog.getSlug() != null && !blog.getSlug().trim().isEmpty() && !blog.getSlug().equals(existing.getSlug())) {
+            existing.setSlug(sanitizeSlug(blog.getSlug()));
         }
         existing.setSummary(blog.getSummary());
         existing.setContent(blog.getContent());
@@ -252,29 +263,71 @@ public class BlogService {
         existing.setTags(blog.getTags());
         existing.setCoverImageUrl(blog.getCoverImageUrl());
         existing.setCoverImageAlt(blog.getCoverImageAlt());
+        existing.setVideoUrl(blog.getVideoUrl());
+        existing.setVideoEmbedCode(blog.getVideoEmbedCode());
+        existing.setTargetAudience(blog.getTargetAudience());
         existing.setMetaTitle(blog.getMetaTitle());
         existing.setMetaDescription(blog.getMetaDescription());
         existing.setPrimaryKeyword(blog.getPrimaryKeyword());
         existing.setSecondaryKeywords(blog.getSecondaryKeywords());
+        existing.setBacklinkUrl(blog.getBacklinkUrl());
+        existing.setTargetWebsite(blog.getTargetWebsite());
+        existing.setLanguage(blog.getLanguage() != null ? blog.getLanguage() : "English");
+        existing.setTargetLocation(blog.getTargetLocation());
         existing.setSchemaMarkup(blog.getSchemaMarkup());
 
+        // Status update
+        if (blog.getStatus() != null && !blog.getStatus().equals(existing.getStatus())) {
+            existing.setStatus(blog.getStatus());
+            if ("PUBLISHED".equalsIgnoreCase(blog.getStatus()) && existing.getPublishedAt() == null) {
+                existing.setPublishedAt(LocalDateTime.now());
+                int days = blog.getValidityDays() != null ? blog.getValidityDays() : getPermissions().getDefaultValidityDays();
+                existing.setExpiresAt(LocalDateTime.now().plusDays(days));
+            }
+        }
+
+        // Validity days update & expiration recalculation
         if (blog.getValidityDays() != null && !blog.getValidityDays().equals(existing.getValidityDays())) {
             existing.setValidityDays(blog.getValidityDays());
             if (existing.getPublishedAt() != null) {
                 existing.setExpiresAt(existing.getPublishedAt().plusDays(blog.getValidityDays()));
             }
         }
+        if (blog.getExpiresAt() != null) {
+            existing.setExpiresAt(blog.getExpiresAt());
+        }
 
         BlogPost updated = blogRepository.save(existing);
-        logActivity(editorUsername, "BLOG_UPDATED", "Updated blog: " + updated.getTitle());
 
+        // Run AI SEO analysis
         try {
             aiSeoService.analyzeBlog(updated);
         } catch (Exception e) {
             logger.warn("AI SEO analysis error on update: {}", e.getMessage());
         }
 
+        // Record Audit History
+        BlogEditHistory history = new BlogEditHistory(
+                updated,
+                existing.getAuthorName(),
+                existing.getAuthorRole(),
+                editorUsername != null ? editorUsername : "ADMIN",
+                changeSummary != null && !changeSummary.trim().isEmpty() ? changeSummary : "Admin updated blog details and SEO attributes",
+                prevTitle,
+                updated.getTitle(),
+                prevContent,
+                updated.getContent(),
+                prevSeoScore,
+                updated.getSeoScore()
+        );
+        editHistoryRepository.save(history);
+
+        logActivity(editorUsername, "BLOG_UPDATED", "Admin updated blog ID " + updated.getId() + " (" + updated.getTitle() + ")");
         return updated;
+    }
+
+    public List<BlogEditHistory> getBlogEditHistory(Long blogId) {
+        return editHistoryRepository.findByBlogIdOrderByEditedAtDesc(blogId);
     }
 
     public void approveBlog(Long id, String adminUsername) {

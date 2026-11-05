@@ -11,3 +11,4 @@ public interface BlogPublishingPermissionRepository extends JpaRepository<BlogPu
 
     Optional<BlogPublishingPermission> findFirstByOrderByIdAsc();
 }
+

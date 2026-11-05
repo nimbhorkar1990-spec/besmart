@@ -17,3 +17,4 @@ public interface AiSeoRecommendationRepository extends JpaRepository<AiSeoRecomm
 
     long countByApprovalStatus(String approvalStatus);
 }
+

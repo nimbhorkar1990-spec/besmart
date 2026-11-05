@@ -53,3 +53,4 @@ public interface BlogPostRepository extends JpaRepository<BlogPost, Long> {
     @Query("SELECT SUM(b.viewsCount) FROM BlogPost b")
     Long sumViewsCount();
 }
+

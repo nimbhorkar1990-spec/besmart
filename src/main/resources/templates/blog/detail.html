@@ -121,6 +121,11 @@
                 <i class="far fa-eye me-1"></i>
                 <span th:text="${blog.viewsCount}">0</span> views
             </div>
+            <div th:if="${blog.targetAudience != null and !blog.targetAudience.isEmpty()}">
+                <span>&bull;</span>
+                <i class="fas fa-users me-1 text-primary"></i>
+                <span th:text="${blog.targetAudience}">Audience</span>
+            </div>
             <div class="ms-auto" th:if="${blog.isAiGenerated}">
                 <span class="badge bg-info-subtle text-info rounded-pill">
                     <i class="fas fa-robot me-1"></i> AI-Optimized
@@ -140,10 +145,25 @@
              class="article-cover"
              loading="eager">
 
+        <!-- Embedded Video if Present -->
+        <div class="mb-4" th:if="${blog.videoEmbedCode != null and !blog.videoEmbedCode.isEmpty()}" th:utext="${blog.videoEmbedCode}">
+        </div>
+
         <!-- Article Body Content -->
         <article class="article-body mb-5" th:utext="${blog.content}">
             <p>Article body content appears here...</p>
         </article>
+
+        <!-- Official Backlink Reference if Provided -->
+        <div class="p-3 bg-primary-subtle rounded-3 mb-4 d-flex justify-content-between align-items-center" th:if="${blog.backlinkUrl != null and !blog.backlinkUrl.isEmpty()}">
+            <div>
+                <span class="fw-bold text-primary"><i class="fas fa-arrow-up-right-from-square me-1"></i> Verified Destination &amp; Reference:</span>
+                <div class="small text-muted" th:text="${blog.targetWebsite != null ? blog.targetWebsite : 'Official Portal'}">Portal</div>
+            </div>
+            <a th:href="${blog.backlinkUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-primary rounded-pill px-3">
+                Visit Partner Site &raquo;
+            </a>
+        </div>
 
         <!-- Contextual Internal Links Section -->
         <div class="card border rounded-4 shadow-sm mb-4 bg-light-subtle" th:if="${blog.primaryKeyword != null}">
@@ -201,3 +221,4 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+

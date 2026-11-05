@@ -31,6 +31,8 @@ public class DataInitializerService implements ApplicationRunner {
     private final com.smartsearch.repository.UserBlogLimitRepository userBlogLimitRepository;
     private final com.smartsearch.repository.BlogPostRepository blogPostRepository;
     private final com.smartsearch.repository.AiSeoRecommendationRepository aiSeoRecommendationRepository;
+    private final com.smartsearch.repository.AssistantCommandRepository assistantCommandRepository;
+    private final com.smartsearch.repository.BlogCampaignScheduleRepository campaignScheduleRepository;
 
     public DataInitializerService(UserRepository userRepository,
                                   IndexedPageRepository indexedPageRepository,
@@ -42,7 +44,9 @@ public class DataInitializerService implements ApplicationRunner {
                                   com.smartsearch.repository.BlogPublishingPermissionRepository blogPermissionRepository,
                                   com.smartsearch.repository.UserBlogLimitRepository userBlogLimitRepository,
                                   com.smartsearch.repository.BlogPostRepository blogPostRepository,
-                                  com.smartsearch.repository.AiSeoRecommendationRepository aiSeoRecommendationRepository) {
+                                  com.smartsearch.repository.AiSeoRecommendationRepository aiSeoRecommendationRepository,
+                                  com.smartsearch.repository.AssistantCommandRepository assistantCommandRepository,
+                                  com.smartsearch.repository.BlogCampaignScheduleRepository campaignScheduleRepository) {
         this.userRepository = userRepository;
         this.indexedPageRepository = indexedPageRepository;
         this.luceneService = luceneService;
@@ -54,6 +58,8 @@ public class DataInitializerService implements ApplicationRunner {
         this.userBlogLimitRepository = userBlogLimitRepository;
         this.blogPostRepository = blogPostRepository;
         this.aiSeoRecommendationRepository = aiSeoRecommendationRepository;
+        this.assistantCommandRepository = assistantCommandRepository;
+        this.campaignScheduleRepository = campaignScheduleRepository;
     }
 
     @Override
@@ -623,6 +629,75 @@ public class DataInitializerService implements ApplicationRunner {
             aiSeoRecommendationRepository.save(rec2);
 
             logger.info("Seeded initial blog posts, SEO metrics, and AI recommendations.");
+        }
+
+        // 4. Initial Assistant Command & 10-Day Content Campaign Schedule
+        if (assistantCommandRepository.count() == 0) {
+            AssistantCommand cmd = new AssistantCommand();
+            cmd.setCommandText("Write 10 blogs daily for the next 10 days focusing on real estate investment in Pune. Target property buyers and investors. Focus on Google search visibility. Include relevant images, SEO-friendly titles, meta descriptions, internal links and backlinks to my website. Avoid duplicate topics.");
+            cmd.setTitle("Real Estate Investment in Pune");
+            cmd.setCategory("Real Estate");
+            cmd.setTargetAudience("Property Buyers & Investors");
+            cmd.setLocation("Pune, Maharashtra");
+            cmd.setLanguage("English");
+            cmd.setFocusKeywords("Pune Real Estate Investment, RERA Projects Pune, High Rental Yields");
+            cmd.setOtherTopics("Metro Line 3, Hinjawadi IT Corridor, Kharadi SEZ appreciation");
+            cmd.setAllowImages(true);
+            cmd.setAllowVideos(true);
+            cmd.setAllowAiImages(true);
+            cmd.setAllowVideoEmbed(true);
+            cmd.setBlogTarget("Google SERP Organic Visibility & Qualified Buyer Leads");
+            cmd.setBacklinkUrl("/search?q=Pune+Real+Estate");
+            cmd.setWebsiteFocus("SmartSearch Real Estate & Career Portal");
+            cmd.setWebsiteRankingFocus("Google India, Bing & Brave Search");
+            cmd.setTargetEngines("Google, Bing, Yahoo, DuckDuckGo, Brave");
+            cmd.setIsRecurringSchedule(true);
+            cmd.setBlogsPerDay(10);
+            cmd.setScheduleDurationDays(10);
+            cmd.setScheduleApproved(true);
+            cmd.setScheduleStatus("IN_PROGRESS");
+            cmd.setBlogsRequested(100);
+            cmd.setBlogsGenerated(3);
+            cmd.setBlogsApproved(2);
+            cmd.setBlogsPublished(2);
+            cmd.setStatus("COMPLETED");
+            cmd.setExecutionSummary("Generated 10-day strategic campaign calendar (100 planned blogs across 10 distinct daily intents) with initial articles live.");
+            cmd.setCreatedAt(LocalDateTime.now().minusDays(1));
+            cmd.setCompletedAt(LocalDateTime.now().minusHours(2));
+            assistantCommandRepository.save(cmd);
+
+            // Populate sample 10-day schedule items
+            String[][] themes = {
+                    {"Market Overview & Growth Drivers", "Macroeconomic trends, FDI flows and IT corridor expansion in Pune", "High-Level Informational"},
+                    {"Price Trends & Micro-Market Valuation", "Locality-wise sq.ft pricing in Baner, Wakad, Kharadi and Hinjewadi", "Commercial Research & Valuation"},
+                    {"Infrastructure & Metro Rail Corridors", "Pune Metro Line 3, Ring Road and international airport connectivity", "Infrastructure & Long-term Growth"},
+                    {"Legal Due Diligence & MahaRERA Compliance", "Title deeds, encumbrance certificates, MahaRERA portal verification", "Transactional Safety & Due Diligence"},
+                    {"Rental Yields & Passive Income Strategies", "Residential vs commercial leasing yields near IT hubs", "Investment & ROI Focus"},
+                    {"Top Developer Track Records & Benchmarks", "A-grade builders in Pune, delivery track record, ESG construction", "Vendor & Developer Evaluation"},
+                    {"Home Loans, Interest Rates & Tax Deductions", "Comparing SBI, HDFC, ICICI home loan rates, Section 24b deductions", "Financing & Budgeting Strategy"},
+                    {"Ready-to-Move vs Under-Construction Analysis", "Price discounts vs possession certainty and GST tradeoffs", "Purchase Decision Comparison"},
+                    {"Emerging Suburban Growth Hotspots", "High-upside micro-markets: Punawale, Ravet, Mahalunge, Wagholi", "High-Upside Exploration"},
+                    {"2026 Strategic Investor Playbook & Checklist", "Complete roadmap for property portfolio allocation in Pune", "Actionable Investment Strategy"}
+            };
+
+            List<BlogCampaignSchedule> schedules = new ArrayList<>();
+            java.time.LocalDate today = java.time.LocalDate.now();
+            for (int day = 0; day < 10; day++) {
+                java.time.LocalDate sDate = today.plusDays(day);
+                for (int b = 1; b <= 10; b++) {
+                    String title = String.format("Day %d (%d/10): %s - Real Estate in Pune (2026)",
+                            (day + 1), b, themes[day][0]);
+                    BlogCampaignSchedule item = new BlogCampaignSchedule(
+                            cmd, (day + 1), sDate, title, themes[day][1], themes[day][2], cmd.getFocusKeywords()
+                    );
+                    if (day == 0 && b <= 3) {
+                        item.setStatus("APPROVED");
+                    }
+                    schedules.add(item);
+                }
+            }
+            campaignScheduleRepository.saveAll(schedules);
+            logger.info("Seeded initial Assistant Command with 10-day campaign schedule (100 unique blogs).");
         }
     }
 }
