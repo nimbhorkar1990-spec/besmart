@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+
+{% block title %}Post by {{ post.author.username }} - SmartSearch Social{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-7 col-md-9">
+            <div class="mb-3">
+                <a href="{% url 'feed' %}" class="btn btn-light btn-sm rounded-pill px-3 fw-semibold text-secondary">
+                    <i class="fas fa-arrow-left me-1"></i> Back to Feed
+                </a>
+            </div>
+
+            <!-- Single Post Card -->
+            <div class="card-social mb-4">
+                <div class="p-3 d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-3">
+                        <a href="{% url 'profile' username=post.author.username %}">
+                            <img src="{{ post.author.profile.get_avatar }}" alt="{{ post.author.username }}" class="user-avatar-sm border">
+                        </a>
+                        <div>
+                            <h6 class="fw-bold mb-0">
+                                <a href="{% url 'profile' username=post.author.username %}" class="text-decoration-none text-dark">
+                                    {{ post.author.get_full_name|default:post.author.username }}
+                                </a>
+                                {% if post.author.profile.email_verified %}
+                                <i class="fas fa-circle-check text-primary small ms-1"></i>
+                                {% endif %}
+                            </h6>
+                            <div class="small text-muted" style="font-size: 0.75rem;">
+                                {{ post.author.profile.profession|default:"Member" }} &middot; {{ post.created_at|date:"F d, Y at H:i" }}
+                            </div>
+                        </div>
+                    </div>
+                    {% if post.author == user or user.is_staff %}
+                    <div class="d-flex align-items-center gap-2">
+                        <a href="{% url 'edit_post' post_id=post.id %}" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                            <i class="fas fa-pen me-1"></i>Edit
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="px-3 py-2">
+                    <p class="fs-5 mb-3 text-dark" style="white-space: pre-line;">{{ post.content }}</p>
+                    {% if post.link_url %}
+                    <div class="mb-3 p-2 border rounded-3 bg-light small">
+                        <i class="fas fa-link text-primary me-1"></i>
+                        <a href="{{ post.link_url }}" target="_blank" rel="noopener noreferrer" class="text-decoration-none fw-semibold">
+                            {{ post.link_url }}
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% if post.image %}
+                <div class="text-center bg-dark">
+                    <img src="{{ post.image.url }}" alt="Post image" class="img-fluid" style="max-height: 600px; width: 100%; object-fit: contain;">
+                </div>
+                {% endif %}
+                {% if post.video %}
+                <div class="bg-black text-center">
+                    <video controls class="w-100" style="max-height: 500px;">
+                        <source src="{{ post.video.url }}">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+                {% endif %}
+
+                <!-- Post Stats & Actions -->
+                <div class="px-3 py-2 d-flex justify-content-between align-items-center text-muted small border-top">
+                    <div>
+                        <span class="badge bg-primary text-white rounded-circle p-1" style="font-size: 0.65rem;"><i class="fas fa-thumbs-up"></i></span>
+                        <span class="like-count fw-semibold">{{ post.likes_count }}</span> Likes
+                    </div>
+                    <div>{{ post.comments_count }} Comments &middot; {{ post.shares_count }} Shares</div>
+                </div>
+
+                <div class="px-2 py-1 border-top d-flex justify-content-around">
+                    <button type="button" class="post-action-btn btn-like-post {% if user in post.likes.all %}text-primary active{% endif %}" data-post-id="{{ post.id }}">
+                        <i class="{% if user in post.likes.all %}fa-solid{% else %}fa-regular{% endif %} fa-thumbs-up"></i>
+                        <span>Like</span>
+                    </button>
+                    <button type="button" class="post-action-btn" onclick="document.getElementById('commentInput').focus();">
+                        <i class="fa-regular fa-comment"></i>
+                        <span>Comment</span>
+                    </button>
+                    <form method="post" action="{% url 'share_post' post_id=post.id %}" class="d-inline m-0">
+                        {% csrf_token %}
+                        <button type="submit" class="post-action-btn">
+                            <i class="fa-regular fa-share-from-square"></i>
+                            <span>Share</span>
+                        </button>
+                    </form>
+                    <button type="button" class="post-action-btn btn-save-post {% if user in post.saves.all %}text-warning active-saved{% endif %}" data-post-id="{{ post.id }}">
+                        <i class="{% if user in post.saves.all %}fa-solid{% else %}fa-regular{% endif %} fa-bookmark"></i>
+                        <span>Save</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Comments Section Card -->
+            <div class="card-social p-4">
+                <h5 class="fw-bold mb-3"><i class="fas fa-comments text-primary me-2"></i>Comments &amp; Discussion ({{ post.comments_count }})</h5>
+
+                <!-- Add Comment Form -->
+                <form method="post" action="{% url 'add_comment' post_id=post.id %}" class="d-flex gap-2 mb-4">
+                    {% csrf_token %}
+                    <img src="{{ user_profile.get_avatar }}" alt="{{ user.username }}" class="user-avatar-sm border">
+                    <input type="text" name="content" id="commentInput" class="form-control rounded-pill px-3" placeholder="Share your insights on this discussion..." required>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 fw-semibold">Submit</button>
+                </form>
+
+                <!-- Comments & Nested Replies -->
+                <div class="d-flex flex-column gap-3">
+                    {% for comment in comments %}
+                    <div class="d-flex align-items-start gap-2">
+                        <a href="{% url 'profile' username=comment.author.username %}">
+                            <img src="{{ comment.author.profile.get_avatar }}" alt="{{ comment.author.username }}" class="user-avatar-sm border">
+                        </a>
+                        <div class="flex-grow-1">
+                            <div class="bg-light p-3 rounded-4 border">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <a href="{% url 'profile' username=comment.author.username %}" class="fw-bold text-dark text-decoration-none">
+                                        {{ comment.author.get_full_name|default:comment.author.username }}
+                                    </a>
+                                    <span class="text-muted small" style="font-size: 0.75rem;">{{ comment.created_at|timesince }} ago</span>
+                                </div>
+                                <div class="text-secondary small">{{ comment.content }}</div>
+                            </div>
+
+                            <div class="d-flex align-items-center gap-3 ms-2 mt-1 small">
+                                <a href="#replyBox-{{ comment.id }}" data-bs-toggle="collapse" class="text-decoration-none text-muted fw-semibold">Reply</a>
+                                {% if comment.author == user or post.author == user or user.is_staff %}
+                                <form method="post" action="{% url 'delete_comment' comment_id=comment.id %}" class="d-inline" onsubmit="return confirm('Delete comment?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-link text-danger p-0 border-0 small text-decoration-none" style="font-size: 0.8rem;">Delete</button>
+                                </form>
+                                {% endif %}
+                            </div>
+
+                            <!-- Nested Replies Collapse Box -->
+                            <div class="collapse mt-2 ms-3" id="replyBox-{{ comment.id }}">
+                                <form method="post" action="{% url 'add_comment' post_id=post.id %}" class="d-flex gap-2">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="parent_id" value="{{ comment.id }}">
+                                    <input type="text" name="content" class="form-control form-control-sm rounded-pill" placeholder="Reply to {{ comment.author.username }}..." required>
+                                    <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3">Reply</button>
+                                </form>
+                            </div>
+
+                            <!-- Render Existing Replies -->
+                            {% for reply in comment.replies.all %}
+                            <div class="d-flex align-items-start gap-2 mt-2 ms-4">
+                                <a href="{% url 'profile' username=reply.author.username %}">
+                                    <img src="{{ reply.author.profile.get_avatar }}" alt="{{ reply.author.username }}" class="user-avatar-sm border" style="width: 28px; height: 28px;">
+                                </a>
+                                <div class="bg-white p-2 px-3 rounded-4 border shadow-sm flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <a href="{% url 'profile' username=reply.author.username %}" class="fw-bold text-dark text-decoration-none small">
+                                            {{ reply.author.get_full_name|default:reply.author.username }}
+                                        </a>
+                                        <span class="text-muted" style="font-size: 0.7rem;">{{ reply.created_at|timesince }} ago</span>
+                                    </div>
+                                    <div class="text-secondary small">{{ reply.content }}</div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted py-4">No comments on this post yet.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

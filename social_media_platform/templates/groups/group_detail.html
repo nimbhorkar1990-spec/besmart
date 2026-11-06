@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ group.name }} - Community Discussion{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <!-- Group Cover & Header -->
+    <div class="card-social mb-4 overflow-hidden">
+        <div style="height: 180px; background: url('{{ group.get_cover }}') center/cover no-repeat;"></div>
+        <div class="p-4 d-flex flex-column flex-sm-row justify-content-between align-items-start gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <h3 class="fw-bold mb-0 text-dark">{{ group.name }}</h3>
+                    {% if group.is_private %}
+                    <span class="badge bg-secondary-subtle text-secondary small"><i class="fas fa-lock me-1"></i>Private</span>
+                    {% else %}
+                    <span class="badge bg-success-subtle text-success small"><i class="fas fa-globe me-1"></i>Public</span>
+                    {% endif %}
+                </div>
+                <p class="text-secondary small mb-2" style="max-width: 680px;">{{ group.description }}</p>
+                <div class="small text-muted">
+                    <i class="fas fa-users text-primary me-1"></i><strong>{{ group.members.count }}</strong> members &middot; Created by <a href="{% url 'profile' username=group.creator.username %}" class="text-decoration-none fw-semibold">{{ group.creator.username }}</a>
+                </div>
+            </div>
+
+            <div>
+                <form method="post" action="{% url 'join_group' slug=group.slug %}">
+                    {% csrf_token %}
+                    {% if is_member %}
+                    <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-4 fw-semibold">
+                        <i class="fas fa-sign-out-alt me-1"></i>Leave Group
+                    </button>
+                    {% else %}
+                    <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4 fw-semibold shadow-sm">
+                        <i class="fas fa-plus me-1"></i>Join Community
+                    </button>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Post Creator in Group (if member) -->
+    <div class="row g-4">
+        <div class="col-lg-8">
+            {% if is_member %}
+            <div class="card-social p-3 mb-4">
+                <form method="post" action="{% url 'create_post' %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="group_id" value="{{ group.id }}">
+                    <div class="d-flex align-items-start gap-2 mb-2">
+                        <img src="{{ user_profile.get_avatar }}" alt="{{ user.username }}" class="user-avatar-sm border">
+                        <div class="flex-grow-1">
+                            <textarea name="content" class="form-control border-0 shadow-none" rows="2" placeholder="Start a community discussion in {{ group.name }}..." required></textarea>
+                        </div>
+                    </div>
+                    <div class="border-top pt-2 d-flex justify-content-between align-items-center">
+                        <label class="btn btn-sm btn-light text-secondary rounded-pill cursor-pointer mb-0">
+                            <i class="fas fa-image text-success me-1"></i>Photo
+                            <input type="file" name="image" accept="image/*" class="d-none">
+                        </label>
+                        <button type="submit" class="btn btn-primary btn-sm px-4 rounded-pill fw-semibold shadow-sm">Post to Group</button>
+                    </div>
+                </form>
+            </div>
+            {% else %}
+            <div class="alert alert-info rounded-4 small p-3 mb-4 d-flex align-items-center justify-content-between">
+                <span>Join this community to share updates and participate in discussions.</span>
+                <form method="post" action="{% url 'join_group' slug=group.slug %}" class="m-0">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3">Join Now</button>
+                </form>
+            </div>
+            {% endif %}
+
+            <!-- Group Posts Stream -->
+            {% if posts %}
+                {% for post in posts %}
+                <div class="card-social mb-3">
+                    <div class="p-3 d-flex align-items-center justify-content-between border-bottom">
+                        <div class="d-flex align-items-center gap-2">
+                            <a href="{% url 'profile' username=post.author.username %}">
+                                <img src="{{ post.author.profile.get_avatar }}" alt="{{ post.author.username }}" class="user-avatar-sm border">
+                            </a>
+                            <div>
+                                <h6 class="fw-bold mb-0">
+                                    <a href="{% url 'profile' username=post.author.username %}" class="text-decoration-none text-dark">
+                                        {{ post.author.get_full_name|default:post.author.username }}
+                                    </a>
+                                </h6>
+                                <div class="text-muted small" style="font-size: 0.7rem;">{{ post.created_at|timesince }} ago</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-3">
+                        <p class="mb-2 text-dark">{{ post.content }}</p>
+                        {% if post.image %}
+                        <img src="{{ post.image.url }}" alt="Post image" class="img-fluid rounded-3 mb-2" style="max-height: 400px;">
+                        {% endif %}
+                    </div>
+                    <div class="p-2 px-3 border-top d-flex justify-content-between align-items-center small text-muted">
+                        <div><i class="fas fa-thumbs-up text-primary me-1"></i>{{ post.likes_count }} likes</div>
+                        <a href="{% url 'post_detail' post_id=post.id %}" class="text-decoration-none small text-primary fw-semibold">View Discussion ({{ post.comments_count }}) &rarr;</a>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="card-social p-4 text-center text-muted">
+                    No discussions in this community yet.
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Group Members Sidebar -->
+        <div class="col-lg-4">
+            <div class="card-social p-4">
+                <h5 class="fw-bold mb-3"><i class="fas fa-users text-primary me-2"></i>Members ({{ group.members.count }})</h5>
+                <div class="d-flex flex-column gap-2">
+                    {% for member in group.members.all|slice:":10" %}
+                    <a href="{% url 'profile' username=member.username %}" class="d-flex align-items-center gap-2 text-decoration-none p-1 rounded hover-bg-light">
+                        <img src="{{ member.profile.get_avatar }}" alt="{{ member.username }}" class="user-avatar-sm border" style="width: 32px; height: 32px;">
+                        <div class="text-truncate">
+                            <div class="fw-semibold text-dark small text-truncate">{{ member.get_full_name|default:member.username }}</div>
+                            <div class="text-muted" style="font-size: 0.7rem;">{{ member.profile.profession|default:"Member" }}</div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

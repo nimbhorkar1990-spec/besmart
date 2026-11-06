@@ -1,0 +1,237 @@
+{% extends 'base.html' %}
+
+{% block title %}Messages &amp; Chat - SmartSearch Social{% endblock %}
+
+{% block content %}
+<div class="container my-3">
+    <div class="card-social overflow-hidden shadow-sm" style="min-height: 600px; height: 75vh;">
+        <div class="row g-0 h-100">
+            <!-- Left: Conversations List -->
+            <div class="col-lg-4 col-md-5 border-end d-flex flex-column h-100 bg-white">
+                <div class="p-3 border-bottom d-flex align-items-center justify-content-between">
+                    <h5 class="fw-bold mb-0"><i class="fas fa-comment-dots text-primary me-2"></i>Messaging</h5>
+                </div>
+
+                <div class="overflow-y-auto flex-grow-1 p-2">
+                    {% for conv in conversations %}
+                    <a href="{% url 'messages_thread' username=conv.partner.username %}" class="d-flex align-items-center justify-content-between p-2 rounded-3 text-decoration-none {% if active_chat_user and active_chat_user == conv.partner %}bg-primary-subtle text-primary-emphasis border border-primary-subtle{% else %}hover-bg-light text-dark{% endif %} mb-1">
+                        <div class="d-flex align-items-center gap-2 text-truncate me-2">
+                            <div class="position-relative">
+                                <img src="{{ conv.partner.profile.get_avatar }}" alt="{{ conv.partner.username }}" class="user-avatar-sm border">
+                                {% if conv.partner.profile.is_online %}
+                                <span class="position-absolute bottom-0 end-0 p-1 bg-success border border-white rounded-circle"></span>
+                                {% endif %}
+                            </div>
+                            <div class="text-truncate">
+                                <div class="fw-bold small text-truncate">{{ conv.partner.get_full_name|default:conv.partner.username }}</div>
+                                <div class="text-muted text-truncate" style="font-size: 0.72rem;">
+                                    {% if conv.last_message %}
+                                        {{ conv.last_message.content|default:"[Attachment]"|truncatechars:28 }}
+                                    {% else %}
+                                        Say hello!
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="text-end">
+                            {% if conv.last_message %}
+                            <div class="text-muted" style="font-size: 0.68rem;">{{ conv.last_message.created_at|date:"H:i" }}</div>
+                            {% endif %}
+                            {% if conv.unread_count > 0 %}
+                            <span class="badge bg-primary rounded-pill small">{{ conv.unread_count }}</span>
+                            {% endif %}
+                        </div>
+                    </a>
+                    {% empty %}
+                    <div class="text-center py-5 text-muted small">
+                        <i class="fas fa-comments fa-2xl mb-2"></i>
+                        <p>No active conversations. Start a chat by connecting with someone!</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Right: Active Chat Thread -->
+            <div class="col-lg-8 col-md-7 d-flex flex-column h-100 bg-light">
+                {% if active_chat_user %}
+                <!-- Chat Header -->
+                <div class="p-3 bg-white border-bottom d-flex align-items-center justify-content-between shadow-sm">
+                    <div class="d-flex align-items-center gap-2">
+                        <a href="{% url 'profile' username=active_chat_user.username %}">
+                            <img src="{{ active_chat_user.profile.get_avatar }}" alt="{{ active_chat_user.username }}" class="user-avatar-sm border">
+                        </a>
+                        <div>
+                            <h6 class="fw-bold mb-0">
+                                <a href="{% url 'profile' username=active_chat_user.username %}" class="text-decoration-none text-dark">
+                                    {{ active_chat_user.get_full_name|default:active_chat_user.username }}
+                                </a>
+                            </h6>
+                            <div class="small text-muted" style="font-size: 0.72rem;">
+                                {% if active_chat_user.profile.is_online %}
+                                    <span class="text-success"><i class="fas fa-circle me-1" style="font-size: 0.5rem;"></i>Active Now</span>
+                                {% else %}
+                                    <span class="text-secondary"><i class="fas fa-circle me-1" style="font-size: 0.5rem;"></i>Offline</span>
+                                {% endif %}
+                                &middot; {{ active_chat_user.profile.profession|default:"Member" }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <a href="{% url 'profile' username=active_chat_user.username %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                            <i class="fas fa-user me-1"></i>View Profile
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Messages Stream Box -->
+                <div class="flex-grow-1 p-3 overflow-y-auto d-flex flex-column gap-2" id="chatStreamBox">
+                    {% for msg in chat_messages %}
+                    <div class="d-flex {% if msg.sender == user %}justify-content-end{% else %}justify-content-start{% endif %}">
+                        <div class="p-2 px-3 rounded-4 shadow-sm" style="max-width: 70%; {% if msg.sender == user %}background-color: #1a73e8; color: #ffffff; border-bottom-right-radius: 0.25rem !important;{% else %}background-color: #ffffff; color: #1f2937; border-bottom-left-radius: 0.25rem !important; border: 1px solid rgba(0,0,0,0.06);{% endif %}">
+                            {% if msg.attachment %}
+                            <div class="mb-2">
+                                <a href="{{ msg.attachment.url }}" target="_blank" class="text-decoration-underline {% if msg.sender == user %}text-white{% else %}text-primary{% endif %} small">
+                                    <i class="fas fa-paperclip me-1"></i>View Attachment
+                                </a>
+                            </div>
+                            {% endif %}
+                            <div class="small" style="word-break: break-word;">{{ msg.content }}</div>
+                            <div class="text-end" style="font-size: 0.65rem; opacity: 0.85; margin-top: 2px;">
+                                {{ msg.created_at|date:"H:i" }}
+                                {% if msg.sender == user %}
+                                    <i class="fas fa-check-double ms-1"></i>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-5 text-muted small">
+                        This is the beginning of your conversation with {{ active_chat_user.first_name|default:active_chat_user.username }}.
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Message Input Bar -->
+                <div class="p-3 bg-white border-top">
+                    <form id="chatSendForm" class="d-flex align-items-center gap-2">
+                        {% csrf_token %}
+                        <label class="btn btn-light rounded-circle p-2 text-secondary mb-0 cursor-pointer" title="Attach file or photo">
+                            <i class="fas fa-paperclip"></i>
+                            <input type="file" name="attachment" id="chatAttachment" class="d-none">
+                        </label>
+                        <input type="text" name="content" id="chatContentInput" class="form-control rounded-pill px-3 shadow-none border" placeholder="Write a message..." autocomplete="off" autofocus required>
+                        <button type="submit" class="btn btn-primary rounded-circle p-2 d-flex align-items-center justify-content-center shadow-sm" style="width: 42px; height: 42px;">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </div>
+                {% else %}
+                <!-- No Active Chat Selected -->
+                <div class="d-flex flex-column align-items-center justify-content-center h-100 text-center text-muted p-4">
+                    <div class="bg-white rounded-circle p-4 shadow-sm mb-3 text-primary" style="font-size: 2.5rem;">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark">Your Direct Messages</h5>
+                    <p class="small mb-3" style="max-width: 360px;">Select an existing conversation on the left, or open any member's profile to send them a private message.</p>
+                    <a href="{% url 'network' %}" class="btn btn-primary btn-sm rounded-pill px-4 fw-semibold shadow-sm">
+                        Find People to Chat
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if active_chat_user %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const streamBox = document.getElementById("chatStreamBox");
+        if (streamBox) streamBox.scrollTop = streamBox.scrollHeight;
+
+        const chatForm = document.getElementById("chatSendForm");
+        const contentInput = document.getElementById("chatContentInput");
+        const attachmentInput = document.getElementById("chatAttachment");
+        const targetUsername = "{{ active_chat_user.username }}";
+        let lastMsgId = {% if chat_messages %}{{ chat_messages.last.id }}{% else %}0{% endif %};
+
+        // Form Submit via AJAX
+        chatForm.addEventListener("submit", function(e) {
+            e.preventDefault();
+            const content = contentInput.value.trim();
+            if (!content && !attachmentInput.files.length) return;
+
+            const formData = new FormData();
+            formData.append('content', content);
+            if (attachmentInput.files.length) {
+                formData.append('attachment', attachmentInput.files[0]);
+            }
+
+            fetch(`/api/messages/send/${targetUsername}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrftoken,
+                },
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Append outgoing message bubble
+                    const bubble = document.createElement("div");
+                    bubble.className = "d-flex justify-content-end";
+                    bubble.innerHTML = `
+                        <div class="p-2 px-3 rounded-4 shadow-sm" style="max-width: 70%; background-color: #1a73e8; color: #ffffff; border-bottom-right-radius: 0.25rem !important;">
+                            <div class="small" style="word-break: break-word;">${data.content}</div>
+                            <div class="text-end" style="font-size: 0.65rem; opacity: 0.85; margin-top: 2px;">
+                                ${data.created_at} <i class="fas fa-check-double ms-1"></i>
+                            </div>
+                        </div>
+                    `;
+                    streamBox.appendChild(bubble);
+                    streamBox.scrollTop = streamBox.scrollHeight;
+                    contentInput.value = "";
+                    attachmentInput.value = "";
+                    lastMsgId = data.id;
+                }
+            })
+            .catch(err => console.error(err));
+        });
+
+        // Real-Time Poller (every 2.5 seconds)
+        setInterval(function() {
+            fetch(`/api/messages/get/${targetUsername}/?last_id=${lastMsgId}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.messages && data.messages.length > 0) {
+                    data.messages.forEach(msg => {
+                        if (!msg.is_me) {
+                            const bubble = document.createElement("div");
+                            bubble.className = "d-flex justify-content-start";
+                            bubble.innerHTML = `
+                                <div class="p-2 px-3 rounded-4 shadow-sm" style="max-width: 70%; background-color: #ffffff; color: #1f2937; border-bottom-left-radius: 0.25rem !important; border: 1px solid rgba(0,0,0,0.06);">
+                                    ${msg.attachment_url ? `<div class="mb-2"><a href="${msg.attachment_url}" target="_blank" class="small text-primary"><i class="fas fa-paperclip me-1"></i>Attachment</a></div>` : ''}
+                                    <div class="small" style="word-break: break-word;">${msg.content}</div>
+                                    <div class="text-end text-muted" style="font-size: 0.65rem; margin-top: 2px;">
+                                        ${msg.time}
+                                    </div>
+                                </div>
+                            `;
+                            streamBox.appendChild(bubble);
+                            streamBox.scrollTop = streamBox.scrollHeight;
+                        }
+                        lastMsgId = Math.max(lastMsgId, msg.id);
+                    });
+                }
+            })
+            .catch(err => console.error(err));
+        }, 2500);
+    });
+</script>
+{% endif %}
+{% endblock %}
+

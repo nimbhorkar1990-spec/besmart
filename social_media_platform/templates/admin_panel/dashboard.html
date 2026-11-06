@@ -1,0 +1,207 @@
+{% extends 'base.html' %}
+
+{% block title %}Social Platform Administration Dashboard{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <!-- Header -->
+    <div class="card-social p-4 mb-4 bg-dark text-white">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <span class="badge bg-danger mb-2">Platform Administration</span>
+                <h3 class="fw-bold mb-1">SmartSearch Social Control Center</h3>
+                <p class="small text-white-50 mb-0">Oversee platform health, user compliance, moderation queues and community governance</p>
+            </div>
+            <div>
+                <a href="/admin/" target="_blank" class="btn btn-outline-light btn-sm rounded-pill px-3">
+                    <i class="fas fa-screwdriver-wrench me-1"></i>Django Admin Panel
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Counter Metrics -->
+    <div class="row g-3 mb-4 text-center">
+        <div class="col-6 col-md-2">
+            <div class="card-social p-3 h-100">
+                <h3 class="fw-bold text-primary mb-1">{{ total_users }}</h3>
+                <div class="small text-muted">Registered Users</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <div class="card-social p-3 h-100">
+                <h3 class="fw-bold text-success mb-1">{{ total_posts }}</h3>
+                <div class="small text-muted">Published Posts</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <div class="card-social p-3 h-100">
+                <h3 class="fw-bold text-info mb-1">{{ total_comments }}</h3>
+                <div class="small text-muted">Total Comments</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <div class="card-social p-3 h-100">
+                <h3 class="fw-bold text-warning mb-1">{{ total_groups }}</h3>
+                <div class="small text-muted">Communities</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <div class="card-social p-3 h-100">
+                <h3 class="fw-bold text-secondary mb-1">{{ total_companies }}</h3>
+                <div class="small text-muted">Business Pages</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <div class="card-social p-3 h-100">
+                <h3 class="fw-bold {% if pending_reports %}text-danger{% else %}text-muted{% endif %} mb-1">{{ pending_reports|length }}</h3>
+                <div class="small text-muted">Pending Reports</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Moderation Queue -->
+    <div class="card-social p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0"><i class="fas fa-flag text-danger me-2"></i>Reported Content &amp; Moderation Queue</h5>
+            <span class="badge bg-danger rounded-pill px-3">{{ pending_reports|length }} Pending</span>
+        </div>
+
+        {% if pending_reports %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle small mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Reported Item</th>
+                        <th>Reporter</th>
+                        <th>Reason</th>
+                        <th>Details</th>
+                        <th>Submitted</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for report in pending_reports %}
+                    <tr>
+                        <td>
+                            {% if report.post %}
+                                <a href="{% url 'post_detail' post_id=report.post.id %}" target="_blank" class="fw-bold text-dark text-decoration-none">
+                                    Post #{{ report.post.id }} by {{ report.post.author.username }}
+                                </a>
+                                <div class="text-muted text-truncate" style="max-width: 200px;">{{ report.post.content|truncatechars:40 }}</div>
+                            {% elif report.reported_user %}
+                                <a href="{% url 'profile' username=report.reported_user.username %}" target="_blank" class="fw-bold text-dark text-decoration-none">
+                                    User @{{ report.reported_user.username }}
+                                </a>
+                            {% endif %}
+                        </td>
+                        <td>{{ report.reporter.username }}</td>
+                        <td><span class="badge bg-warning text-dark">{{ report.reason }}</span></td>
+                        <td>{{ report.details|default:"N/A" }}</td>
+                        <td class="text-muted">{{ report.created_at|date:"M d, H:i" }}</td>
+                        <td class="text-end">
+                            <div class="d-flex justify-content-end gap-1">
+                                {% if report.post %}
+                                <form method="post" action="{% url 'admin_resolve_report' report_id=report.id %}" onsubmit="return confirm('Delete post #{{ report.post.id }}?');">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="delete_post">
+                                    <button type="submit" class="btn btn-danger btn-sm rounded-pill px-2" title="Delete Post">Delete Post</button>
+                                </form>
+                                {% endif %}
+                                {% if report.reported_user %}
+                                <form method="post" action="{% url 'admin_resolve_report' report_id=report.id %}" onsubmit="return confirm('Deactivate user?');">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="deactivate_user">
+                                    <button type="submit" class="btn btn-dark btn-sm rounded-pill px-2">Deactivate</button>
+                                </form>
+                                {% endif %}
+                                <form method="post" action="{% url 'admin_resolve_report' report_id=report.id %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="dismiss">
+                                    <button type="submit" class="btn btn-light btn-sm rounded-pill px-2 border">Dismiss</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-muted small">
+            <i class="fas fa-circle-check text-success fa-2xl mb-2"></i>
+            <p class="mb-0">All clean! There are no pending reports or flags requiring administrator review.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- User Management Table -->
+    <div class="card-social p-4">
+        <h5 class="fw-bold mb-3"><i class="fas fa-users-gear text-primary me-2"></i>User Management &amp; Access Controls</h5>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle small mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>User</th>
+                        <th>Email</th>
+                        <th>Profession</th>
+                        <th>Status</th>
+                        <th>Role</th>
+                        <th>Joined</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in recent_users %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <img src="{{ u.profile.get_avatar }}" alt="{{ u.username }}" class="user-avatar-sm border" style="width: 32px; height: 32px;">
+                                <div>
+                                    <a href="{% url 'profile' username=u.username %}" class="fw-bold text-dark text-decoration-none">
+                                        {{ u.get_full_name|default:u.username }}
+                                    </a>
+                                    <div class="text-muted" style="font-size: 0.7rem;">@{{ u.username }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ u.email }}</td>
+                        <td>{{ u.profile.profession|default:"-" }}</td>
+                        <td>
+                            {% if u.is_active %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle">Active</span>
+                            {% else %}
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Deactivated</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if u.is_superuser %}
+                            <span class="badge bg-danger">Superadmin</span>
+                            {% elif u.is_staff %}
+                            <span class="badge bg-primary">Staff</span>
+                            {% else %}
+                            <span class="badge bg-light text-secondary border">Member</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-muted">{{ u.date_joined|date:"M d, Y" }}</td>
+                        <td class="text-end">
+                            {% if not u.is_superuser %}
+                            <form method="post" action="{% url 'admin_toggle_user_status' user_id=u.id %}" class="d-inline" onsubmit="return confirm('Change status for {{ u.username }}?');">
+                                {% csrf_token %}
+                                {% if u.is_active %}
+                                <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3">Deactivate</button>
+                                {% else %}
+                                <button type="submit" class="btn btn-outline-success btn-sm rounded-pill px-3">Activate</button>
+                                {% endif %}
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

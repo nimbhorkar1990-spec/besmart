@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Profile - SmartSearch Social{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card-social p-4 p-md-5">
+                <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+                    <div>
+                        <h4 class="fw-bold mb-1"><i class="fas fa-user-pen text-primary me-2"></i>Edit Profile Details</h4>
+                        <p class="text-muted small mb-0">Update your professional identity, contact channels and public bio</p>
+                    </div>
+                    <a href="{% url 'profile' username=user.username %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                        <i class="fas fa-eye me-1"></i>View Profile
+                    </a>
+                </div>
+
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <h5 class="fw-bold text-primary mb-3">Basic Information</h5>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">First Name</label>
+                            {{ form.first_name }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Last Name</label>
+                            {{ form.last_name }}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Professional Headline</label>
+                        {{ form.headline }}
+                        <div class="form-text small">e.g. Senior Backend Engineer @ Acme | Spring Boot &amp; Python Evangelist</div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Profession / Job Title</label>
+                            {{ form.profession }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Company / Organization</label>
+                            {{ form.company_name }}
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Location (City, Country)</label>
+                            {{ form.location }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Education / Degree</label>
+                            {{ form.education }}
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-semibold">About / Bio</label>
+                        {{ form.bio }}
+                    </div>
+
+                    <hr class="my-4">
+                    <h5 class="fw-bold text-primary mb-3">Skills &amp; Interests</h5>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Skills (Comma-separated)</label>
+                        {{ form.skills }}
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label small fw-semibold">Interests &amp; Topics</label>
+                        {{ form.interests }}
+                    </div>
+
+                    <hr class="my-4">
+                    <h5 class="fw-bold text-primary mb-3">Contact Information &amp; Social Links</h5>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Mobile Number</label>
+                            {{ form.mobile_number }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">WhatsApp Number</label>
+                            {{ form.whatsapp_number }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Contact Email</label>
+                            {{ form.contact_email }}
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">LinkedIn Profile URL</label>
+                            {{ form.linkedin_url }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">GitHub Profile URL</label>
+                            {{ form.github_url }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">X / Twitter URL</label>
+                            {{ form.twitter_url }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Personal Website / Portfolio</label>
+                            {{ form.website_url }}
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+                    <h5 class="fw-bold text-primary mb-3">Photographs &amp; Privacy</h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Profile Photo (Avatar)</label>
+                            <input type="file" name="avatar" accept="image/*" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Cover Photo (Banner)</label>
+                            <input type="file" name="cover_photo" accept="image/*" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="mb-4 form-check p-3 bg-light rounded-3 border">
+                        <div class="form-check form-switch">
+                            {{ form.is_private }}
+                            <label class="form-check-label fw-semibold small" for="{{ form.is_private.id_for_label }}">
+                                Private Profile Mode
+                            </label>
+                        </div>
+                        <div class="form-text small mt-1">
+                            When enabled, only accepted connections can see your posts, media and activity stream.
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{% url 'profile' username=user.username %}" class="btn btn-outline-secondary rounded-pill px-4">Cancel</a>
+                        <button type="submit" class="btn btn-primary rounded-pill px-5 fw-semibold shadow-sm">Save Profile</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

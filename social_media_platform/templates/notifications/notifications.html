@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block title %}Notifications - SmartSearch Social{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card-social p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+                    <h4 class="fw-bold mb-0">
+                        <i class="fas fa-bell text-danger me-2"></i>Notifications
+                        {% if unread_notifications_count > 0 %}
+                        <span class="badge bg-danger rounded-pill fs-6 ms-2">{{ unread_notifications_count }} Unread</span>
+                        {% endif %}
+                    </h4>
+                    {% if unread_notifications_count > 0 %}
+                    <form method="post" action="{% url 'mark_all_notifications_read' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                            <i class="fas fa-check-double me-1"></i>Mark all as read
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+
+                <div class="d-flex flex-column gap-2">
+                    {% for notif in notifications %}
+                    <a href="{% url 'mark_notification_read' notification_id=notif.id %}" class="d-flex align-items-center justify-content-between p-3 rounded-4 text-decoration-none border transition-hover {% if not notif.is_read %}bg-primary-subtle text-primary-emphasis border-primary-subtle{% else %}bg-white text-dark{% endif %}">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="position-relative">
+                                {% if notif.sender %}
+                                <img src="{{ notif.sender.profile.get_avatar }}" alt="{{ notif.sender.username }}" class="user-avatar-sm border">
+                                {% else %}
+                                <div class="bg-primary text-white rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                    <i class="fas fa-bell"></i>
+                                </div>
+                                {% endif %}
+
+                                <span class="position-absolute bottom-0 end-0 badge rounded-circle p-1 
+                                    {% if notif.notification_type == 'like' %}bg-primary text-white
+                                    {% elif notif.notification_type == 'comment' or notif.notification_type == 'reply' %}bg-success text-white
+                                    {% elif notif.notification_type == 'connection_request' or notif.notification_type == 'connection_accepted' %}bg-info text-white
+                                    {% elif notif.notification_type == 'message' %}bg-warning text-dark
+                                    {% else %}bg-secondary text-white{% endif %}" style="font-size: 0.6rem;">
+                                    {% if notif.notification_type == 'like' %}<i class="fas fa-thumbs-up"></i>
+                                    {% elif notif.notification_type == 'comment' or notif.notification_type == 'reply' %}<i class="fas fa-comment"></i>
+                                    {% elif notif.notification_type == 'connection_request' or notif.notification_type == 'connection_accepted' %}<i class="fas fa-user-plus"></i>
+                                    {% elif notif.notification_type == 'message' %}<i class="fas fa-comment-dots"></i>
+                                    {% else %}<i class="fas fa-info"></i>{% endif %}
+                                </span>
+                            </div>
+
+                            <div>
+                                <div class="small fw-semibold mb-1">{{ notif.text }}</div>
+                                <div class="text-muted" style="font-size: 0.72rem;">{{ notif.created_at|timesince }} ago</div>
+                            </div>
+                        </div>
+
+                        <div>
+                            {% if not notif.is_read %}
+                            <span class="p-1 bg-primary rounded-circle d-inline-block" title="Unread"></span>
+                            {% else %}
+                            <i class="fas fa-chevron-right text-muted" style="font-size: 0.75rem;"></i>
+                            {% endif %}
+                        </div>
+                    </a>
+                    {% empty %}
+                    <div class="text-center py-5 text-muted">
+                        <i class="fas fa-bell-slash fa-3x mb-3 text-secondary opacity-50"></i>
+                        <h5>No notifications right now</h5>
+                        <p class="small mb-0">When people interact with your posts or send you connection requests, you will see alerts here.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

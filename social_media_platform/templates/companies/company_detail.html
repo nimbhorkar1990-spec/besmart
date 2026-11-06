@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ company.name }} - Company Profile &amp; Updates{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <!-- Company Header Banner -->
+    <div class="card-social mb-4 overflow-hidden">
+        <div style="height: 180px; background: url('{{ company.get_cover }}') center/cover no-repeat;"></div>
+        <div class="p-4" style="margin-top: -50px;">
+            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <img src="{{ company.get_logo }}" alt="{{ company.name }}" class="rounded-3 border border-4 border-white shadow" style="width: 80px; height: 80px; object-fit: cover;">
+                    <div>
+                        <h3 class="fw-bold mb-0 text-dark">{{ company.name }}</h3>
+                        <p class="text-secondary small mb-1 fw-medium">{{ company.tagline|default:company.industry }}</p>
+                        <div class="text-muted small">
+                            <i class="fas fa-users text-primary me-1"></i><strong>{{ company.followers.count }}</strong> followers &middot; {{ company.location|default:"Worldwide" }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-sm-5 d-flex gap-2">
+                    {% if company.website %}
+                    <a href="{{ company.website }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                        <i class="fas fa-external-link me-1"></i>Website
+                    </a>
+                    {% endif %}
+                    <form method="post" action="{% url 'toggle_follow_company' slug=company.slug %}">
+                        {% csrf_token %}
+                        {% if is_follower %}
+                        <button type="submit" class="btn btn-light btn-sm rounded-pill px-4 border text-secondary">
+                            <i class="fas fa-check me-1"></i>Following
+                        </button>
+                        {% else %}
+                        <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4 fw-semibold shadow-sm">
+                            <i class="fas fa-plus me-1"></i>Follow
+                        </button>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Main: Posts & Updates -->
+        <div class="col-lg-8">
+            {% if is_owner %}
+            <!-- Create Company Update -->
+            <div class="card-social p-3 mb-4">
+                <form method="post" action="{% url 'create_post' %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="company_id" value="{{ company.id }}">
+                    <div class="d-flex align-items-start gap-2 mb-2">
+                        <img src="{{ company.get_logo }}" alt="{{ company.name }}" class="rounded-2 border" style="width: 36px; height: 36px; object-fit: cover;">
+                        <div class="flex-grow-1">
+                            <textarea name="content" class="form-control border-0 shadow-none" rows="2" placeholder="Share a company milestone, news or opening as {{ company.name }}..." required></textarea>
+                        </div>
+                    </div>
+                    <div class="border-top pt-2 d-flex justify-content-between align-items-center">
+                        <label class="btn btn-sm btn-light text-secondary rounded-pill cursor-pointer mb-0">
+                            <i class="fas fa-image text-success me-1"></i>Add Media
+                            <input type="file" name="image" accept="image/*" class="d-none">
+                        </label>
+                        <button type="submit" class="btn btn-primary btn-sm px-4 rounded-pill fw-semibold shadow-sm">Post Update</button>
+                    </div>
+                </form>
+            </div>
+            {% endif %}
+
+            <!-- Posts Stream -->
+            {% if posts %}
+                {% for post in posts %}
+                <div class="card-social mb-3">
+                    <div class="p-3 d-flex align-items-center justify-content-between border-bottom">
+                        <div class="d-flex align-items-center gap-2">
+                            <img src="{{ company.get_logo }}" alt="{{ company.name }}" class="rounded-2 border" style="width: 36px; height: 36px; object-fit: cover;">
+                            <div>
+                                <h6 class="fw-bold mb-0 text-dark">{{ company.name }}</h6>
+                                <div class="text-muted small" style="font-size: 0.7rem;">{{ post.created_at|timesince }} ago</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-3">
+                        <p class="mb-2 text-dark">{{ post.content }}</p>
+                        {% if post.image %}
+                        <img src="{{ post.image.url }}" alt="Update media" class="img-fluid rounded-3 mb-2" style="max-height: 400px;">
+                        {% endif %}
+                    </div>
+                    <div class="p-2 px-3 border-top d-flex justify-content-between align-items-center small text-muted">
+                        <div><i class="fas fa-thumbs-up text-primary me-1"></i>{{ post.likes_count }} likes</div>
+                        <a href="{% url 'post_detail' post_id=post.id %}" class="text-decoration-none small text-primary fw-semibold">Discussion ({{ post.comments_count }}) &rarr;</a>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="card-social p-4 text-center text-muted">
+                    No public updates from {{ company.name }} yet.
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar: About Company -->
+        <div class="col-lg-4">
+            <div class="card-social p-4">
+                <h5 class="fw-bold mb-3"><i class="fas fa-circle-info text-primary me-2"></i>About Company</h5>
+                <p class="small text-secondary mb-3">{{ company.description|default:"Leading innovator on SmartSearch platform." }}</p>
+
+                <ul class="list-unstyled mb-0 d-flex flex-column gap-2 small">
+                    <li><strong class="text-dark">Industry:</strong> {{ company.industry }}</li>
+                    <li><strong class="text-dark">Company Size:</strong> {{ company.company_size }}</li>
+                    <li><strong class="text-dark">Headquarters:</strong> {{ company.location|default:"Global" }}</li>
+                    <li><strong class="text-dark">Administrator:</strong> <a href="{% url 'profile' username=company.owner.username %}" class="text-decoration-none">{{ company.owner.get_full_name|default:company.owner.username }}</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

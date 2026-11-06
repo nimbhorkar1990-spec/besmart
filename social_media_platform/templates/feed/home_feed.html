@@ -1,0 +1,454 @@
+{% extends 'base.html' %}
+
+{% block title %}Feed - SmartSearch Social{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4">
+    <div class="row g-4">
+        <!-- Left Sidebar: Profile Card & Shortcuts -->
+        <div class="col-lg-3 d-none d-lg-block">
+            <!-- User Mini Profile Card -->
+            <div class="card-social text-center position-relative">
+                <div style="height: 75px; background: url('{{ user_profile.get_cover }}') center/cover no-repeat;"></div>
+                <div class="px-3 pb-3" style="margin-top: -40px;">
+                    <a href="{% url 'profile' username=user.username %}">
+                        <img src="{{ user_profile.get_avatar }}" alt="{{ user.username }}" class="user-avatar-lg mb-2">
+                    </a>
+                    <h5 class="fw-bold mb-0">
+                        <a href="{% url 'profile' username=user.username %}" class="text-decoration-none text-dark">
+                            {{ user.get_full_name|default:user.username }}
+                        </a>
+                    </h5>
+                    <p class="small text-muted mb-3 text-truncate">{{ user_profile.headline|default:"SmartSearch Network Member" }}</p>
+
+                    <div class="border-top border-bottom py-2 d-flex justify-content-around text-center small">
+                        <div>
+                            <div class="fw-bold text-dark">{{ user_profile.connections_count }}</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">Connections</div>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark">{{ user_profile.followers_count }}</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">Followers</div>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark">{{ user_profile.posts_count }}</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">Posts</div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid mt-3">
+                        <a href="{% url 'profile' username=user.username %}" class="btn btn-outline-primary btn-sm rounded-pill fw-semibold">
+                            <i class="fas fa-user me-1"></i>View My Profile
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Navigation Shortcuts -->
+            <div class="card-social p-3">
+                <h6 class="fw-bold text-muted text-uppercase small mb-2"><i class="fas fa-compass me-1"></i>Explore Network</h6>
+                <div class="list-group list-group-flush small">
+                    <a href="{% url 'network' %}" class="list-group-item list-group-item-action border-0 px-2 py-2 rounded d-flex align-items-center justify-content-between">
+                        <span><i class="fas fa-user-plus text-primary me-2"></i>Find Connections</span>
+                        <i class="fas fa-chevron-right text-muted" style="font-size: 0.7rem;"></i>
+                    </a>
+                    <a href="{% url 'groups_list' %}" class="list-group-item list-group-item-action border-0 px-2 py-2 rounded d-flex align-items-center justify-content-between">
+                        <span><i class="fas fa-users-rectangle text-success me-2"></i>Communities &amp; Groups</span>
+                        <i class="fas fa-chevron-right text-muted" style="font-size: 0.7rem;"></i>
+                    </a>
+                    <a href="{% url 'companies_list' %}" class="list-group-item list-group-item-action border-0 px-2 py-2 rounded d-flex align-items-center justify-content-between">
+                        <span><i class="fas fa-building text-info me-2"></i>Companies &amp; Pages</span>
+                        <i class="fas fa-chevron-right text-muted" style="font-size: 0.7rem;"></i>
+                    </a>
+                    <a href="{% url 'feed' %}?tab=saved" class="list-group-item list-group-item-action border-0 px-2 py-2 rounded d-flex align-items-center justify-content-between">
+                        <span><i class="fas fa-bookmark text-warning me-2"></i>Saved Items</span>
+                        <i class="fas fa-chevron-right text-muted" style="font-size: 0.7rem;"></i>
+                    </a>
+                    <a href="http://localhost:8080/employment" class="list-group-item list-group-item-action border-0 px-2 py-2 rounded d-flex align-items-center justify-content-between">
+                        <span><i class="fas fa-briefcase text-primary me-2"></i>Employment Portal</span>
+                        <span class="badge bg-primary-subtle text-primary small">Jobs</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Column: Post Creator & Feed Stream -->
+        <div class="col-lg-6 col-md-8">
+            <!-- Create Post Card -->
+            <div class="card-social p-3 mb-3">
+                <div class="d-flex align-items-start gap-2 mb-2">
+                    <img src="{{ user_profile.get_avatar }}" alt="{{ user.username }}" class="user-avatar-sm border">
+                    <div class="flex-grow-1">
+                        <form method="post" action="{% url 'create_post' %}" enctype="multipart/form-data" id="mainPostForm">
+                            {% csrf_token %}
+                            {{ post_form.content }}
+
+                            <!-- Expandable Attachments Bar (hidden until focused/selected) -->
+                            <div class="mt-2 pt-2 border-top d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <label class="btn btn-sm btn-light text-secondary rounded-pill d-inline-flex align-items-center gap-1 cursor-pointer mb-0">
+                                        <i class="fas fa-image text-success"></i> Photo
+                                        <input type="file" name="image" accept="image/*" class="d-none" onchange="document.getElementById('imgBadge').classList.remove('d-none'); document.getElementById('imgBadge').textContent = this.files[0].name.substring(0, 15) + '...';">
+                                    </label>
+                                    <span id="imgBadge" class="badge bg-success-subtle text-success small d-none"></span>
+
+                                    <label class="btn btn-sm btn-light text-secondary rounded-pill d-inline-flex align-items-center gap-1 cursor-pointer mb-0">
+                                        <i class="fas fa-video text-danger"></i> Video
+                                        <input type="file" name="video" accept="video/*" class="d-none" onchange="document.getElementById('vidBadge').classList.remove('d-none'); document.getElementById('vidBadge').textContent = this.files[0].name.substring(0, 15) + '...';">
+                                    </label>
+                                    <span id="vidBadge" class="badge bg-danger-subtle text-danger small d-none"></span>
+
+                                    <button type="button" class="btn btn-sm btn-light text-secondary rounded-pill" data-bs-toggle="collapse" data-bs-target="#linkCollapse">
+                                        <i class="fas fa-link text-primary"></i> Link
+                                    </button>
+                                </div>
+
+                                <div class="d-flex align-items-center gap-2">
+                                    {{ post_form.visibility }}
+                                    <button type="submit" class="btn btn-primary btn-sm px-4 rounded-pill fw-semibold shadow-sm">
+                                        <i class="fas fa-paper-plane me-1"></i>Post
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Link input collapse -->
+                            <div class="collapse mt-2" id="linkCollapse">
+                                {{ post_form.link_url }}
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feed Filter Tabs -->
+            <div class="card-social p-2 mb-3 d-flex flex-row justify-content-around">
+                <a href="{% url 'feed' %}?tab=all" class="btn btn-sm rounded-pill px-3 fw-semibold {% if active_tab == 'all' %}btn-primary text-white shadow-sm{% else %}btn-light text-secondary{% endif %}">
+                    <i class="fas fa-globe me-1"></i>For You (All)
+                </a>
+                <a href="{% url 'feed' %}?tab=following" class="btn btn-sm rounded-pill px-3 fw-semibold {% if active_tab == 'following' %}btn-primary text-white shadow-sm{% else %}btn-light text-secondary{% endif %}">
+                    <i class="fas fa-user-check me-1"></i>Following &amp; Network
+                </a>
+                <a href="{% url 'feed' %}?tab=saved" class="btn btn-sm rounded-pill px-3 fw-semibold {% if active_tab == 'saved' %}btn-primary text-white shadow-sm{% else %}btn-light text-secondary{% endif %}">
+                    <i class="fas fa-bookmark me-1"></i>Saved Bookmarks
+                </a>
+            </div>
+
+            <!-- Posts Stream -->
+            {% if posts %}
+                {% for post in posts %}
+                <div class="card-social" id="post-{{ post.id }}">
+                    <!-- Post Header -->
+                    <div class="p-3 pb-2 d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-3">
+                            <a href="{% url 'profile' username=post.author.username %}">
+                                <img src="{{ post.author.profile.get_avatar }}" alt="{{ post.author.username }}" class="user-avatar-sm border">
+                            </a>
+                            <div>
+                                <h6 class="fw-bold mb-0">
+                                    <a href="{% url 'profile' username=post.author.username %}" class="text-decoration-none text-dark">
+                                        {{ post.author.get_full_name|default:post.author.username }}
+                                    </a>
+                                    {% if post.author.profile.email_verified %}
+                                    <i class="fas fa-circle-check text-primary small ms-1" title="Verified Member"></i>
+                                    {% endif %}
+                                </h6>
+                                <div class="small text-muted" style="font-size: 0.75rem;">
+                                    <span>{{ post.author.profile.profession|default:"Member" }}</span>
+                                    <span>&middot;</span>
+                                    <span>{{ post.created_at|timesince }} ago</span>
+                                    {% if post.visibility == 'public' %}
+                                        <i class="fas fa-globe ms-1" title="Public"></i>
+                                    {% elif post.visibility == 'connections' %}
+                                        <i class="fas fa-user-group ms-1" title="Connections Only"></i>
+                                    {% else %}
+                                        <i class="fas fa-lock ms-1" title="Only Me"></i>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Options Dropdown -->
+                        <div class="dropdown">
+                            <button class="btn btn-link text-muted p-1" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-ellipsis"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 small">
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'post_detail' post_id=post.id %}">
+                                        <i class="fas fa-arrow-up-right-from-square me-2"></i>Open Full Post
+                                    </a>
+                                </li>
+                                {% if post.author == user or user.is_staff %}
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'edit_post' post_id=post.id %}">
+                                        <i class="fas fa-pen-to-square me-2 text-primary"></i>Edit Post
+                                    </a>
+                                </li>
+                                <li>
+                                    <form method="post" action="{% url 'delete_post' post_id=post.id %}" onsubmit="return confirm('Are you sure you want to delete this post?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="dropdown-item text-danger">
+                                            <i class="fas fa-trash me-2"></i>Delete Post
+                                        </button>
+                                    </form>
+                                </li>
+                                {% endif %}
+                                {% if post.author != user %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <button type="button" class="dropdown-item text-warning" data-bs-toggle="modal" data-bs-target="#reportModal-{{ post.id }}">
+                                        <i class="fas fa-flag me-2"></i>Report Post
+                                    </button>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Post Body -->
+                    <div class="px-3 py-2">
+                        <p class="mb-2 text-dark" style="white-space: pre-line; word-break: break-word;">{{ post.content }}</p>
+
+                        <!-- Attached Link -->
+                        {% if post.link_url %}
+                        <div class="mb-2 p-2 border rounded-3 bg-light small">
+                            <i class="fas fa-link text-primary me-1"></i>
+                            <a href="{{ post.link_url }}" target="_blank" rel="noopener noreferrer" class="text-decoration-none fw-semibold">
+                                {{ post.link_url|truncatechars:50 }}
+                            </a>
+                        </div>
+                        {% endif %}
+
+                        <!-- Attached Group or Company Banner -->
+                        {% if post.group %}
+                        <div class="mb-2 badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
+                            <i class="fas fa-users-rectangle me-1"></i>Group: <a href="{% url 'group_detail' slug=post.group.slug %}" class="text-primary fw-bold text-decoration-none">{{ post.group.name }}</a>
+                        </div>
+                        {% endif %}
+                        {% if post.company %}
+                        <div class="mb-2 badge bg-info-subtle text-info border border-info-subtle px-2 py-1">
+                            <i class="fas fa-building me-1"></i>Company: <a href="{% url 'company_detail' slug=post.company.slug %}" class="text-info fw-bold text-decoration-none">{{ post.company.name }}</a>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Post Media (Image / Video) -->
+                    {% if post.image %}
+                    <div class="text-center bg-dark">
+                        <img src="{{ post.image.url }}" alt="Post image" class="img-fluid" style="max-height: 520px; width: 100%; object-fit: contain;">
+                    </div>
+                    {% endif %}
+                    {% if post.video %}
+                    <div class="bg-black text-center">
+                        <video controls class="w-100" style="max-height: 480px;">
+                            <source src="{{ post.video.url }}">
+                            Your browser does not support the video tag.
+                        </video>
+                    </div>
+                    {% endif %}
+
+                    <!-- Post Stats Strip -->
+                    <div class="px-3 py-2 d-flex justify-content-between align-items-center text-muted small border-top">
+                        <div>
+                            <span class="badge bg-primary text-white rounded-circle p-1" style="font-size: 0.65rem;"><i class="fas fa-thumbs-up"></i></span>
+                            <span class="like-count fw-semibold">{{ post.likes_count }}</span> Likes
+                        </div>
+                        <div class="d-flex align-items-center gap-3">
+                            <span>{{ post.comments_count }} Comments</span>
+                            <span>{{ post.shares_count }} Shares</span>
+                        </div>
+                    </div>
+
+                    <!-- Post Actions Bar -->
+                    <div class="px-2 py-1 border-top d-flex justify-content-around">
+                        <button type="button" class="post-action-btn btn-like-post {% if user in post.likes.all %}text-primary active{% endif %}" data-post-id="{{ post.id }}">
+                            <i class="{% if user in post.likes.all %}fa-solid{% else %}fa-regular{% endif %} fa-thumbs-up"></i>
+                            <span>Like</span>
+                        </button>
+                        <button type="button" class="post-action-btn" data-bs-toggle="collapse" data-bs-target="#comments-{{ post.id }}">
+                            <i class="fa-regular fa-comment"></i>
+                            <span>Comment</span>
+                        </button>
+                        <form method="post" action="{% url 'share_post' post_id=post.id %}" class="d-inline m-0">
+                            {% csrf_token %}
+                            <button type="submit" class="post-action-btn">
+                                <i class="fa-regular fa-share-from-square"></i>
+                                <span>Share</span>
+                            </button>
+                        </form>
+                        <button type="button" class="post-action-btn btn-save-post {% if user in post.saves.all %}text-warning active-saved{% endif %}" data-post-id="{{ post.id }}">
+                            <i class="{% if user in post.saves.all %}fa-solid{% else %}fa-regular{% endif %} fa-bookmark"></i>
+                            <span>Save</span>
+                        </button>
+                    </div>
+
+                    <!-- Comments Collapse Section -->
+                    <div class="collapse border-top bg-light p-3" id="comments-{{ post.id }}">
+                        <!-- Comment Form -->
+                        <form method="post" action="{% url 'add_comment' post_id=post.id %}" class="d-flex gap-2 mb-3">
+                            {% csrf_token %}
+                            <img src="{{ user_profile.get_avatar }}" alt="{{ user.username }}" class="user-avatar-sm border" style="width: 32px; height: 32px;">
+                            <input type="text" name="content" class="form-control form-control-sm rounded-pill" placeholder="Write a comment..." required>
+                            <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold">Post</button>
+                        </form>
+
+                        <!-- Comments List -->
+                        <div class="d-flex flex-column gap-2">
+                            {% for comment in post.comments.all|slice:":5" %}
+                            <div class="d-flex align-items-start gap-2">
+                                <a href="{% url 'profile' username=comment.author.username %}">
+                                    <img src="{{ comment.author.profile.get_avatar }}" alt="{{ comment.author.username }}" class="user-avatar-sm border" style="width: 28px; height: 28px;">
+                                </a>
+                                <div class="bg-white p-2 px-3 rounded-4 border shadow-sm flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <a href="{% url 'profile' username=comment.author.username %}" class="fw-bold small text-dark text-decoration-none">
+                                            {{ comment.author.get_full_name|default:comment.author.username }}
+                                        </a>
+                                        <span class="text-muted" style="font-size: 0.7rem;">{{ comment.created_at|timesince }} ago</span>
+                                    </div>
+                                    <div class="small text-secondary">{{ comment.content }}</div>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <div class="text-center text-muted small py-2">No comments yet. Be the first to start the conversation!</div>
+                            {% endfor %}
+
+                            {% if post.comments_count > 5 %}
+                            <div class="text-center mt-2">
+                                <a href="{% url 'post_detail' post_id=post.id %}" class="small text-primary text-decoration-none fw-semibold">
+                                    View all {{ post.comments_count }} comments &rarr;
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Report Post Modal -->
+                <div class="modal fade" id="reportModal-{{ post.id }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content rounded-4 border-0 shadow">
+                            <div class="modal-header">
+                                <h5 class="modal-title fw-bold"><i class="fas fa-flag text-warning me-2"></i>Report Content</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <form method="post" action="{% url 'report_content' %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="post_id" value="{{ post.id }}">
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-semibold">Reason for report</label>
+                                        <select name="reason" class="form-select">
+                                            <option value="spam">Spam or misleading information</option>
+                                            <option value="harassment">Harassment or hate speech</option>
+                                            <option value="inappropriate">Explicit or inappropriate media</option>
+                                            <option value="other">Other policy violation</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-semibold">Additional Details</label>
+                                        <textarea name="details" class="form-control" rows="3" placeholder="Provide extra context for our moderation team..."></textarea>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-warning rounded-pill px-4 fw-semibold">Submit Report</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="card-social p-5 text-center">
+                    <div class="mb-3 text-muted" style="font-size: 3rem;"><i class="fas fa-newspaper"></i></div>
+                    <h5 class="fw-bold">No posts in this feed yet</h5>
+                    <p class="text-muted small mb-3">Connect with more people or publish your own update to start engaging!</p>
+                    <div>
+                        <a href="{% url 'network' %}" class="btn btn-primary btn-sm rounded-pill px-4 fw-semibold">Discover People</a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Right Column: Recommendations & Network Highlights -->
+        <div class="col-lg-3 col-md-4">
+            <!-- People You May Know -->
+            <div class="card-social p-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold mb-0 text-dark">Suggested People</h6>
+                    <a href="{% url 'network' %}" class="small text-decoration-none fw-semibold">See All</a>
+                </div>
+                <div class="d-flex flex-column gap-3">
+                    {% for person in suggested_users %}
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-2 text-truncate me-2">
+                            <a href="{% url 'profile' username=person.username %}">
+                                <img src="{{ person.profile.get_avatar }}" alt="{{ person.username }}" class="user-avatar-sm border" style="width: 36px; height: 36px;">
+                            </a>
+                            <div class="text-truncate">
+                                <a href="{% url 'profile' username=person.username %}" class="text-decoration-none text-dark fw-semibold small d-block text-truncate">
+                                    {{ person.get_full_name|default:person.username }}
+                                </a>
+                                <div class="text-muted text-truncate" style="font-size: 0.72rem;">{{ person.profile.profession|default:"Member" }}</div>
+                            </div>
+                        </div>
+                        <form method="post" action="{% url 'send_connection' user_id=person.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-primary btn-sm rounded-pill px-2 py-0" style="font-size: 0.75rem;" title="Connect">
+                                <i class="fas fa-user-plus"></i>
+                            </button>
+                        </form>
+                    </div>
+                    {% empty %}
+                    <p class="small text-muted mb-0">No suggestions right now.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Trending Communities -->
+            <div class="card-social p-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold mb-0 text-dark">Communities</h6>
+                    <a href="{% url 'groups_list' %}" class="small text-decoration-none fw-semibold">Browse</a>
+                </div>
+                <div class="d-flex flex-column gap-2">
+                    {% for grp in popular_groups %}
+                    <a href="{% url 'group_detail' slug=grp.slug %}" class="text-decoration-none d-flex align-items-center gap-2 p-2 rounded hover-bg-light">
+                        <img src="{{ grp.get_cover }}" alt="{{ grp.name }}" class="rounded-3" style="width: 36px; height: 36px; object-fit: cover;">
+                        <div class="text-truncate">
+                            <div class="text-dark fw-semibold small text-truncate">{{ grp.name }}</div>
+                            <div class="text-muted" style="font-size: 0.7rem;">{{ grp.num_members }} members</div>
+                        </div>
+                    </a>
+                    {% empty %}
+                    <p class="small text-muted mb-0">Create the first community!</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Top Company Pages -->
+            <div class="card-social p-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold mb-0 text-dark">Company Pages</h6>
+                    <a href="{% url 'companies_list' %}" class="small text-decoration-none fw-semibold">Explore</a>
+                </div>
+                <div class="d-flex flex-column gap-2">
+                    {% for comp in featured_companies %}
+                    <a href="{% url 'company_detail' slug=comp.slug %}" class="text-decoration-none d-flex align-items-center gap-2 p-2 rounded hover-bg-light">
+                        <img src="{{ comp.get_logo }}" alt="{{ comp.name }}" class="rounded-3 border" style="width: 36px; height: 36px; object-fit: cover;">
+                        <div class="text-truncate">
+                            <div class="text-dark fw-semibold small text-truncate">{{ comp.name }}</div>
+                            <div class="text-muted" style="font-size: 0.7rem;">{{ comp.industry }}</div>
+                        </div>
+                    </a>
+                    {% empty %}
+                    <p class="small text-muted mb-0">No business pages yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,252 @@
+{% extends 'base.html' %}
+
+{% block title %}My Network & Connections - SmartSearch Social{% endblock %}
+
+{% block content %}
+<div class="container my-3">
+    <!-- Network Header Banner -->
+    <div class="card-social p-4 mb-4 bg-primary text-white position-relative overflow-hidden">
+        <div class="position-absolute end-0 bottom-0 opacity-10 pe-4 pb-2" style="font-size: 7rem; pointer-events: none;">
+            <i class="fas fa-users-viewfinder"></i>
+        </div>
+        <h3 class="fw-bold mb-1">Grow Your Professional &amp; Social Network</h3>
+        <p class="small text-white-50 mb-0" style="max-width: 650px;">
+            Connect with software engineers, cloud architects, founders and recruiters. Exchange insights and expand your opportunities.
+        </p>
+    </div>
+
+    <!-- Navigation Pills / Tabs -->
+    <div class="card-social p-2 mb-4 d-flex flex-wrap gap-2 justify-content-start">
+        <a href="{% url 'network' %}?tab=discover" class="btn btn-sm rounded-pill px-3 fw-semibold {% if tab == 'discover' %}btn-primary{% else %}btn-light text-secondary{% endif %}">
+            <i class="fas fa-compass me-1"></i>Discover People
+        </a>
+        <a href="{% url 'network' %}?tab=requests" class="btn btn-sm rounded-pill px-3 fw-semibold position-relative {% if tab == 'requests' %}btn-primary{% else %}btn-light text-secondary{% endif %}">
+            <i class="fas fa-user-clock me-1"></i>Requests
+            {% if received_requests %}
+            <span class="badge bg-danger rounded-pill ms-1">{{ received_requests|length }}</span>
+            {% endif %}
+        </a>
+        <a href="{% url 'network' %}?tab=connections" class="btn btn-sm rounded-pill px-3 fw-semibold {% if tab == 'connections' %}btn-primary{% else %}btn-light text-secondary{% endif %}">
+            <i class="fas fa-handshake me-1"></i>Connections ({{ connected_users|length }})
+        </a>
+        <a href="{% url 'network' %}?tab=following" class="btn btn-sm rounded-pill px-3 fw-semibold {% if tab == 'following' %}btn-primary{% else %}btn-light text-secondary{% endif %}">
+            <i class="fas fa-rss me-1"></i>Following ({{ following|length }})
+        </a>
+        <a href="{% url 'network' %}?tab=followers" class="btn btn-sm rounded-pill px-3 fw-semibold {% if tab == 'followers' %}btn-primary{% else %}btn-light text-secondary{% endif %}">
+            <i class="fas fa-users me-1"></i>Followers ({{ followers|length }})
+        </a>
+    </div>
+
+    <!-- Tab Content -->
+    {% if tab == 'requests' %}
+        <!-- Requests View -->
+        <div class="row g-4">
+            <div class="col-lg-6">
+                <div class="card-social p-4">
+                    <h5 class="fw-bold mb-3"><i class="fas fa-envelope-open text-primary me-2"></i>Received Connection Requests</h5>
+                    {% if received_requests %}
+                    <div class="d-flex flex-column gap-3">
+                        {% for req in received_requests %}
+                        <div class="d-flex align-items-center justify-content-between p-2 rounded border bg-light">
+                            <div class="d-flex align-items-center gap-2">
+                                <a href="{% url 'profile' username=req.sender.username %}">
+                                    <img src="{{ req.sender.profile.get_avatar }}" alt="{{ req.sender.username }}" class="user-avatar-sm border">
+                                </a>
+                                <div>
+                                    <a href="{% url 'profile' username=req.sender.username %}" class="fw-bold text-dark text-decoration-none small d-block">
+                                        {{ req.sender.get_full_name|default:req.sender.username }}
+                                    </a>
+                                    <div class="text-muted" style="font-size: 0.72rem;">{{ req.sender.profile.profession|default:"Member" }}</div>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <form method="post" action="{% url 'accept_connection' connection_id=req.id %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold">Accept</button>
+                                </form>
+                                <form method="post" action="{% url 'reject_connection' connection_id=req.id %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-outline-secondary btn-sm rounded-pill px-3">Ignore</button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted small mb-0">No pending received connection requests.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="card-social p-4">
+                    <h5 class="fw-bold mb-3"><i class="fas fa-paper-plane text-info me-2"></i>Sent Requests (Awaiting Approval)</h5>
+                    {% if sent_requests %}
+                    <div class="d-flex flex-column gap-3">
+                        {% for req in sent_requests %}
+                        <div class="d-flex align-items-center justify-content-between p-2 rounded border bg-light">
+                            <div class="d-flex align-items-center gap-2">
+                                <a href="{% url 'profile' username=req.receiver.username %}">
+                                    <img src="{{ req.receiver.profile.get_avatar }}" alt="{{ req.receiver.username }}" class="user-avatar-sm border">
+                                </a>
+                                <div>
+                                    <a href="{% url 'profile' username=req.receiver.username %}" class="fw-bold text-dark text-decoration-none small d-block">
+                                        {{ req.receiver.get_full_name|default:req.receiver.username }}
+                                    </a>
+                                    <div class="text-muted" style="font-size: 0.72rem;">{{ req.receiver.profile.profession|default:"Member" }}</div>
+                                </div>
+                            </div>
+                            <span class="badge bg-secondary-subtle text-secondary small px-3 py-2 rounded-pill">Pending</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted small mb-0">No active outgoing requests pending.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+    {% elif tab == 'connections' %}
+        <!-- Connections View -->
+        <div class="card-social p-4">
+            <h5 class="fw-bold mb-4"><i class="fas fa-handshake text-primary me-2"></i>My Connected Network ({{ connected_users|length }})</h5>
+            {% if connected_users %}
+            <div class="row g-3">
+                {% for person in connected_users %}
+                <div class="col-md-4 col-sm-6">
+                    <div class="p-3 border rounded-4 text-center bg-light h-100 d-flex flex-column justify-content-between">
+                        <div>
+                            <a href="{% url 'profile' username=person.username %}">
+                                <img src="{{ person.profile.get_avatar }}" alt="{{ person.username }}" class="user-avatar-md mb-2 border">
+                            </a>
+                            <h6 class="fw-bold mb-0">
+                                <a href="{% url 'profile' username=person.username %}" class="text-decoration-none text-dark">
+                                    {{ person.get_full_name|default:person.username }}
+                                </a>
+                            </h6>
+                            <p class="small text-muted mb-2 text-truncate">{{ person.profile.profession|default:"Member" }}</p>
+                        </div>
+                        <div class="d-flex justify-content-center gap-2 mt-2">
+                            <a href="{% url 'messages_thread' username=person.username %}" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold">
+                                <i class="fas fa-comment-dots me-1"></i>Message
+                            </a>
+                            <form method="post" action="{% url 'remove_connection' user_id=person.id %}" onsubmit="return confirm('Disconnect with {{ person.username }}?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-2" title="Remove Connection">
+                                    <i class="fas fa-user-xmark"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-4 text-muted">
+                <i class="fas fa-user-friends fa-2xl mb-2"></i>
+                <p>You have not connected with anyone yet. Explore suggestions to build your circle!</p>
+                <a href="{% url 'network' %}?tab=discover" class="btn btn-primary btn-sm rounded-pill px-4">Find People</a>
+            </div>
+            {% endif %}
+        </div>
+
+    {% elif tab == 'following' %}
+        <!-- Following View -->
+        <div class="card-social p-4">
+            <h5 class="fw-bold mb-3">People You Follow ({{ following|length }})</h5>
+            <div class="row g-3">
+                {% for person in following %}
+                <div class="col-md-4 col-sm-6">
+                    <div class="p-3 border rounded-3 bg-light d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-2 text-truncate">
+                            <img src="{{ person.profile.get_avatar }}" alt="{{ person.username }}" class="user-avatar-sm border">
+                            <div class="text-truncate">
+                                <a href="{% url 'profile' username=person.username %}" class="fw-bold text-dark text-decoration-none small d-block text-truncate">
+                                    {{ person.get_full_name|default:person.username }}
+                                </a>
+                                <div class="text-muted text-truncate" style="font-size: 0.7rem;">{{ person.profile.profession|default:"Member" }}</div>
+                            </div>
+                        </div>
+                        <form method="post" action="{% url 'toggle_follow' user_id=person.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-secondary btn-sm rounded-pill px-3">Unfollow</button>
+                        </form>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-muted small py-3">You are not following anyone yet.</div>
+                {% endfor %}
+            </div>
+        </div>
+
+    {% elif tab == 'followers' %}
+        <!-- Followers View -->
+        <div class="card-social p-4">
+            <h5 class="fw-bold mb-3">People Following You ({{ followers|length }})</h5>
+            <div class="row g-3">
+                {% for person in followers %}
+                <div class="col-md-4 col-sm-6">
+                    <div class="p-3 border rounded-3 bg-light d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-2 text-truncate">
+                            <img src="{{ person.profile.get_avatar }}" alt="{{ person.username }}" class="user-avatar-sm border">
+                            <div class="text-truncate">
+                                <a href="{% url 'profile' username=person.username %}" class="fw-bold text-dark text-decoration-none small d-block text-truncate">
+                                    {{ person.get_full_name|default:person.username }}
+                                </a>
+                                <div class="text-muted text-truncate" style="font-size: 0.7rem;">{{ person.profile.profession|default:"Member" }}</div>
+                            </div>
+                        </div>
+                        <a href="{% url 'profile' username=person.username %}" class="btn btn-outline-primary btn-sm rounded-pill px-3">View</a>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-muted small py-3">You don't have any followers yet. Share insightful posts to attract followers!</div>
+                {% endfor %}
+            </div>
+        </div>
+
+    {% else %}
+        <!-- Discover People View (Default) -->
+        <div class="card-social p-4">
+            <h5 class="fw-bold mb-3"><i class="fas fa-user-plus text-primary me-2"></i>People You May Know</h5>
+            <div class="row g-4">
+                {% for person in discover_people %}
+                <div class="col-lg-3 col-md-4 col-sm-6">
+                    <div class="card border rounded-4 text-center overflow-hidden h-100 shadow-sm d-flex flex-column justify-content-between bg-white">
+                        <div style="height: 60px; background: url('{{ person.profile.get_cover }}') center/cover no-repeat;"></div>
+                        <div class="p-3 pt-0" style="margin-top: -30px;">
+                            <a href="{% url 'profile' username=person.username %}">
+                                <img src="{{ person.profile.get_avatar }}" alt="{{ person.username }}" class="user-avatar-md border-3 border-white shadow-sm mb-2">
+                            </a>
+                            <h6 class="fw-bold mb-0 text-truncate">
+                                <a href="{% url 'profile' username=person.username %}" class="text-decoration-none text-dark">
+                                    {{ person.get_full_name|default:person.username }}
+                                </a>
+                            </h6>
+                            <p class="small text-muted mb-2 text-truncate" style="font-size: 0.75rem;">
+                                {{ person.profile.headline|default:person.profile.profession|default:"Member" }}
+                            </p>
+                            <div class="text-muted mb-3" style="font-size: 0.7rem;">
+                                <i class="fas fa-location-dot me-1"></i>{{ person.profile.location|default:"Worldwide" }}
+                            </div>
+                        </div>
+                        <div class="p-3 pt-0 d-grid">
+                            <form method="post" action="{% url 'send_connection' user_id=person.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-primary btn-sm w-100 rounded-pill fw-semibold">
+                                    <i class="fas fa-user-plus me-1"></i>Connect
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-4 text-muted">No additional suggestions at this moment.</div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+

@@ -1,0 +1,273 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ profile_user.get_full_name|default:profile_user.username }} - SmartSearch Social Profile{% endblock %}
+
+{% block content %}
+<div class="container my-3">
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <!-- Profile Hero Banner Card -->
+            <div class="card-social mb-4">
+                <!-- Cover Photo -->
+                <div style="height: 200px; background: url('{{ profile.get_cover }}') center/cover no-repeat;" class="position-relative">
+                    {% if is_me %}
+                    <a href="{% url 'edit_profile' %}" class="btn btn-sm btn-light position-absolute top-0 end-0 m-3 shadow-sm rounded-pill fw-semibold">
+                        <i class="fas fa-camera me-1"></i> Edit Cover
+                    </a>
+                    {% endif %}
+                </div>
+
+                <!-- Profile Info & Avatar -->
+                <div class="p-4" style="margin-top: -60px;">
+                    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start gap-3 mb-3">
+                        <div class="position-relative">
+                            <img src="{{ profile.get_avatar }}" alt="{{ profile_user.username }}" class="user-avatar-lg border-4 border-white shadow">
+                            {% if profile.is_online %}
+                            <span class="position-absolute bottom-0 end-0 p-2 bg-success border border-white rounded-circle" title="Online now"></span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex flex-wrap align-items-center gap-2 mt-sm-5">
+                            {% if is_me %}
+                            <a href="{% url 'edit_profile' %}" class="btn btn-outline-primary btn-sm rounded-pill px-4 fw-semibold">
+                                <i class="fas fa-user-pen me-1"></i> Edit Profile
+                            </a>
+                            <a href="{% url 'deactivate_account' %}" class="btn btn-outline-danger btn-sm rounded-pill px-3" title="Account Settings">
+                                <i class="fas fa-shield"></i>
+                            </a>
+                            {% else %}
+                                {% if user.is_authenticated %}
+                                    <!-- Connection State -->
+                                    {% if is_connected %}
+                                        <a href="{% url 'messages_thread' username=profile_user.username %}" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold shadow-sm">
+                                            <i class="fas fa-paper-plane me-1"></i> Message
+                                        </a>
+                                        <form method="post" action="{% url 'remove_connection' user_id=profile_user.id %}" class="d-inline" onsubmit="return confirm('Remove connection with {{ profile_user.username }}?');">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                                                <i class="fas fa-user-xmark me-1"></i> Connected
+                                            </button>
+                                        </form>
+                                    {% elif has_pending %}
+                                        <form method="post" action="{% url 'accept_connection' connection_id=has_pending.id %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-success btn-sm rounded-pill px-3 fw-semibold">
+                                                <i class="fas fa-check me-1"></i> Accept Request
+                                            </button>
+                                        </form>
+                                    {% elif has_sent %}
+                                        <button class="btn btn-secondary btn-sm rounded-pill px-3" disabled>
+                                            <i class="fas fa-clock me-1"></i> Request Pending
+                                        </button>
+                                    {% else %}
+                                        <form method="post" action="{% url 'send_connection' user_id=profile_user.id %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4 fw-semibold shadow-sm">
+                                                <i class="fas fa-user-plus me-1"></i> Connect
+                                            </button>
+                                        </form>
+                                    {% endif %}
+
+                                    <!-- Follow State -->
+                                    <form method="post" action="{% url 'toggle_follow' user_id=profile_user.id %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn {% if is_following %}btn-outline-secondary{% else %}btn-outline-primary{% endif %} btn-sm rounded-pill px-3 fw-semibold">
+                                            <i class="fas fa-rss me-1"></i> {% if is_following %}Following{% else %}Follow{% endif %}
+                                        </button>
+                                    </form>
+
+                                    <!-- Block & Report Dropdown -->
+                                    <div class="dropdown d-inline">
+                                        <button class="btn btn-light btn-sm rounded-circle p-2" type="button" data-bs-toggle="dropdown">
+                                            <i class="fas fa-ellipsis-vertical"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 small">
+                                            <li>
+                                                <form method="post" action="{% url 'block_user' user_id=profile_user.id %}" onsubmit="return confirm('Block this user?');">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="dropdown-item text-danger">
+                                                        <i class="fas fa-ban me-2"></i>Block User
+                                                    </button>
+                                                </form>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                {% else %}
+                                    <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-primary btn-sm rounded-pill px-4 fw-semibold">Sign In to Connect</a>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Names & Headlines -->
+                    <h3 class="fw-bold mb-1">
+                        {{ profile_user.get_full_name|default:profile_user.username }}
+                        {% if profile.email_verified %}
+                        <i class="fas fa-circle-check text-primary fs-5 ms-1" title="Verified Member"></i>
+                        {% endif %}
+                        <span class="text-muted fs-6 fw-normal ms-1">(@{{ profile_user.username }})</span>
+                    </h3>
+
+                    <p class="lead fs-6 text-dark mb-2 fw-medium">{{ profile.headline|default:"SmartSearch Network Member" }}</p>
+
+                    <div class="d-flex flex-wrap align-items-center gap-3 text-muted small mb-3">
+                        {% if profile.location %}
+                        <span><i class="fas fa-location-dot text-danger me-1"></i>{{ profile.location }}</span>
+                        {% endif %}
+                        {% if profile.company_name %}
+                        <span><i class="fas fa-building text-primary me-1"></i>{{ profile.company_name }}</span>
+                        {% endif %}
+                        {% if profile.education %}
+                        <span><i class="fas fa-graduation-cap text-success me-1"></i>{{ profile.education }}</span>
+                        {% endif %}
+                        <span><i class="fas fa-calendar-alt text-info me-1"></i>Joined {{ profile_user.date_joined|date:"M Y" }}</span>
+                    </div>
+
+                    <!-- Network Metrics -->
+                    <div class="d-flex align-items-center gap-4 py-2 border-top border-bottom small">
+                        <div><strong class="text-dark">{{ profile.connections_count }}</strong> <span class="text-muted">connections</span></div>
+                        <div><strong class="text-dark">{{ profile.followers_count }}</strong> <span class="text-muted">followers</span></div>
+                        <div><strong class="text-dark">{{ profile.following_count }}</strong> <span class="text-muted">following</span></div>
+                        <div><strong class="text-dark">{{ profile.posts_count }}</strong> <span class="text-muted">posts</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- About / Bio Card -->
+            {% if profile.bio %}
+            <div class="card-social p-4 mb-4">
+                <h5 class="fw-bold mb-2"><i class="fas fa-align-left text-primary me-2"></i>About</h5>
+                <p class="text-secondary mb-0" style="white-space: pre-line;">{{ profile.bio }}</p>
+            </div>
+            {% endif %}
+
+            <!-- Skills & Interests Card -->
+            {% if profile.skills or profile.interests %}
+            <div class="card-social p-4 mb-4">
+                <h5 class="fw-bold mb-3"><i class="fas fa-award text-warning me-2"></i>Skills &amp; Expertise</h5>
+                {% if profile.skills %}
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    {% for skill in profile.get_skills_list %}
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill small fw-semibold">
+                        <i class="fas fa-check-circle me-1"></i>{{ skill }}
+                    </span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if profile.interests %}
+                <h6 class="fw-bold text-muted small text-uppercase mb-2">Interests</h6>
+                <p class="small text-secondary mb-0">{{ profile.interests }}</p>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- User Posts Activity Stream -->
+            <div class="card-social p-4 mb-4">
+                <h5 class="fw-bold mb-3"><i class="fas fa-newspaper text-info me-2"></i>Activity &amp; Posts</h5>
+
+                {% if not can_view_posts %}
+                    <div class="p-4 text-center text-muted">
+                        <i class="fas fa-lock fa-2xl mb-3 text-secondary"></i>
+                        <h6 class="fw-bold text-dark">This Profile is Private</h6>
+                        <p class="small mb-0">Only accepted connections can view {{ profile_user.first_name|default:profile_user.username }}'s posts and activity.</p>
+                    </div>
+                {% elif posts %}
+                    <div class="d-flex flex-column gap-3">
+                        {% for post in posts %}
+                        <div class="p-3 border rounded-3 bg-light">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-muted small">{{ post.created_at|date:"F d, Y" }}</span>
+                                <a href="{% url 'post_detail' post_id=post.id %}" class="small text-primary text-decoration-none fw-semibold">View Post &rarr;</a>
+                            </div>
+                            <p class="mb-2 text-dark">{{ post.content|truncatechars:200 }}</p>
+                            {% if post.image %}
+                            <img src="{{ post.image.url }}" alt="Post image" class="img-fluid rounded-3 mb-2" style="max-height: 250px;">
+                            {% endif %}
+                            <div class="small text-muted d-flex gap-3">
+                                <span><i class="fas fa-thumbs-up me-1"></i>{{ post.likes_count }}</span>
+                                <span><i class="fas fa-comment me-1"></i>{{ post.comments_count }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted small mb-0">No public posts yet from this user.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Right Column: Contact Info & Mutual Connections -->
+        <div class="col-lg-4">
+            <!-- Contact & Web Presence Card -->
+            <div class="card-social p-4 mb-4">
+                <h5 class="fw-bold mb-3"><i class="fas fa-address-card text-primary me-2"></i>Contact &amp; Links</h5>
+                <ul class="list-unstyled mb-0 d-flex flex-column gap-3 small">
+                    {% if profile.contact_email %}
+                    <li class="d-flex align-items-center gap-2">
+                        <i class="fas fa-envelope text-primary fa-lg" style="width: 20px;"></i>
+                        <a href="mailto:{{ profile.contact_email }}" class="text-decoration-none text-dark">{{ profile.contact_email }}</a>
+                    </li>
+                    {% endif %}
+                    {% if profile.mobile_number %}
+                    <li class="d-flex align-items-center gap-2">
+                        <i class="fas fa-phone text-success fa-lg" style="width: 20px;"></i>
+                        <span>{{ profile.mobile_number }}</span>
+                    </li>
+                    {% endif %}
+                    {% if profile.whatsapp_number %}
+                    <li class="d-flex align-items-center gap-2">
+                        <i class="fab fa-whatsapp text-success fa-lg" style="width: 20px;"></i>
+                        <span>{{ profile.whatsapp_number }}</span>
+                    </li>
+                    {% endif %}
+                    {% if profile.linkedin_url %}
+                    <li class="d-flex align-items-center gap-2">
+                        <i class="fab fa-linkedin text-primary fa-lg" style="width: 20px;"></i>
+                        <a href="{{ profile.linkedin_url }}" target="_blank" rel="noopener noreferrer" class="text-decoration-none text-primary fw-medium">LinkedIn Profile</a>
+                    </li>
+                    {% endif %}
+                    {% if profile.github_url %}
+                    <li class="d-flex align-items-center gap-2">
+                        <i class="fab fa-github text-dark fa-lg" style="width: 20px;"></i>
+                        <a href="{{ profile.github_url }}" target="_blank" rel="noopener noreferrer" class="text-decoration-none text-dark fw-medium">GitHub Repository</a>
+                    </li>
+                    {% endif %}
+                    {% if profile.twitter_url %}
+                    <li class="d-flex align-items-center gap-2">
+                        <i class="fab fa-x-twitter text-dark fa-lg" style="width: 20px;"></i>
+                        <a href="{{ profile.twitter_url }}" target="_blank" rel="noopener noreferrer" class="text-decoration-none text-dark">X / Twitter</a>
+                    </li>
+                    {% endif %}
+                    {% if profile.website_url %}
+                    <li class="d-flex align-items-center gap-2">
+                        <i class="fas fa-globe text-info fa-lg" style="width: 20px;"></i>
+                        <a href="{{ profile.website_url }}" target="_blank" rel="noopener noreferrer" class="text-decoration-none text-primary">{{ profile.website_url|truncatechars:35 }}</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+
+            <!-- Mutual Connections Preview -->
+            {% if mutual_connections %}
+            <div class="card-social p-4 mb-4">
+                <h5 class="fw-bold mb-3"><i class="fas fa-users text-primary me-2"></i>Mutual Connections ({{ mutual_connections|length }})</h5>
+                <div class="d-flex flex-column gap-2">
+                    {% for m_user in mutual_connections|slice:":5" %}
+                    <a href="{% url 'profile' username=m_user.username %}" class="d-flex align-items-center gap-2 text-decoration-none p-2 rounded hover-bg-light">
+                        <img src="{{ m_user.profile.get_avatar }}" alt="{{ m_user.username }}" class="user-avatar-sm border" style="width: 32px; height: 32px;">
+                        <div class="text-truncate">
+                            <div class="fw-semibold text-dark small text-truncate">{{ m_user.get_full_name|default:m_user.username }}</div>
+                            <div class="text-muted" style="font-size: 0.7rem;">{{ m_user.profile.profession|default:"Member" }}</div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+

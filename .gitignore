@@ -35,3 +35,8 @@ cookies*.txt
 scratch/
 *.tmp
 
+# Python
+__pycache__/
+*.pyc
+*.pyo
+

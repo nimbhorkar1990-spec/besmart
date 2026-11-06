@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SmartSearch Social - Modern Social Networking Platform{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome 6 Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #1a73e8;
+            --primary-hover: #1557b0;
+            --primary-subtle: #e8f0fe;
+            --bg-body: #f0f2f5;
+            --card-border: rgba(0, 0, 0, 0.08);
+            --text-main: #1f2937;
+            --text-secondary: #65676b;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Navbar */
+        .social-navbar {
+            background-color: #ffffff;
+            border-bottom: 1px solid var(--card-border);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            position: sticky;
+            top: 0;
+            z-index: 1030;
+            padding: 0.5rem 1rem;
+        }
+
+        .social-brand {
+            font-weight: 800;
+            font-size: 1.35rem;
+            color: var(--primary-color) !important;
+            text-decoration: none;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .search-input-pill {
+            background-color: #f0f2f5;
+            border: 1px solid transparent;
+            border-radius: 50rem;
+            padding: 0.45rem 1rem 0.45rem 2.2rem;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            width: 260px;
+        }
+
+        .search-input-pill:focus {
+            background-color: #ffffff;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.15);
+            width: 320px;
+        }
+
+        .nav-icon-link {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 0.35rem 0.9rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.75rem;
+            font-weight: 500;
+            position: relative;
+            border-radius: 0.5rem;
+            transition: all 0.15s ease;
+        }
+
+        .nav-icon-link i {
+            font-size: 1.25rem;
+            margin-bottom: 2px;
+        }
+
+        .nav-icon-link:hover, .nav-icon-link.active {
+            color: var(--primary-color);
+            background-color: var(--primary-subtle);
+        }
+
+        .nav-icon-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -0.5rem;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background-color: var(--primary-color);
+            border-radius: 3px 3px 0 0;
+        }
+
+        .badge-nav-counter {
+            position: absolute;
+            top: 2px;
+            right: 8px;
+            font-size: 0.65rem;
+            padding: 0.2em 0.45em;
+        }
+
+        /* Card Styles */
+        .card-social {
+            background: #ffffff;
+            border: 1px solid var(--card-border);
+            border-radius: 0.85rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+            margin-bottom: 1.25rem;
+            overflow: hidden;
+            transition: box-shadow 0.2s ease;
+        }
+
+        .card-social:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+        }
+
+        /* Post Styles */
+        .user-avatar-sm {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .user-avatar-md {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .user-avatar-lg {
+            width: 96px;
+            height: 96px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #ffffff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .post-action-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.875rem;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+
+        .post-action-btn:hover {
+            background-color: #f0f2f5;
+            color: var(--primary-color);
+        }
+
+        .post-action-btn.active {
+            color: var(--primary-color);
+        }
+
+        .post-action-btn.active-saved {
+            color: #d97706;
+        }
+
+        /* Mobile Bottom Nav */
+        @media (max-width: 767.98px) {
+            .search-input-pill {
+                width: 160px;
+            }
+            .mobile-bottom-nav {
+                display: flex !important;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: #ffffff;
+                border-top: 1px solid var(--card-border);
+                justify-content: space-around;
+                padding: 0.35rem 0;
+                z-index: 1040;
+            }
+            body {
+                padding-bottom: 60px;
+            }
+        }
+
+        /* Social Footer */
+        .social-footer {
+            background: #ffffff;
+            border-top: 1px solid var(--card-border);
+            color: var(--text-secondary);
+            font-size: 0.825rem;
+            padding: 1.5rem 0;
+            margin-top: auto;
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+    <!-- Main Navigation Bar -->
+    <header class="social-navbar">
+        <div class="container-fluid px-lg-4 d-flex align-items-center justify-content-between">
+            <!-- Left: Logo & Search -->
+            <div class="d-flex align-items-center gap-3">
+                <a href="{% url 'feed' %}" class="social-brand" title="SmartSearch Social">
+                    <span class="bg-primary text-white rounded-3 p-1 px-2 d-inline-flex align-items-center justify-content-center" style="font-size: 1.1rem; line-height: 1;">
+                        <i class="fas fa-share-nodes"></i>
+                    </span>
+                    <span>Smart<span class="text-dark">Social</span></span>
+                </a>
+
+                <!-- Global Search Input -->
+                <form action="{% url 'search' %}" method="get" class="position-relative d-none d-sm-block">
+                    <i class="fas fa-search position-absolute top-50 translate-middle-y text-muted" style="left: 0.85rem; font-size: 0.85rem;"></i>
+                    <input type="text" name="q" class="search-input-pill" placeholder="Search people, posts, groups..." value="{{ request.GET.q|default:'' }}">
+                </form>
+            </div>
+
+            <!-- Middle: Navigation Icons (Desktop/Tablet) -->
+            <div class="d-none d-md-flex align-items-center gap-1">
+                <a href="{% url 'feed' %}" class="nav-icon-link {% if request.resolver_match.url_name == 'feed' %}active{% endif %}" title="Home Feed">
+                    <i class="fas fa-house"></i>
+                    <span>Feed</span>
+                </a>
+                <a href="{% url 'network' %}" class="nav-icon-link {% if request.resolver_match.url_name == 'network' %}active{% endif %}" title="My Network & Connections">
+                    <i class="fas fa-user-group"></i>
+                    <span>Network</span>
+                    {% if pending_connections_count > 0 %}
+                    <span class="badge bg-danger rounded-pill badge-nav-counter">{{ pending_connections_count }}</span>
+                    {% endif %}
+                </a>
+                <a href="{% url 'messages' %}" class="nav-icon-link {% if 'messages' in request.resolver_match.url_name %}active{% endif %}" title="Private Messages">
+                    <i class="fas fa-comment-dots"></i>
+                    <span>Chat</span>
+                    {% if unread_messages_count > 0 %}
+                    <span class="badge bg-primary rounded-pill badge-nav-counter">{{ unread_messages_count }}</span>
+                    {% endif %}
+                </a>
+                <a href="{% url 'notifications' %}" class="nav-icon-link {% if request.resolver_match.url_name == 'notifications' %}active{% endif %}" title="Notifications">
+                    <i class="fas fa-bell"></i>
+                    <span>Alerts</span>
+                    {% if unread_notifications_count > 0 %}
+                    <span class="badge bg-danger rounded-pill badge-nav-counter">{{ unread_notifications_count }}</span>
+                    {% endif %}
+                </a>
+                <a href="{% url 'groups_list' %}" class="nav-icon-link {% if 'groups' in request.resolver_match.url_name %}active{% endif %}" title="Communities & Groups">
+                    <i class="fas fa-users-rectangle"></i>
+                    <span>Groups</span>
+                </a>
+                <a href="{% url 'companies_list' %}" class="nav-icon-link {% if 'companies' in request.resolver_match.url_name %}active{% endif %}" title="Business Pages & Companies">
+                    <i class="fas fa-building"></i>
+                    <span>Pages</span>
+                </a>
+            </div>
+
+            <!-- Right: Actions & User Dropdown -->
+            <div class="d-flex align-items-center gap-2">
+                <!-- Back to Search Engine Link -->
+                <a href="http://localhost:8080/" class="btn btn-outline-secondary btn-sm rounded-pill px-3 d-none d-lg-inline-flex align-items-center gap-1" title="Return to SmartSearch Engine">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Search Engine</span>
+                </a>
+
+                {% if user.is_authenticated %}
+                <!-- User Profile Dropdown -->
+                <div class="dropdown">
+                    <button class="btn btn-link text-decoration-none p-0 d-flex align-items-center gap-2 dropdown-toggle" type="button" id="userMenuBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                        <img src="{{ user_profile.get_avatar }}" alt="{{ user.username }}" class="user-avatar-sm border">
+                        <span class="d-none d-xl-inline text-dark fw-semibold small">{{ user.first_name|default:user.username }}</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 py-2 mt-2" aria-labelledby="userMenuBtn" style="min-width: 240px;">
+                        <li class="px-3 py-2 border-bottom">
+                            <div class="fw-bold text-dark">{{ user.get_full_name|default:user.username }}</div>
+                            <div class="small text-muted text-truncate">{{ user_profile.headline|default:user.email }}</div>
+                        </li>
+                        <li>
+                            <a class="dropdown-item py-2" href="{% url 'profile' username=user.username %}">
+                                <i class="fas fa-user-circle me-2 text-primary"></i>View Profile
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item py-2" href="{% url 'edit_profile' %}">
+                                <i class="fas fa-gear me-2 text-secondary"></i>Edit Profile &amp; Settings
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item py-2" href="{% url 'feed' %}?tab=saved">
+                                <i class="fas fa-bookmark me-2 text-warning"></i>Saved Posts
+                            </a>
+                        </li>
+                        {% if user.is_staff %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item py-2 text-danger fw-semibold" href="{% url 'admin_dashboard' %}">
+                                <i class="fas fa-shield-halved me-2"></i>Admin Dashboard
+                            </a>
+                        </li>
+                        {% endif %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item py-2 text-danger" href="{% url 'logout' %}">
+                                <i class="fas fa-sign-out-alt me-2"></i>Sign Out
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                {% else %}
+                <!-- Guest Actions -->
+                <div class="d-flex align-items-center gap-2">
+                    <a href="{% url 'login' %}" class="btn btn-outline-primary btn-sm px-3 rounded-pill fw-semibold">Sign In</a>
+                    <a href="{% url 'register' %}" class="btn btn-primary btn-sm px-3 rounded-pill fw-semibold shadow-sm">Sign Up</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <!-- Flash Messages -->
+    <div class="container mt-3">
+        {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm rounded-3 py-2 px-3 small d-flex align-items-center gap-2" role="alert">
+                {% if message.tags == 'success' %}
+                    <i class="fas fa-circle-check text-success"></i>
+                {% elif message.tags == 'error' or message.tags == 'danger' %}
+                    <i class="fas fa-circle-exclamation text-danger"></i>
+                {% elif message.tags == 'warning' %}
+                    <i class="fas fa-triangle-exclamation text-warning"></i>
+                {% else %}
+                    <i class="fas fa-circle-info text-info"></i>
+                {% endif %}
+                <span class="flex-grow-1">{{ message }}</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" style="padding: 0.75rem;"></button>
+            </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <!-- Main Content Container -->
+    <main class="flex-grow-1 py-3">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Mobile Bottom Navigation Bar -->
+    <nav class="mobile-bottom-nav d-md-none">
+        <a href="{% url 'feed' %}" class="nav-icon-link {% if request.resolver_match.url_name == 'feed' %}active{% endif %}">
+            <i class="fas fa-house"></i>
+            <span>Feed</span>
+        </a>
+        <a href="{% url 'network' %}" class="nav-icon-link {% if request.resolver_match.url_name == 'network' %}active{% endif %}">
+            <i class="fas fa-user-group"></i>
+            <span>Network</span>
+            {% if pending_connections_count > 0 %}
+            <span class="badge bg-danger rounded-pill badge-nav-counter">{{ pending_connections_count }}</span>
+            {% endif %}
+        </a>
+        <a href="{% url 'messages' %}" class="nav-icon-link {% if 'messages' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-comment-dots"></i>
+            <span>Chat</span>
+            {% if unread_messages_count > 0 %}
+            <span class="badge bg-primary rounded-pill badge-nav-counter">{{ unread_messages_count }}</span>
+            {% endif %}
+        </a>
+        <a href="{% url 'notifications' %}" class="nav-icon-link {% if request.resolver_match.url_name == 'notifications' %}active{% endif %}">
+            <i class="fas fa-bell"></i>
+            <span>Alerts</span>
+            {% if unread_notifications_count > 0 %}
+            <span class="badge bg-danger rounded-pill badge-nav-counter">{{ unread_notifications_count }}</span>
+            {% endif %}
+        </a>
+        {% if user.is_authenticated %}
+        <a href="{% url 'profile' username=user.username %}" class="nav-icon-link">
+            <i class="fas fa-user"></i>
+            <span>Profile</span>
+        </a>
+        {% else %}
+        <a href="{% url 'login' %}" class="nav-icon-link">
+            <i class="fas fa-sign-in-alt"></i>
+            <span>Login</span>
+        </a>
+        {% endif %}
+    </nav>
+
+    <!-- Footer -->
+    <footer class="social-footer">
+        <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
+            <div>
+                <strong>SmartSearch Social Media Platform</strong> &copy; 2026. Inspired by professional and personal networking architectures.
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <a href="http://localhost:8080/" class="text-decoration-none text-muted">SmartSearch Engine</a>
+                <a href="http://localhost:8080/employment" class="text-decoration-none text-muted">Employment Services</a>
+                <a href="http://localhost:8080/blogs" class="text-decoration-none text-muted">Blogs &amp; News</a>
+                <a href="{% url 'search' %}" class="text-decoration-none text-muted">Discover People</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- CSRF Token Setup for AJAX -->
+    <script>
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        const csrftoken = getCookie('csrftoken');
+
+        // Like button AJAX handler
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('.btn-like-post');
+            if (btn) {
+                e.preventDefault();
+                const postId = btn.getAttribute('data-post-id');
+                fetch(`/post/${postId}/like/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrftoken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    const countSpan = btn.querySelector('.like-count');
+                    const icon = btn.querySelector('i');
+                    if (countSpan) countSpan.textContent = data.likes_count;
+                    if (data.liked) {
+                        btn.classList.add('text-primary');
+                        icon.classList.remove('fa-regular');
+                        icon.classList.add('fa-solid');
+                    } else {
+                        btn.classList.remove('text-primary');
+                        icon.classList.remove('fa-solid');
+                        icon.classList.add('fa-regular');
+                    }
+                })
+                .catch(err => console.error(err));
+            }
+
+            // Save button AJAX handler
+            const saveBtn = e.target.closest('.btn-save-post');
+            if (saveBtn) {
+                e.preventDefault();
+                const postId = saveBtn.getAttribute('data-post-id');
+                fetch(`/post/${postId}/save/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrftoken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    const icon = saveBtn.querySelector('i');
+                    if (data.saved) {
+                        saveBtn.classList.add('text-warning');
+                        icon.classList.remove('fa-regular');
+                        icon.classList.add('fa-solid');
+                    } else {
+                        saveBtn.classList.remove('text-warning');
+                        icon.classList.remove('fa-solid');
+                        icon.classList.add('fa-regular');
+                    }
+                })
+                .catch(err => console.error(err));
+            }
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
+
