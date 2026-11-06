@@ -10,7 +10,7 @@
 <!-- Header Navbar with Home & Services Navigation Menu -->
 <header th:replace="~{fragments/header :: navbar}"></header>
 
-<!-- Main Blank Page Content (Completely blank: no text, images, banners, or other content) -->
+<!-- Main Container -->
 <main class="flex-grow-1" id="socialMediaPlatformContent">
 </main>
 
@@ -20,6 +20,10 @@
 <!-- Bootstrap 5 JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script th:src="@{/js/main.js}"></script>
+
+<script>
+    window.location.href = "http://localhost:8000/feed/";
+</script>
 
 </body>
 </html>
