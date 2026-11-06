@@ -91,9 +91,14 @@
                         </span>
                     </a>
 
-                    {% if user.is_staff %}
-                    <a href="{% url 'admin_dashboard' %}" class="btn btn-danger btn-sm py-1 px-2 small fw-bold">
+                    {% if user.is_staff or user.is_superuser or current_profile.is_admin_or_super %}
+                    <a href="{% url 'admin_dashboard' %}" class="btn btn-danger btn-sm py-1 px-2 small fw-bold position-relative" title="Admin Dashboard">
                         <i class="fas fa-shield-halved me-1"></i>Admin
+                        {% if pending_deletions_count > 0 %}
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark" title="{{ pending_deletions_count }} Pending Deletion Requests">
+                                {{ pending_deletions_count }}
+                            </span>
+                        {% endif %}
                     </a>
                     {% endif %}
 

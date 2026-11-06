@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+
+{% block title %}orkut - edit role permissions: {{ role.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-md-4 py-3">
+    {% with active_tab='roles' %}
+        {% include 'admin_panel/_nav.html' %}
+    {% endwith %}
+
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="orkut-card">
+                <div class="orkut-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <span class="fw-bold text-danger"><i class="fas fa-sliders me-1"></i> Define Default Permissions for Role: {{ role.name }}</span>
+                        <code class="ms-2">[{{ role.code }}]</code>
+                    </div>
+                    <a href="{% url 'admin_roles' %}" class="small text-decoration-none">&larr; Back to Role Management</a>
+                </div>
+
+                <div class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div class="small text-muted">
+                        {{ role.description|default:"All users assigned this role will inherit these 12 default authorities unless individually overridden." }}
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-success btn-sm" onclick="setRoleToggles(true)">
+                            <i class="fas fa-check-double me-1"></i> Enable All
+                        </button>
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="setRoleToggles(false)">
+                            <i class="fas fa-ban me-1"></i> Disable All
+                        </button>
+                    </div>
+                </div>
+
+                <form method="post" class="p-3">
+                    {% csrf_token %}
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded h-100 bg-white">
+                                <div class="form-check form-switch d-flex justify-content-between align-items-center ps-0">
+                                    <label class="form-check-label fw-bold mb-0">1. Edit User Profile</label>
+                                    {{ form.can_edit_profile }}
+                                </div>
+                                <div class="small text-muted mt-1">Allow editing profile bio and fortune.</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded h-100 bg-white">
+                                <div class="form-check form-switch d-flex justify-content-between align-items-center ps-0">
+                                    <label class="form-check-label fw-bold mb-0">2. Upload Photos</label>
+                                    {{ form.can_upload_photos }}
+                                </div>
+                                <div class="small text-muted mt-1">Allow uploading photos to albums.</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded h-100 bg-white">
+                                <div class="form-check form-switch d-flex justify-content-between align-items-center ps-0">
+                                    <label class="form-check-label fw-bold mb-0">3. Publish Status Updates</label>
+                                    {{ form.can_create_posts }}
+                                </div>
+                                <div class="small text-muted mt-1">Allow publishing feed updates.</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded h-100 bg-white">
+                                <div class="form-check form-switch d-flex justify-content-between align-items-center ps-0">
+                                    <label class="form-check-label fw-bold mb-0">4. Edit &amp; Delete Posts</label>
+                                    {{ form.can_manage_posts }}
+                                </div>
+                                <div class="small text-muted mt-1">Allow deleting own posts.</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded h-100 bg-white">
+                                <div class="form-check form-switch d-flex justify-content-between align-items-center ps-0">
+                                    <label class="form-check-label fw-bold mb-0">5. Like &amp; Comment</label>
+                                    {{ form.can_like_comment }}
+                                </div>
+                                <div class="small text-muted mt-1">Allow commenting and liking updates.</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded h-100 bg-white">
+                                <div class="form-check form-switch d-flex justify-content-between align-items-center ps-0">
+                                    <label class="form-check-label fw-bold mb-0">6. Send &amp; Receive Messages</label>
+                                    {{ form.can_send_messages }}
+                                </div>
+                                <div class="small text-muted mt-1">Allow private messages and chats.</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded h-100 bg-white">
+                                <div class="form-check form-switch d-flex justify-content-between align-items-center ps-0">
+                                    <label class="form-check-label fw-bold mb-0">7. Send Friend Requests</label>
+                                    {{ form.can_send_friend_requests }}
+                                </div>
+                                <div class="small text-muted mt-1">Allow sending friend connections.</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded h-100 bg-white">
+                                <div class="form-check form-switch d-flex justify-content-between align-items-center ps-0">
+                                    <label class="form-check-label fw-bold mb-0">8. Create Communities</label>
+                                    {{ form.can_create_communities }}
+                                </div>
+                                <div class="small text-muted mt-1">Allow creating new communities.</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded h-100 bg-white">
+                                <div class="form-check form-switch d-flex justify-content-between align-items-center ps-0">
+                                    <label class="form-check-label fw-bold mb-0">9. Join Communities</label>
+                                    {{ form.can_join_communities }}
+                                </div>
+                                <div class="small text-muted mt-1">Allow joining and posting in communities.</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded h-100 bg-white">
+                                <div class="form-check form-switch d-flex justify-content-between align-items-center ps-0">
+                                    <label class="form-check-label fw-bold mb-0">10. Create Photo Albums</label>
+                                    {{ form.can_create_albums }}
+                                </div>
+                                <div class="small text-muted mt-1">Allow creating albums.</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded h-100 bg-white">
+                                <div class="form-check form-switch d-flex justify-content-between align-items-center ps-0">
+                                    <label class="form-check-label fw-bold mb-0">11. Use Scrapbook</label>
+                                    {{ form.can_use_scrapbook }}
+                                </div>
+                                <div class="small text-muted mt-1">Allow posting scraps on friend profiles.</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded h-100 bg-white">
+                                <div class="form-check form-switch d-flex justify-content-between align-items-center ps-0">
+                                    <label class="form-check-label fw-bold mb-0">12. All Social Media Features</label>
+                                    {{ form.can_access_social_features }}
+                                </div>
+                                <div class="small text-muted mt-1">Full access to visitors, fans, and profile interactions.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                        <a href="{% url 'admin_roles' %}" class="btn btn-outline-secondary btn-sm">Cancel</a>
+                        <button type="submit" class="btn btn-danger btn-sm px-4 fw-bold">
+                            <i class="fas fa-save me-1"></i> Save Role Permissions
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function setRoleToggles(state) {
+    const switches = document.querySelectorAll('.form-check-input');
+    switches.forEach(sw => {
+        sw.checked = state;
+    });
+}
+</script>
+{% endblock %}

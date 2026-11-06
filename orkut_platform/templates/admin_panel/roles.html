@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+
+{% block title %}orkut - role management{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-md-4 py-3">
+    {% with active_tab='roles' %}
+        {% include 'admin_panel/_nav.html' %}
+    {% endwith %}
+
+    <div class="row g-3">
+        <!-- Roles List Table -->
+        <div class="col-lg-8">
+            <div class="orkut-card">
+                <div class="orkut-card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="fw-bold text-danger"><i class="fas fa-user-shield me-1"></i> System Roles &amp; Authorities</span>
+                        <span class="badge bg-warning text-dark ms-2">Super Admin Control</span>
+                    </div>
+                    <span class="small text-muted">{{ roles|length }} Defined Roles</span>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle small mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Role Name</th>
+                                <th>Role Code</th>
+                                <th>Description</th>
+                                <th>Users</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in roles %}
+                            <tr>
+                                <td>
+                                    <div class="fw-bold text-dark d-flex align-items-center gap-2">
+                                        {% if r.code == 'SUPER_ADMIN' %}
+                                            <i class="fas fa-crown text-warning"></i>
+                                        {% elif r.code == 'ADMIN' %}
+                                            <i class="fas fa-shield-halved text-danger"></i>
+                                        {% elif r.code == 'MODERATOR' %}
+                                            <i class="fas fa-wand-magic-sparkles text-info"></i>
+                                        {% else %}
+                                            <i class="fas fa-user text-secondary"></i>
+                                        {% endif %}
+                                        {{ r.name }}
+                                        {% if r.is_system_role %}
+                                            <span class="badge bg-light text-muted border py-0 px-1" style="font-size: 0.65rem;">System</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <code>{{ r.code }}</code>
+                                </td>
+                                <td class="text-muted" style="max-width: 250px;">
+                                    {{ r.description|default:"Standard role" }}
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary-subtle text-secondary border">
+                                        {{ r.users.count }} users
+                                    </span>
+                                </td>
+                                <td class="text-end text-nowrap">
+                                    <a href="{% url 'admin_edit_role_permissions' r.id %}" class="btn btn-sm btn-outline-danger py-0 px-2" style="font-size: 0.72rem;">
+                                        <i class="fas fa-sliders me-1"></i> Define Permissions
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted">
+                                    No roles configured yet.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create New Role Card -->
+        <div class="col-lg-4">
+            <div class="orkut-card">
+                <div class="orkut-card-header bg-light">
+                    <span class="fw-bold text-dark"><i class="fas fa-plus-circle me-1 text-primary"></i> Create New Custom Role</span>
+                </div>
+                <div class="p-3">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Role Name:</label>
+                            {{ new_role_form.name }}
+                            <div class="form-text small">e.g. Community Leader, Content Auditor</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Role Code:</label>
+                            {{ new_role_form.code }}
+                            <div class="form-text small">Unique uppercase identifier (e.g. COMMUNITY_LEADER).</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Description:</label>
+                            {{ new_role_form.description }}
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-sm w-100 fw-bold">
+                            <i class="fas fa-plus me-1"></i> Create Role
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

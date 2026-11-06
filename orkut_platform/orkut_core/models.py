@@ -2,6 +2,64 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
 
+class UserRole(models.Model):
+    ROLE_CHOICES = [
+        ('SUPER_ADMIN', 'Super Admin'),
+        ('ADMIN', 'Admin'),
+        ('MODERATOR', 'Moderator'),
+        ('NORMAL_USER', 'Normal User'),
+    ]
+    name = models.CharField(max_length=50, unique=True)
+    code = models.CharField(max_length=20, choices=ROLE_CHOICES, default='NORMAL_USER')
+    description = models.TextField(blank=True)
+    is_system_role = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+
+class RolePermission(models.Model):
+    role = models.OneToOneField(UserRole, on_delete=models.CASCADE, related_name='permissions')
+    can_edit_profile = models.BooleanField(default=True)
+    can_upload_photos = models.BooleanField(default=True)
+    can_create_posts = models.BooleanField(default=True)
+    can_manage_posts = models.BooleanField(default=True)
+    can_like_comment = models.BooleanField(default=True)
+    can_send_messages = models.BooleanField(default=True)
+    can_send_friend_requests = models.BooleanField(default=True)
+    can_create_communities = models.BooleanField(default=True)
+    can_join_communities = models.BooleanField(default=True)
+    can_create_albums = models.BooleanField(default=True)
+    can_use_scrapbook = models.BooleanField(default=True)
+    can_access_social_features = models.BooleanField(default=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Permissions for {self.role.name}"
+
+
+class UserPermission(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='custom_permissions')
+    can_edit_profile = models.BooleanField(default=True)
+    can_upload_photos = models.BooleanField(default=True)
+    can_create_posts = models.BooleanField(default=True)
+    can_manage_posts = models.BooleanField(default=True)
+    can_like_comment = models.BooleanField(default=True)
+    can_send_messages = models.BooleanField(default=True)
+    can_send_friend_requests = models.BooleanField(default=True)
+    can_create_communities = models.BooleanField(default=True)
+    can_join_communities = models.BooleanField(default=True)
+    can_create_albums = models.BooleanField(default=True)
+    can_use_scrapbook = models.BooleanField(default=True)
+    can_access_social_features = models.BooleanField(default=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Custom Permissions for {self.user.username}"
+
+
 class UserProfile(models.Model):
     GENDER_CHOICES = [
         ('M', 'Male'),
@@ -21,8 +79,18 @@ class UserProfile(models.Model):
         ('FRIENDS', 'Friends Only'),
         ('ONLY_ME', 'Only Me'),
     ]
+    ACCOUNT_STATUS_CHOICES = [
+        ('ACTIVE', 'Active'),
+        ('INACTIVE', 'Inactive'),
+        ('BLOCKED', 'Blocked'),
+        ('PENDING_DELETION', 'Pending Deletion'),
+        ('DELETED', 'Deleted'),
+    ]
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='orkut_profile')
+    role = models.ForeignKey(UserRole, on_delete=models.SET_NULL, null=True, blank=True, related_name='users')
+    account_status = models.CharField(max_length=20, choices=ACCOUNT_STATUS_CHOICES, default='ACTIVE')
+
     full_name = models.CharField(max_length=150, blank=True)
     mobile_number = models.CharField(max_length=20, blank=True)
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES, default='M')
@@ -63,6 +131,64 @@ class UserProfile(models.Model):
             return self.profile_photo.url
         name_encoded = (self.full_name or self.user.username).replace(' ', '+')
         return f"https://ui-avatars.com/api/?name={name_encoded}&background=2b4f81&color=ffffff&bold=true"
+
+    def check_permission(self, perm_name):
+        if self.user.is_superuser:
+            return True
+        if hasattr(self.user, 'custom_permissions'):
+            return getattr(self.user.custom_permissions, perm_name, True)
+        if self.role and hasattr(self.role, 'permissions'):
+            return getattr(self.role.permissions, perm_name, True)
+        return True
+
+    def is_super_admin(self):
+        return self.user.is_superuser or (self.role and self.role.code == 'SUPER_ADMIN')
+
+    def is_admin_or_super(self):
+        return self.user.is_superuser or (self.role and self.role.code in ('SUPER_ADMIN', 'ADMIN'))
+
+    def is_moderator_or_higher(self):
+        return self.user.is_superuser or (self.role and self.role.code in ('SUPER_ADMIN', 'ADMIN', 'MODERATOR'))
+
+
+class AccountDeletionRequest(models.Model):
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('APPROVED', 'Approved'),
+        ('REJECTED', 'Rejected'),
+        ('COMPLETED', 'Completed'),
+        ('CANCELLED', 'Cancelled'),
+    ]
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='deletion_requests')
+    reason = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    admin_notes = models.TextField(blank=True)
+    reviewed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_deletions')
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Deletion Request by {self.user.username} [{self.status}]"
+
+
+class AdminActivityLog(models.Model):
+    admin_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='admin_actions')
+    action = models.CharField(max_length=150)
+    affected_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='affected_actions')
+    previous_value = models.TextField(blank=True)
+    updated_value = models.TextField(blank=True)
+    ip_address = models.CharField(max_length=50, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.admin_user.username if self.admin_user else 'System'} - {self.action} ({self.created_at.strftime('%Y-%m-%d %H:%M')})"
 
 
 class FriendRequest(models.Model):
@@ -275,6 +401,8 @@ class Notification(models.Model):
         ('COMMENT', 'Commented on your post'),
         ('FAN', 'Added you as a Fan'),
         ('COMMUNITY', 'Community Activity'),
+        ('DELETION', 'Account Deletion Status Update'),
+        ('SYSTEM', 'System Administration Notice'),
     ]
     recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orkut_notifications')
     sender = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
@@ -296,7 +424,7 @@ class Report(models.Model):
         ('DISMISSED', 'Dismissed'),
     ]
     reported_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reports_made')
-    content_type = models.CharField(max_length=50) # 'post', 'comment', 'scrap', 'community', 'user'
+    content_type = models.CharField(max_length=50) # 'post', 'comment', 'scrap', 'community', 'user', 'photo'
     content_id = models.PositiveIntegerField()
     reason = models.TextField()
     status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='PENDING')

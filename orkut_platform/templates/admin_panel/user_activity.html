@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+
+{% block title %}orkut - activity for @{{ target_user.username }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-md-4 py-3">
+    {% with active_tab='users' %}
+        {% include 'admin_panel/_nav.html' %}
+    {% endwith %}
+
+    <div class="orkut-card">
+        <div class="orkut-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <span class="fw-bold text-primary"><i class="fas fa-chart-line me-1"></i> User Activity Timeline: @{{ target_user.username }}</span>
+                <span class="badge bg-light text-dark border ms-2">ID #{{ target_user.id }}</span>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'admin_edit_user' target_user.id %}" class="small text-decoration-none">Edit User</a>
+                <span class="text-muted">|</span>
+                <a href="{% url 'admin_users' %}" class="small text-decoration-none">&larr; Back to Users</a>
+            </div>
+        </div>
+
+        <!-- User Profile Quick Banner -->
+        <div class="p-3 bg-light border-bottom d-flex align-items-center gap-3">
+            <img src="{{ target_user.orkut_profile.avatar_url }}" alt="avatar" class="rounded-circle border" style="width: 44px; height: 44px; object-fit: cover;">
+            <div>
+                <h6 class="fw-bold mb-0">{{ target_user.orkut_profile.full_name|default:target_user.username }} (@{{ target_user.username }})</h6>
+                <div class="small text-muted">
+                    Joined: {{ target_user.date_joined|date:"M d, Y" }} &bull;
+                    Status: <span class="badge bg-success-subtle text-success">{{ target_user.orkut_profile.account_status }}</span> &bull;
+                    Role: <span class="badge bg-secondary-subtle text-secondary">{{ target_user.orkut_profile.role.name|default:"Normal User" }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-3">
+            <!-- Nav pills for activity categories -->
+            <ul class="nav nav-pills small mb-3 gap-2" id="activityTab" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link active py-1 px-3" id="posts-tab" data-bs-toggle="pill" data-bs-target="#posts-content" type="button">
+                        <i class="fas fa-comment-dots me-1"></i> Posts ({{ posts|length }})
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link py-1 px-3" id="scraps-tab" data-bs-toggle="pill" data-bs-target="#scraps-content" type="button">
+                        <i class="fas fa-book-open me-1"></i> Scraps (Sent: {{ scraps_sent|length }} / Rcv: {{ scraps_received|length }})
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link py-1 px-3" id="photos-tab" data-bs-toggle="pill" data-bs-target="#photos-content" type="button">
+                        <i class="fas fa-image me-1"></i> Photos ({{ photos|length }})
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link py-1 px-3" id="comms-tab" data-bs-toggle="pill" data-bs-target="#comms-content" type="button">
+                        <i class="fas fa-people-roof me-1"></i> Communities ({{ communities|length }})
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link py-1 px-3" id="audit-tab" data-bs-toggle="pill" data-bs-target="#audit-content" type="button">
+                        <i class="fas fa-clock-rotate-left me-1"></i> Admin Audit Log ({{ audit_logs|length }})
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="activityTabContent">
+                <!-- Posts -->
+                <div class="tab-pane fade show active" id="posts-content" role="tabpanel">
+                    <div class="list-group list-group-flush small">
+                        {% for p in posts %}
+                        <div class="list-group-item px-0 py-2">
+                            <div class="d-flex justify-content-between">
+                                <span class="fw-bold text-dark">{{ p.content }}</span>
+                                <span class="text-muted" style="font-size: 0.7rem;">{{ p.created_at|date:"M d, Y H:i" }}</span>
+                            </div>
+                            <div class="text-muted" style="font-size: 0.7rem;">
+                                {{ p.likes.count }} likes &bull; {{ p.comments.count }} comments
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-muted text-center py-3">No status posts yet.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Scraps -->
+                <div class="tab-pane fade" id="scraps-content" role="tabpanel">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <h6 class="small fw-bold text-primary">Scraps Sent ({{ scraps_sent|length }}):</h6>
+                            <div class="list-group list-group-flush small">
+                                {% for s in scraps_sent %}
+                                <div class="list-group-item px-0 py-2">
+                                    <div class="text-muted" style="font-size: 0.7rem;">To: @{{ s.recipient.username }} on {{ s.created_at|date:"M d, Y" }}</div>
+                                    <div class="p-2 bg-light rounded text-dark mt-1">{{ s.content }}</div>
+                                </div>
+                                {% empty %}
+                                <div class="text-muted small">None sent.</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="small fw-bold text-success">Scraps Received ({{ scraps_received|length }}):</h6>
+                            <div class="list-group list-group-flush small">
+                                {% for s in scraps_received %}
+                                <div class="list-group-item px-0 py-2">
+                                    <div class="text-muted" style="font-size: 0.7rem;">From: @{{ s.sender.username }} on {{ s.created_at|date:"M d, Y" }}</div>
+                                    <div class="p-2 bg-light rounded text-dark mt-1">{{ s.content }}</div>
+                                </div>
+                                {% empty %}
+                                <div class="text-muted small">None received.</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Photos -->
+                <div class="tab-pane fade" id="photos-content" role="tabpanel">
+                    <div class="row g-2">
+                        {% for ph in photos %}
+                        <div class="col-md-2 col-4">
+                            <img src="{{ ph.image.url }}" class="img-thumbnail" style="height: 100px; width: 100%; object-fit: cover;" alt="Photo">
+                            <div class="small text-truncate mt-1" style="font-size: 0.7rem;">{{ ph.caption|default:"Photo" }}</div>
+                        </div>
+                        {% empty %}
+                        <div class="col-12 text-muted text-center py-3">No photos uploaded.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Communities -->
+                <div class="tab-pane fade" id="comms-content" role="tabpanel">
+                    <div class="list-group list-group-flush small">
+                        {% for m in communities %}
+                        <div class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center">
+                            <div>
+                                <a href="{% url 'community_detail' m.community.id %}" class="fw-bold text-dark text-decoration-none">
+                                    {{ m.community.name }}
+                                </a>
+                                <div class="text-muted" style="font-size: 0.7rem;">Role: {{ m.role }} &bull; Joined {{ m.joined_at|date:"M d, Y" }}</div>
+                            </div>
+                            <span class="badge bg-light text-secondary border">{{ m.community.category }}</span>
+                        </div>
+                        {% empty %}
+                        <div class="text-muted text-center py-3">Not a member of any communities.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Audit Logs -->
+                <div class="tab-pane fade" id="audit-content" role="tabpanel">
+                    <div class="list-group list-group-flush small">
+                        {% for l in audit_logs %}
+                        <div class="list-group-item px-0 py-2">
+                            <div class="d-flex justify-content-between">
+                                <span class="badge bg-light text-dark border">{{ l.action }}</span>
+                                <span class="text-muted" style="font-size: 0.7rem;">{{ l.created_at|date:"M d, Y H:i:s" }}</span>
+                            </div>
+                            <div class="small mt-1">Admin: <strong>@{{ l.admin_user.username|default:"System" }}</strong></div>
+                            {% if l.previous_value or l.new_value %}
+                                <div class="text-muted" style="font-size: 0.7rem;">
+                                    Prev: {{ l.previous_value|default:"-" }} &rarr; New: {{ l.new_value|default:"-" }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        {% empty %}
+                        <div class="text-muted text-center py-3">No admin actions recorded for this user.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

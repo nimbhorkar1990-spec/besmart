@@ -1,6 +1,9 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import UserProfile, StatusPost, ScrapbookMessage, Community, CommunityPost, PhotoAlbum, Photo, Report
+from .models import (
+    UserProfile, StatusPost, ScrapbookMessage, Community, CommunityPost, PhotoAlbum, Photo, Report,
+    AccountDeletionRequest, UserRole, RolePermission, UserPermission
+)
 
 class UserRegistrationForm(forms.ModelForm):
     full_name = forms.CharField(max_length=150, required=True, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Full Name'}))
@@ -64,6 +67,79 @@ class UserProfileForm(forms.ModelForm):
             'profession': forms.TextInput(attrs={'class': 'form-control'}),
             'fortune': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Today\'s status or fortune'}),
             'scrapbook_privacy': forms.Select(attrs={'class': 'form-select'}),
+        }
+
+
+class AccountDeletionRequestForm(forms.ModelForm):
+    confirm_checkbox = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        label="I understand that submitting this request will schedule my account and all associated profile data for deletion."
+    )
+
+    class Meta:
+        model = AccountDeletionRequest
+        fields = ['reason']
+        widgets = {
+            'reason': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Optional: Please tell us why you wish to delete your account (e.g., privacy concerns, moving to another platform, taking a break)...'
+            }),
+        }
+
+
+class UserRoleForm(forms.ModelForm):
+    class Meta:
+        model = UserRole
+        fields = ['name', 'code', 'description']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Role Name (e.g. Senior Moderator)'}),
+            'code': forms.Select(attrs={'class': 'form-select'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Role responsibilities and authority level...'}),
+        }
+
+
+class RolePermissionForm(forms.ModelForm):
+    class Meta:
+        model = RolePermission
+        fields = [
+            'can_edit_profile', 'can_upload_photos', 'can_create_posts', 'can_manage_posts',
+            'can_like_comment', 'can_send_messages', 'can_send_friend_requests',
+            'can_create_communities', 'can_join_communities', 'can_create_albums',
+            'can_use_scrapbook', 'can_access_social_features'
+        ]
+        widgets = {field: forms.CheckboxInput(attrs={'class': 'form-check-input'}) for field in fields}
+
+
+class UserPermissionForm(forms.ModelForm):
+    class Meta:
+        model = UserPermission
+        fields = [
+            'can_edit_profile', 'can_upload_photos', 'can_create_posts', 'can_manage_posts',
+            'can_like_comment', 'can_send_messages', 'can_send_friend_requests',
+            'can_create_communities', 'can_join_communities', 'can_create_albums',
+            'can_use_scrapbook', 'can_access_social_features'
+        ]
+        widgets = {field: forms.CheckboxInput(attrs={'class': 'form-check-input'}) for field in fields}
+
+
+class AdminUserEditForm(forms.ModelForm):
+    email = forms.EmailField(required=True, widget=forms.EmailInput(attrs={'class': 'form-control'}))
+
+    class Meta:
+        model = UserProfile
+        fields = ['full_name', 'mobile_number', 'city', 'country', 'profession', 'education', 'role', 'account_status', 'is_suspended']
+        widgets = {
+            'full_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'mobile_number': forms.TextInput(attrs={'class': 'form-control'}),
+            'city': forms.TextInput(attrs={'class': 'form-control'}),
+            'country': forms.TextInput(attrs={'class': 'form-control'}),
+            'profession': forms.TextInput(attrs={'class': 'form-control'}),
+            'education': forms.TextInput(attrs={'class': 'form-control'}),
+            'role': forms.Select(attrs={'class': 'form-select'}),
+            'account_status': forms.Select(attrs={'class': 'form-select'}),
+            'is_suspended': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
 
@@ -139,4 +215,3 @@ class ReportForm(forms.ModelForm):
         widgets = {
             'reason': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Please specify why you are reporting this content...'}),
         }
-

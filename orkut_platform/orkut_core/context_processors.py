@@ -1,4 +1,4 @@
-from .models import UserProfile, FriendRequest, Friendship, ScrapbookMessage, PrivateMessage, Notification, CommunityMember
+from .models import UserProfile, FriendRequest, Friendship, ScrapbookMessage, PrivateMessage, Notification, CommunityMember, AccountDeletionRequest
 from django.db.models import Q
 
 def orkut_context(request):
@@ -22,12 +22,16 @@ def orkut_context(request):
     # Unread scraps
     unread_scraps_count = ScrapbookMessage.objects.filter(recipient=request.user, is_read=False).count()
 
+    # Pending deletions (for admin)
+    pending_deletions_count = 0
+    if profile.is_admin_or_super():
+        pending_deletions_count = AccountDeletionRequest.objects.filter(status='PENDING').count()
+
     # User's friends for Right Sidebar "My Friends"
     friendships = Friendship.objects.filter(Q(user1=request.user) | Q(user2=request.user)).select_related('user1', 'user2', 'user1__orkut_profile', 'user2__orkut_profile')
     friends = []
     for f in friendships:
         friend = f.user2 if f.user1 == request.user else f.user1
-        # ensure profile exists
         if not hasattr(friend, 'orkut_profile'):
             UserProfile.objects.get_or_create(user=friend, defaults={'full_name': friend.username})
         friends.append(friend)
@@ -41,8 +45,8 @@ def orkut_context(request):
         'unread_notifications_count': unread_notifications_count,
         'unread_messages_count': unread_messages_count,
         'unread_scraps_count': unread_scraps_count,
-        'sidebar_friends': friends[:9], # 3x3 grid or list
+        'pending_deletions_count': pending_deletions_count,
+        'sidebar_friends': friends[:9],
         'total_friends_count': len(friends),
         'user_communities': [m.community for m in user_communities],
     }
-

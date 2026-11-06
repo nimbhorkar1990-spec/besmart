@@ -1,0 +1,260 @@
+{% extends 'base.html' %}
+
+{% block title %}orkut - manage authorities for @{{ target_user.username }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-md-4 py-3">
+    {% with active_tab='users' %}
+        {% include 'admin_panel/_nav.html' %}
+    {% endwith %}
+
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="orkut-card">
+                <div class="orkut-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <span class="fw-bold text-danger"><i class="fas fa-key me-1"></i> Manage User Authorities &amp; Permissions</span>
+                        <span class="badge bg-warning text-dark ms-2">Super Admin Only</span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'admin_edit_user' target_user.id %}" class="small text-decoration-none">&larr; Edit User</a>
+                        <span class="text-muted">|</span>
+                        <a href="{% url 'admin_users' %}" class="small text-decoration-none">Back to Users</a>
+                    </div>
+                </div>
+
+                <!-- User Summary Card -->
+                <div class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-3">
+                        <img src="{{ target_user.orkut_profile.avatar_url }}" alt="avatar" class="rounded-circle border" style="width: 44px; height: 44px; object-fit: cover;">
+                        <div>
+                            <h6 class="fw-bold mb-0">{{ target_user.orkut_profile.full_name|default:target_user.username }} (@{{ target_user.username }})</h6>
+                            <div class="small text-muted">
+                                Role: <strong>{{ target_user.orkut_profile.role.name|default:"Normal User" }}</strong> &bull;
+                                Status: <span class="badge bg-success-subtle text-success">{{ target_user.orkut_profile.account_status }}</span> &bull;
+                                Email: {{ target_user.email|default:"None" }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-success btn-sm" onclick="setAllToggles(true)">
+                            <i class="fas fa-check-double me-1"></i> Grant All (ON)
+                        </button>
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="setAllToggles(false)">
+                            <i class="fas fa-ban me-1"></i> Revoke All (OFF)
+                        </button>
+                    </div>
+                </div>
+
+                <form method="post" class="p-3">
+                    {% csrf_token %}
+
+                    <div class="alert alert-info py-2 small mb-3">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Super Administrators can individually enable (ON) or disable (OFF) any of the 12 platform authorities below. Custom user permissions override their default system role.
+                    </div>
+
+                    <!-- 12 Authorities Grid -->
+                    <div class="row g-3">
+                        <!-- 1. Create and edit user profiles -->
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded h-100 bg-white shadow-sm">
+                                <div class="form-check form-switch d-flex justify-content-between align-items-center ps-0">
+                                    <label class="form-check-label fw-bold text-dark mb-0" for="{{ form.can_edit_profile.id_for_label }}">
+                                        <i class="fas fa-user-gear text-primary me-2"></i> 1. Edit User Profile
+                                    </label>
+                                    {{ form.can_edit_profile }}
+                                </div>
+                                <div class="small text-muted mt-2">
+                                    Allow user to change personal profile information, fortune status, and bio.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. Upload and delete photos -->
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded h-100 bg-white shadow-sm">
+                                <div class="form-check form-switch d-flex justify-content-between align-items-center ps-0">
+                                    <label class="form-check-label fw-bold text-dark mb-0" for="{{ form.can_upload_photos.id_for_label }}">
+                                        <i class="fas fa-camera text-primary me-2"></i> 2. Upload Photos
+                                    </label>
+                                    {{ form.can_upload_photos }}
+                                </div>
+                                <div class="small text-muted mt-2">
+                                    Allow uploading photo items to existing albums and galleries.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. Create and publish posts -->
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded h-100 bg-white shadow-sm">
+                                <div class="form-check form-switch d-flex justify-content-between align-items-center ps-0">
+                                    <label class="form-check-label fw-bold text-dark mb-0" for="{{ form.can_create_posts.id_for_label }}">
+                                        <i class="fas fa-pen-to-square text-primary me-2"></i> 3. Publish Status Updates
+                                    </label>
+                                    {{ form.can_create_posts }}
+                                </div>
+                                <div class="small text-muted mt-2">
+                                    Allow publishing new status updates, text posts, links, and media.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 4. Edit and delete posts -->
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded h-100 bg-white shadow-sm">
+                                <div class="form-check form-switch d-flex justify-content-between align-items-center ps-0">
+                                    <label class="form-check-label fw-bold text-dark mb-0" for="{{ form.can_manage_posts.id_for_label }}">
+                                        <i class="fas fa-trash-can text-primary me-2"></i> 4. Edit &amp; Delete Posts
+                                    </label>
+                                    {{ form.can_manage_posts }}
+                                </div>
+                                <div class="small text-muted mt-2">
+                                    Allow modifying or removing own status updates and timeline entries.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 5. Like and comment on posts -->
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded h-100 bg-white shadow-sm">
+                                <div class="form-check form-switch d-flex justify-content-between align-items-center ps-0">
+                                    <label class="form-check-label fw-bold text-dark mb-0" for="{{ form.can_like_comment.id_for_label }}">
+                                        <i class="fas fa-thumbs-up text-primary me-2"></i> 5. Like &amp; Comment
+                                    </label>
+                                    {{ form.can_like_comment }}
+                                </div>
+                                <div class="small text-muted mt-2">
+                                    Allow interacting with status updates and photos through likes and comments.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 6. Send and receive private messages -->
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded h-100 bg-white shadow-sm">
+                                <div class="form-check form-switch d-flex justify-content-between align-items-center ps-0">
+                                    <label class="form-check-label fw-bold text-dark mb-0" for="{{ form.can_send_messages.id_for_label }}">
+                                        <i class="fas fa-envelope text-primary me-2"></i> 6. Private Messaging &amp; Chat
+                                    </label>
+                                    {{ form.can_send_messages }}
+                                </div>
+                                <div class="small text-muted mt-2">
+                                    Allow sending one-to-one private messages and instant chats.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 7. Send friend requests -->
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded h-100 bg-white shadow-sm">
+                                <div class="form-check form-switch d-flex justify-content-between align-items-center ps-0">
+                                    <label class="form-check-label fw-bold text-dark mb-0" for="{{ form.can_send_friend_requests.id_for_label }}">
+                                        <i class="fas fa-user-plus text-primary me-2"></i> 7. Send Friend Requests
+                                    </label>
+                                    {{ form.can_send_friend_requests }}
+                                </div>
+                                <div class="small text-muted mt-2">
+                                    Allow sending connection and friendship invitations to other members.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 8. Create and manage communities -->
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded h-100 bg-white shadow-sm">
+                                <div class="form-check form-switch d-flex justify-content-between align-items-center ps-0">
+                                    <label class="form-check-label fw-bold text-dark mb-0" for="{{ form.can_create_communities.id_for_label }}">
+                                        <i class="fas fa-people-roof text-primary me-2"></i> 8. Create Communities
+                                    </label>
+                                    {{ form.can_create_communities }}
+                                </div>
+                                <div class="small text-muted mt-2">
+                                    Allow creating new communities and managing forum topics/moderation.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 9. Join communities -->
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded h-100 bg-white shadow-sm">
+                                <div class="form-check form-switch d-flex justify-content-between align-items-center ps-0">
+                                    <label class="form-check-label fw-bold text-dark mb-0" for="{{ form.can_join_communities.id_for_label }}">
+                                        <i class="fas fa-right-to-bracket text-primary me-2"></i> 9. Join Communities
+                                    </label>
+                                    {{ form.can_join_communities }}
+                                </div>
+                                <div class="small text-muted mt-2">
+                                    Allow joining public communities and sending join requests to private clubs.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 10. Create and manage photo albums -->
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded h-100 bg-white shadow-sm">
+                                <div class="form-check form-switch d-flex justify-content-between align-items-center ps-0">
+                                    <label class="form-check-label fw-bold text-dark mb-0" for="{{ form.can_create_albums.id_for_label }}">
+                                        <i class="fas fa-images text-primary me-2"></i> 10. Create Photo Albums
+                                    </label>
+                                    {{ form.can_create_albums }}
+                                </div>
+                                <div class="small text-muted mt-2">
+                                    Allow organizing photos into custom named albums with privacy controls.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 11. Use scrapbook functionality -->
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded h-100 bg-white shadow-sm">
+                                <div class="form-check form-switch d-flex justify-content-between align-items-center ps-0">
+                                    <label class="form-check-label fw-bold text-dark mb-0" for="{{ form.can_use_scrapbook.id_for_label }}">
+                                        <i class="fas fa-book-open text-primary me-2"></i> 11. Use Scrapbook
+                                    </label>
+                                    {{ form.can_use_scrapbook }}
+                                </div>
+                                <div class="small text-muted mt-2">
+                                    Allow sending public scrap messages on other users' profile scrapbooks.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 12. Access all social media features -->
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded h-100 bg-white shadow-sm">
+                                <div class="form-check form-switch d-flex justify-content-between align-items-center ps-0">
+                                    <label class="form-check-label fw-bold text-dark mb-0" for="{{ form.can_access_social_features.id_for_label }}">
+                                        <i class="fas fa-globe text-primary me-2"></i> 12. All Social Media Features
+                                    </label>
+                                    {{ form.can_access_social_features }}
+                                </div>
+                                <div class="small text-muted mt-2">
+                                    Master authority controlling access to visitors, fans, and public networking.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                        <a href="{% url 'admin_users' %}" class="btn btn-outline-secondary btn-sm">Cancel</a>
+                        <button type="submit" class="btn btn-danger btn-sm px-4 fw-bold">
+                            <i class="fas fa-shield-check me-1"></i> Apply Authorities &amp; Save
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function setAllToggles(state) {
+    const switches = document.querySelectorAll('.form-check-input');
+    switches.forEach(sw => {
+        sw.checked = state;
+    });
+}
+</script>
+{% endblock %}

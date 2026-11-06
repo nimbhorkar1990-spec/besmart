@@ -1,0 +1,272 @@
+{% extends 'base.html' %}
+
+{% block title %}orkut - content management{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-md-4 py-3">
+    {% with active_tab='content' %}
+        {% include 'admin_panel/_nav.html' %}
+    {% endwith %}
+
+    <div class="orkut-card">
+        <div class="orkut-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <span class="fw-bold text-danger"><i class="fas fa-photo-film me-1"></i> Content Moderation &amp; Management</span>
+            </div>
+            <div class="small text-muted">
+                Review and moderate user posts, scrapbook messages, uploaded photos, communities, and reports
+            </div>
+        </div>
+
+        <!-- Content Subtabs -->
+        <div class="bg-light border-bottom px-3 pt-2">
+            <ul class="nav nav-pills small gap-1 pb-2">
+                <li class="nav-item">
+                    <a class="nav-link py-1 px-3 {% if tab == 'posts' %}active bg-danger text-white{% else %}text-dark{% endif %}" href="?tab=posts">
+                        <i class="fas fa-comment-dots me-1"></i> User Posts ({{ posts|length }})
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link py-1 px-3 {% if tab == 'scraps' %}active bg-danger text-white{% else %}text-dark{% endif %}" href="?tab=scraps">
+                        <i class="fas fa-book-open me-1"></i> Scrapbook ({{ scraps|length }})
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link py-1 px-3 {% if tab == 'photos' %}active bg-danger text-white{% else %}text-dark{% endif %}" href="?tab=photos">
+                        <i class="fas fa-image me-1"></i> Photos &amp; Albums ({{ photos|length }})
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link py-1 px-3 {% if tab == 'communities' %}active bg-danger text-white{% else %}text-dark{% endif %}" href="?tab=communities">
+                        <i class="fas fa-users-rectangle me-1"></i> Communities ({{ communities|length }})
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link py-1 px-3 {% if tab == 'reports' %}active bg-danger text-white{% else %}text-dark{% endif %} position-relative" href="?tab=reports">
+                        <i class="fas fa-flag me-1"></i> Reported Content
+                        {% if reports %}
+                            <span class="badge bg-warning text-dark rounded-pill ms-1">{{ reports|length }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="p-3">
+            <!-- TAB: POSTS -->
+            {% if tab == 'posts' %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle small mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Author</th>
+                                <th>Post Content</th>
+                                <th>Created</th>
+                                <th>Likes / Comments</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in posts %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <img src="{{ p.author.orkut_profile.avatar_url }}" alt="avatar" class="rounded-circle border" style="width: 28px; height: 28px; object-fit: cover;">
+                                        <div>
+                                            <a href="{% url 'profile' p.author.username %}" class="fw-bold text-dark text-decoration-none">
+                                                {{ p.author.orkut_profile.full_name|default:p.author.username }}
+                                            </a>
+                                            <div class="text-muted" style="font-size: 0.68rem;">@{{ p.author.username }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td style="max-width: 350px;">
+                                    <div class="text-dark">{{ p.content|truncatewords:20 }}</div>
+                                    {% if p.image %}
+                                        <div class="mt-1"><span class="badge bg-light text-secondary border"><i class="fas fa-image me-1"></i> Has Image</span></div>
+                                    {% endif %}
+                                </td>
+                                <td class="text-nowrap text-muted" style="font-size: 0.72rem;">{{ p.created_at|date:"M d, Y H:i" }}</td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">{{ p.likes.count }} likes</span>
+                                    <span class="badge bg-light text-dark border">{{ p.comments.count }} comments</span>
+                                </td>
+                                <td class="text-end text-nowrap">
+                                    <a href="{% url 'admin_delete_content' 'post' p.id %}" class="btn btn-sm btn-outline-danger py-0 px-2" style="font-size: 0.72rem;" onclick="return confirm('Delete this post permanently?');">
+                                        <i class="fas fa-trash me-1"></i> Remove Post
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="5" class="text-center py-4 text-muted">No posts found.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+            <!-- TAB: SCRAPS -->
+            {% elif tab == 'scraps' %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle small mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>From</th>
+                                <th>To</th>
+                                <th>Scrap Message</th>
+                                <th>Date</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for s in scraps %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'profile' s.sender.username %}" class="fw-bold text-dark text-decoration-none">
+                                        @{{ s.sender.username }}
+                                    </a>
+                                </td>
+                                <td>
+                                    <a href="{% url 'profile' s.recipient.username %}" class="fw-bold text-dark text-decoration-none">
+                                        @{{ s.recipient.username }}
+                                    </a>
+                                </td>
+                                <td style="max-width: 380px;">
+                                    <div class="p-2 bg-light rounded border text-dark">{{ s.content }}</div>
+                                </td>
+                                <td class="text-nowrap text-muted" style="font-size: 0.72rem;">{{ s.created_at|date:"M d, Y H:i" }}</td>
+                                <td class="text-end text-nowrap">
+                                    <a href="{% url 'admin_delete_content' 'scrap' s.id %}" class="btn btn-sm btn-outline-danger py-0 px-2" style="font-size: 0.72rem;" onclick="return confirm('Delete this scrap message?');">
+                                        <i class="fas fa-trash me-1"></i> Remove
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="5" class="text-center py-4 text-muted">No scrapbook entries found.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+            <!-- TAB: PHOTOS -->
+            {% elif tab == 'photos' %}
+                <div class="row g-3">
+                    {% for ph in photos %}
+                    <div class="col-md-3 col-sm-6">
+                        <div class="card h-100 shadow-sm">
+                            <img src="{{ ph.image.url }}" class="card-img-top" style="height: 160px; object-fit: cover;" alt="Photo">
+                            <div class="card-body p-2">
+                                <div class="fw-bold text-truncate small">{{ ph.caption|default:"Untitled Photo" }}</div>
+                                <div class="text-muted" style="font-size: 0.7rem;">
+                                    By @{{ ph.user.username }} &bull; Album: {{ ph.album.title }}
+                                </div>
+                            </div>
+                            <div class="card-footer p-2 bg-white border-top d-flex justify-content-between align-items-center">
+                                <a href="{% url 'photo_detail' ph.id %}" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.7rem;" target="_blank">View</a>
+                                <a href="{% url 'admin_delete_content' 'photo' ph.id %}" class="btn btn-sm btn-danger py-0 px-2" style="font-size: 0.7rem;" onclick="return confirm('Delete this photo?');">
+                                    <i class="fas fa-trash"></i> Remove
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-12 text-center py-4 text-muted">No uploaded photos found.</div>
+                    {% endfor %}
+                </div>
+
+            <!-- TAB: COMMUNITIES -->
+            {% elif tab == 'communities' %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle small mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Community</th>
+                                <th>Category</th>
+                                <th>Creator</th>
+                                <th>Members</th>
+                                <th>Created</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for c in communities %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <img src="{{ c.icon_url }}" alt="icon" class="rounded border" style="width: 32px; height: 32px; object-fit: cover;">
+                                        <div>
+                                            <a href="{% url 'community_detail' c.id %}" class="fw-bold text-dark text-decoration-none">
+                                                {{ c.name }}
+                                            </a>
+                                            <div class="text-muted text-truncate" style="font-size: 0.68rem; max-width: 250px;">{{ c.description }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="badge bg-light text-secondary border">{{ c.category }}</span></td>
+                                <td>@{{ c.creator.username }}</td>
+                                <td><span class="badge bg-info-subtle text-info border">{{ c.members.count }} members</span></td>
+                                <td class="text-muted" style="font-size: 0.72rem;">{{ c.created_at|date:"M d, Y" }}</td>
+                                <td class="text-end text-nowrap">
+                                    <a href="{% url 'community_detail' c.id %}" class="btn btn-sm btn-outline-secondary py-0 px-2 me-1" style="font-size: 0.72rem;">View</a>
+                                    <a href="{% url 'admin_delete_content' 'community' c.id %}" class="btn btn-sm btn-outline-danger py-0 px-2" style="font-size: 0.72rem;" onclick="return confirm('Permanently remove community \'{{ c.name }}\' and all its discussions?');">
+                                        <i class="fas fa-trash me-1"></i> Delete
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="6" class="text-center py-4 text-muted">No communities found.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+            <!-- TAB: REPORTS -->
+            {% elif tab == 'reports' %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle small mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Report ID</th>
+                                <th>Target Content</th>
+                                <th>Reason for Reporting</th>
+                                <th>Reported By</th>
+                                <th>Date</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in reports %}
+                            <tr>
+                                <td><span class="badge bg-light text-dark border">#{{ r.id }}</span></td>
+                                <td>
+                                    <span class="badge bg-warning text-dark text-uppercase">{{ r.content_type }} #{{ r.content_id }}</span>
+                                </td>
+                                <td class="fw-semibold text-danger">
+                                    "{{ r.reason }}"
+                                </td>
+                                <td>@{{ r.reported_by.username }}</td>
+                                <td class="text-nowrap text-muted" style="font-size: 0.72rem;">{{ r.created_at|date:"M d, Y H:i" }}</td>
+                                <td class="text-end text-nowrap">
+                                    <a href="{% url 'admin_resolve_report' r.id 'resolve' %}" class="btn btn-sm btn-danger py-0 px-2 me-1" style="font-size: 0.72rem;" onclick="return confirm('Remove offending content and resolve report?');">
+                                        <i class="fas fa-trash me-1"></i> Remove Content &amp; Resolve
+                                    </a>
+                                    <a href="{% url 'admin_resolve_report' r.id 'dismiss' %}" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.72rem;">
+                                        Dismiss
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">
+                                    <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                                    <div>No pending user reports. Everything is in order!</div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

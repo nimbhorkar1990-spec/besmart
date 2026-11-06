@@ -9,16 +9,65 @@ from django.utils import timezone
 from orkut_core.models import (
     UserProfile, FriendRequest, Friendship, StatusPost, PostLike, PostComment,
     ScrapbookMessage, Community, CommunityMember, CommunityPost, CommunityComment,
-    PhotoAlbum, Photo, PrivateMessage, ProfileVisitor, Fan, Notification
+    PhotoAlbum, Photo, PrivateMessage, ProfileVisitor, Fan, Notification,
+    UserRole, RolePermission, UserPermission, AccountDeletionRequest, AdminActivityLog
 )
 
 def run():
-    print("Starting Orkut database seeding...")
+    print("Starting Orkut database seeding with Roles, Authorities & Admin features...")
 
-    # 1. Admin
+    # 0. Seed Roles and Role Permissions
+    roles_def = [
+        ('SUPER_ADMIN', 'Super Admin', 'Full unrestricted platform access, roles, authorities, user management, and audit inspection.', True),
+        ('ADMIN', 'Admin', 'Platform administration, user management, moderation, and content review.', True),
+        ('MODERATOR', 'Moderator', 'Community and content moderation, review reported posts and scraps.', True),
+        ('NORMAL_USER', 'Normal User', 'Standard registered Orkut networking member.', True)
+    ]
+
+    roles_dict = {}
+    for code, name, desc, sys in roles_def:
+        r, _ = UserRole.objects.get_or_create(code=code, defaults={'name': name, 'description': desc, 'is_system_role': sys})
+        r.name = name
+        r.description = desc
+        r.save()
+        roles_dict[code] = r
+
+        rp, _ = RolePermission.objects.get_or_create(role=r)
+        if code in ('SUPER_ADMIN', 'ADMIN', 'NORMAL_USER'):
+            rp.can_edit_profile = True
+            rp.can_upload_photos = True
+            rp.can_create_posts = True
+            rp.can_manage_posts = True
+            rp.can_like_comment = True
+            rp.can_send_messages = True
+            rp.can_send_friend_requests = True
+            rp.can_create_communities = True
+            rp.can_join_communities = True
+            rp.can_create_albums = True
+            rp.can_use_scrapbook = True
+            rp.can_access_social_features = True
+        elif code == 'MODERATOR':
+            rp.can_edit_profile = True
+            rp.can_upload_photos = True
+            rp.can_create_posts = True
+            rp.can_manage_posts = True
+            rp.can_like_comment = True
+            rp.can_send_messages = True
+            rp.can_send_friend_requests = True
+            rp.can_create_communities = False
+            rp.can_join_communities = True
+            rp.can_create_albums = True
+            rp.can_use_scrapbook = True
+            rp.can_access_social_features = True
+        rp.save()
+
+    # 1. Admin User
     admin_user, _ = User.objects.get_or_create(username='admin', defaults={'email': 'admin@orkut.com', 'is_staff': True, 'is_superuser': True})
     admin_user.set_password('Admin@123')
+    admin_user.is_staff = True
+    admin_user.is_superuser = True
     admin_user.save()
+
     admin_p, _ = UserProfile.objects.get_or_create(user=admin_user)
     admin_p.full_name = "Orkut Platform Administrator"
     admin_p.profession = "Chief Administrator & Architect"
@@ -30,18 +79,21 @@ def run():
     admin_p.sexy_rating = 3
     admin_p.profile_views = 250
     admin_p.is_online = True
+    admin_p.account_status = 'ACTIVE'
+    admin_p.role = roles_dict['SUPER_ADMIN']
     admin_p.save()
 
     # 2. Demo Users
     users_data = [
-        ('alex_orkut', 'Alex Mercer', 'alex@orkut.com', 'M', 'Mumbai', 'Software Architect', 'Music, Web Dev, Chess', 'Life is too short for bad code.'),
-        ('rohit_kumar', 'Rohit Kumar', 'rohit@orkut.com', 'M', 'Bengaluru', 'Backend Engineer', 'Cricket, Gaming, AI', 'A smooth sea never made a skilled sailor.'),
-        ('priya_sharma', 'Priya Sharma', 'priya@orkut.com', 'F', 'Delhi', 'UI/UX Designer', 'Photography, Design, Books', 'Create things that make people smile.'),
-        ('neha_verma', 'Neha Verma', 'neha@orkut.com', 'F', 'Pune', 'Data Scientist', 'Yoga, Traveling, Coffee', 'Every day brings a fresh opportunity.')
+        ('alex_orkut', 'Alex Mercer', 'alex@orkut.com', 'M', 'Mumbai', 'Software Architect', 'Music, Web Dev, Chess', 'Life is too short for bad code.', 'NORMAL_USER'),
+        ('rohit_kumar', 'Rohit Kumar', 'rohit@orkut.com', 'M', 'Bengaluru', 'Backend Engineer', 'Cricket, Gaming, AI', 'A smooth sea never made a skilled sailor.', 'NORMAL_USER'),
+        ('priya_sharma', 'Priya Sharma', 'priya@orkut.com', 'F', 'Delhi', 'UI/UX Designer', 'Photography, Design, Books', 'Create things that make people smile.', 'MODERATOR'),
+        ('neha_verma', 'Neha Verma', 'neha@orkut.com', 'F', 'Pune', 'Data Scientist', 'Yoga, Traveling, Coffee', 'Every day brings a fresh opportunity.', 'NORMAL_USER'),
+        ('david_miller', 'David Miller', 'david@orkut.com', 'M', 'London', 'Product Manager', 'Travel, Reading', 'Onward and upward.', 'NORMAL_USER')
     ]
 
     created_users = []
-    for uname, fname, email, gender, city, prof, hobbies, fortune in users_data:
+    for uname, fname, email, gender, city, prof, hobbies, fortune, rcode in users_data:
         u, _ = User.objects.get_or_create(username=uname, defaults={'email': email})
         u.set_password('Password@123')
         u.save()
@@ -57,10 +109,12 @@ def run():
         p.sexy_rating = 2
         p.profile_views = 45
         p.is_online = True
+        p.account_status = 'ACTIVE'
+        p.role = roles_dict[rcode]
         p.save()
         created_users.append(u)
 
-    alex, rohit, priya, neha = created_users
+    alex, rohit, priya, neha, david = created_users
 
     # 3. Friendships
     def add_friendship(u1, u2):
@@ -102,17 +156,17 @@ def run():
     ScrapbookMessage.objects.get_or_create(
         sender=priya,
         recipient=alex,
-        defaults={'message': 'Hey Alex! Glad to connect with you on Orkut. Long live scraps!'}
+        defaults={'content': 'Hey Alex! Glad to connect with you on Orkut. Long live scraps!'}
     )
     ScrapbookMessage.objects.get_or_create(
         sender=rohit,
         recipient=alex,
-        defaults={'message': 'Dude, check out the new Python & Java communities! Don\'t forget to scrap me back.'}
+        defaults={'content': 'Dude, check out the new Python & Java communities! Don\'t forget to scrap me back.'}
     )
     ScrapbookMessage.objects.get_or_create(
         sender=neha,
         recipient=alex,
-        defaults={'message': 'Happy to see you here Alex! Have a wonderful week ahead.'}
+        defaults={'content': 'Happy to see you here Alex! Have a wonderful week ahead.'}
     )
 
     # 6. Communities
@@ -142,7 +196,7 @@ def run():
     )
 
     for comm in [c1, c2, c3]:
-        for u in [admin_user, alex, rohit, priya, neha]:
+        for u in [admin_user, alex, rohit, priya, neha, david]:
             CommunityMember.objects.get_or_create(community=comm, user=u, defaults={'role': 'MEMBER', 'status': 'ACTIVE'})
 
     # Community Topic
@@ -200,8 +254,42 @@ def run():
         defaults={'message': 'Priya Sharma left a scrap on your scrapbook!', 'link': f'/scrapbook/{alex.username}/'}
     )
 
-    print("Orkut database seeded successfully!")
+    # 11. Sample Account Deletion Request for Admin Panel Demonstration
+    del_req, _ = AccountDeletionRequest.objects.get_or_create(
+        user=david,
+        defaults={
+            'reason': 'Moving to a new personal workspace and requesting account cleanup.',
+            'status': 'PENDING'
+        }
+    )
+    david_p = david.orkut_profile
+    david_p.account_status = 'PENDING_DELETION'
+    david_p.mobile_number = "+1 555-019-2834"
+    david_p.save()
+
+    # 12. Sample Administrative Activity Logs
+    AdminActivityLog.objects.get_or_create(
+        admin_user=admin_user,
+        action='SYSTEM_INITIALIZED',
+        defaults={
+            'affected_user': None,
+            'previous_value': 'None',
+            'updated_value': 'Orkut System Roles and 12-Authority Framework configured',
+            'ip_address': '127.0.0.1'
+        }
+    )
+    AdminActivityLog.objects.get_or_create(
+        admin_user=admin_user,
+        action='ROLE_ASSIGNED',
+        defaults={
+            'affected_user': priya,
+            'previous_value': 'NORMAL_USER',
+            'updated_value': 'MODERATOR',
+            'ip_address': '127.0.0.1'
+        }
+    )
+
+    print("Orkut database seeded successfully with all Roles, Authorities & Deletion features!")
 
 if __name__ == '__main__':
     run()
-

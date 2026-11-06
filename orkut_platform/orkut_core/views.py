@@ -1,22 +1,37 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.models import User
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponseForbidden
 from django.db.models import Q, Count
 from django.utils import timezone
+from django.core.paginator import Paginator
 
 from .models import (
-    UserProfile, FriendRequest, Friendship, StatusPost, PostLike, PostComment,
-    ScrapbookMessage, Community, CommunityMember, CommunityPost, CommunityComment,
-    PhotoAlbum, Photo, PhotoComment, PrivateMessage, ProfileVisitor, Fan,
-    Notification, Report
+    UserProfile, UserRole, RolePermission, UserPermission, AccountDeletionRequest, AdminActivityLog,
+    FriendRequest, Friendship, StatusPost, PostLike, PostComment, ScrapbookMessage,
+    Community, CommunityMember, CommunityPost, CommunityComment, PhotoAlbum, Photo, PhotoComment,
+    PrivateMessage, ProfileVisitor, Fan, Notification, Report
 )
 from .forms import (
-    UserRegistrationForm, UserProfileForm, StatusPostForm, ScrapForm,
+    UserRegistrationForm, UserProfileForm, AccountDeletionRequestForm, UserRoleForm,
+    RolePermissionForm, UserPermissionForm, AdminUserEditForm, StatusPostForm, ScrapForm,
     CommunityForm, CommunityPostForm, PhotoAlbumForm, PhotoUploadForm, ReportForm
 )
+
+# ----------------- AUDIT LOGGER HELPER -----------------
+
+def log_admin_action(request, action, affected_user=None, prev_val="", new_val=""):
+    ip = request.META.get('REMOTE_ADDR', '')
+    AdminActivityLog.objects.create(
+        admin_user=request.user if request.user.is_authenticated else None,
+        action=action,
+        affected_user=affected_user,
+        previous_value=str(prev_val)[:500],
+        updated_value=str(new_val)[:500],
+        ip_address=ip
+    )
 
 # ----------------- AUTHENTICATION -----------------
 
@@ -31,8 +46,12 @@ def register_view(request):
             user.first_name = form.cleaned_data.get('full_name', '')
             user.save()
 
-            # Profile
+            # Assign default Normal User role
+            normal_role, _ = UserRole.objects.get_or_create(code='NORMAL_USER', defaults={'name': 'Normal User', 'is_system_role': True})
+
             profile, _ = UserProfile.objects.get_or_create(user=user)
+            profile.role = normal_role
+            profile.account_status = 'ACTIVE'
             profile.full_name = form.cleaned_data.get('full_name', '')
             profile.mobile_number = form.cleaned_data.get('mobile_number', '')
             profile.gender = form.cleaned_data.get('gender', 'M')
@@ -42,6 +61,9 @@ def register_view(request):
                 profile.profile_photo = request.FILES['profile_photo']
             profile.is_online = True
             profile.save()
+
+            # Initialize custom permissions
+            UserPermission.objects.get_or_create(user=user)
 
             login(request, user)
             messages.success(request, f"Welcome to Orkut, {profile.full_name or user.username}! Your profile is ready.")
@@ -58,7 +80,6 @@ def login_view(request):
         login_input = request.POST.get('username', '').strip()
         password = request.POST.get('password', '')
 
-        # Allow login via username or email
         user_obj = None
         if '@' in login_input:
             user_obj = User.objects.filter(email__iexact=login_input).first()
@@ -69,8 +90,8 @@ def login_view(request):
             user = authenticate(request, username=user_obj.username, password=password)
             if user:
                 profile, _ = UserProfile.objects.get_or_create(user=user)
-                if profile.is_suspended:
-                    messages.error(request, "Your Orkut account has been suspended by an administrator.")
+                if profile.account_status in ('BLOCKED', 'DELETED') or profile.is_suspended:
+                    messages.error(request, f"Your Orkut account is {profile.account_status.lower()}. Please contact the administrator.")
                     return render(request, 'auth/login.html')
                 login(request, user)
                 profile.is_online = True
@@ -126,28 +147,19 @@ def reset_password_view(request, username):
 def home_view(request):
     post_form = StatusPostForm()
     
-    # Get friend IDs
     friendships = Friendship.objects.filter(Q(user1=request.user) | Q(user2=request.user))
-    friend_ids = []
-    for f in friendships:
-        friend_ids.append(f.user2_id if f.user1_id == request.user.id else f.user1_id)
+    friend_ids = [f.user2_id if f.user1_id == request.user.id else f.user1_id for f in friendships]
     
-    # Posts: current user + friends
     posts = StatusPost.objects.filter(
         Q(author=request.user) | Q(author_id__in=friend_ids)
     ).select_related('author', 'author__orkut_profile').prefetch_related('likes', 'comments', 'comments__author', 'comments__author__orkut_profile')[:30]
 
-    # Friend suggestions: users who are not friends, not pending request, and not self
     sent_reqs = FriendRequest.objects.filter(from_user=request.user).values_list('to_user_id', flat=True)
     recv_reqs = FriendRequest.objects.filter(to_user=request.user).values_list('from_user_id', flat=True)
     excluded_ids = set(friend_ids) | set(sent_reqs) | set(recv_reqs) | {request.user.id}
     
     suggestions = User.objects.exclude(id__in=excluded_ids).select_related('orkut_profile')[:6]
-
-    # Recent profile visitors
     recent_visitors = ProfileVisitor.objects.filter(user=request.user).select_related('visitor', 'visitor__orkut_profile')[:6]
-
-    # Total profile views
     profile = request.user.orkut_profile
 
     return render(request, 'dashboard/home.html', {
@@ -161,6 +173,10 @@ def home_view(request):
 
 @login_required
 def create_status_view(request):
+    if not request.user.orkut_profile.check_permission('can_create_posts'):
+        messages.error(request, "Your account does not have permission to publish posts.")
+        return redirect('home')
+
     if request.method == 'POST':
         form = StatusPostForm(request.POST, request.FILES)
         if form.is_valid():
@@ -174,6 +190,10 @@ def create_status_view(request):
 @login_required
 def edit_status_view(request, post_id):
     post = get_object_or_404(StatusPost, id=post_id, author=request.user)
+    if not request.user.orkut_profile.check_permission('can_manage_posts'):
+        messages.error(request, "Your account does not have permission to edit posts.")
+        return redirect('home')
+
     if request.method == 'POST':
         form = StatusPostForm(request.POST, request.FILES, instance=post)
         if form.is_valid():
@@ -188,7 +208,7 @@ def edit_status_view(request, post_id):
 @login_required
 def delete_status_view(request, post_id):
     post = get_object_or_404(StatusPost, id=post_id)
-    if post.author == request.user or request.user.is_staff:
+    if post.author == request.user or request.user.orkut_profile.is_moderator_or_higher():
         post.delete()
         messages.success(request, "Post deleted successfully.")
     else:
@@ -198,6 +218,10 @@ def delete_status_view(request, post_id):
 
 @login_required
 def toggle_like_view(request, post_id):
+    if not request.user.orkut_profile.check_permission('can_like_comment'):
+        messages.error(request, "Your account does not have permission to like posts.")
+        return redirect('home')
+
     post = get_object_or_404(StatusPost, id=post_id)
     like_obj = PostLike.objects.filter(post=post, user=request.user).first()
     liked = False
@@ -223,6 +247,10 @@ def toggle_like_view(request, post_id):
 
 @login_required
 def add_comment_view(request, post_id):
+    if not request.user.orkut_profile.check_permission('can_like_comment'):
+        messages.error(request, "Your account does not have permission to comment.")
+        return redirect('home')
+
     post = get_object_or_404(StatusPost, id=post_id)
     content = request.POST.get('content', '').strip()
     if content:
@@ -243,7 +271,7 @@ def add_comment_view(request, post_id):
 @login_required
 def delete_comment_view(request, comment_id):
     comment = get_object_or_404(PostComment, id=comment_id)
-    if comment.author == request.user or comment.post.author == request.user or request.user.is_staff:
+    if comment.author == request.user or comment.post.author == request.user or request.user.orkut_profile.is_moderator_or_higher():
         comment.delete()
         messages.success(request, "Comment deleted.")
     return redirect('home')
@@ -265,7 +293,6 @@ def profile_view(request, username=None):
         defaults={'full_name': target_user.get_full_name() or target_user.username}
     )
 
-    # Track visitor and increment views if visiting someone else's profile
     if not is_self:
         profile.profile_views += 1
         profile.save()
@@ -275,7 +302,6 @@ def profile_view(request, username=None):
             defaults={'visited_at': timezone.now()}
         )
 
-    # Friendship status
     is_friend = False
     has_sent_request = False
     has_received_request = False
@@ -287,29 +313,21 @@ def profile_view(request, username=None):
             has_sent_request = FriendRequest.objects.filter(from_user=request.user, to_user=target_user, status='PENDING').exists()
             has_received_request = FriendRequest.objects.filter(from_user=target_user, to_user=request.user, status='PENDING').exists()
 
-    # Is Fan
     is_fan = Fan.objects.filter(user=target_user, fan=request.user).exists()
     total_fans = Fan.objects.filter(user=target_user).count()
 
-    # Friends of target user
     friendships = Friendship.objects.filter(Q(user1=target_user) | Q(user2=target_user)).select_related('user1', 'user2', 'user1__orkut_profile', 'user2__orkut_profile')
     friends = [f.user2 if f.user1 == target_user else f.user1 for f in friendships]
 
-    # Mutual friends
     mutual_friends = []
     if not is_self:
         my_friendships = Friendship.objects.filter(Q(user1=request.user) | Q(user2=request.user))
         my_friend_ids = {f.user2_id if f.user1_id == request.user.id else f.user1_id for f in my_friendships}
         mutual_friends = [fr for fr in friends if fr.id in my_friend_ids]
 
-    # Scraps
     scraps = ScrapbookMessage.objects.filter(recipient=target_user).select_related('sender', 'sender__orkut_profile')[:8]
     scrap_form = ScrapForm()
-
-    # Photo albums
     albums = PhotoAlbum.objects.filter(user=target_user).prefetch_related('photos')[:4]
-
-    # User's communities
     memberships = CommunityMember.objects.filter(user=target_user, status='ACTIVE').select_related('community')[:8]
     communities = [m.community for m in memberships]
 
@@ -334,6 +352,10 @@ def profile_view(request, username=None):
 
 @login_required
 def edit_profile_view(request):
+    if not request.user.orkut_profile.check_permission('can_edit_profile'):
+        messages.error(request, "Your account does not have permission to edit profiles.")
+        return redirect('home')
+
     profile, _ = UserProfile.objects.get_or_create(user=request.user)
     if request.method == 'POST':
         form = UserProfileForm(request.POST, request.FILES, instance=profile)
@@ -371,6 +393,9 @@ def rate_user_view(request, username):
 @login_required
 def settings_view(request):
     profile = request.user.orkut_profile
+    deletion_request = AccountDeletionRequest.objects.filter(user=request.user).first()
+    deletion_form = AccountDeletionRequestForm()
+
     if request.method == 'POST':
         action = request.POST.get('action')
         if action == 'fortune':
@@ -382,18 +407,93 @@ def settings_view(request):
             profile.save()
             messages.success(request, "Privacy settings saved!")
         elif action == 'deactivate':
+            profile.account_status = 'INACTIVE'
             profile.is_suspended = True
             profile.save()
             logout(request)
-            messages.info(request, "Your account has been deactivated. You can log in anytime to reactivate it.")
+            messages.info(request, "Your account has been deactivated. You can log back in anytime to reactivate it.")
             return redirect('login')
-    return render(request, 'profile/settings.html', {'profile': profile})
+
+    return render(request, 'profile/settings.html', {
+        'profile': profile,
+        'deletion_request': deletion_request,
+        'deletion_form': deletion_form,
+    })
+
+
+# ----------------- TASK 1: USER ACCOUNT DELETION REQUEST -----------------
+
+@login_required
+def request_account_deletion_view(request):
+    existing_request = AccountDeletionRequest.objects.filter(user=request.user, status__in=['PENDING', 'APPROVED']).first()
+    if existing_request:
+        messages.warning(request, f"You already have an active deletion request with status '{existing_request.get_status_display()}'.")
+        return redirect('settings')
+
+    if request.method == 'POST':
+        form = AccountDeletionRequestForm(request.POST)
+        if form.is_valid():
+            del_req = form.save(commit=False)
+            del_req.user = request.user
+            del_req.status = 'PENDING'
+            del_req.save()
+
+            profile = request.user.orkut_profile
+            profile.account_status = 'PENDING_DELETION'
+            profile.save()
+
+            # Notify user
+            Notification.objects.create(
+                recipient=request.user,
+                notification_type='DELETION',
+                title="Account Deletion Request Submitted",
+                message="Your account deletion request has been submitted to the Admin team. Status: Pending.",
+                link='/settings/'
+            )
+
+            # Audit log
+            log_admin_action(request, "DELETION_REQUEST_SUBMITTED", affected_user=request.user, new_val=del_req.reason)
+
+            messages.success(request, "Your account deletion request has been successfully submitted. The administration team will review it.")
+            return redirect('settings')
+    return redirect('settings')
+
+
+@login_required
+def cancel_account_deletion_view(request, request_id):
+    del_req = get_object_or_404(AccountDeletionRequest, id=request_id, user=request.user)
+    if del_req.status in ('COMPLETED', 'CANCELLED'):
+        messages.error(request, "This deletion request cannot be cancelled.")
+        return redirect('settings')
+
+    del_req.status = 'CANCELLED'
+    del_req.save()
+
+    profile = request.user.orkut_profile
+    profile.account_status = 'ACTIVE'
+    profile.save()
+
+    Notification.objects.create(
+        recipient=request.user,
+        notification_type='DELETION',
+        title="Deletion Request Cancelled",
+        message="You have successfully cancelled your account deletion request. Your account remains Active.",
+        link='/settings/'
+    )
+
+    log_admin_action(request, "DELETION_REQUEST_CANCELLED_BY_USER", affected_user=request.user)
+    messages.success(request, "Your account deletion request has been cancelled. Your account remains active!")
+    return redirect('settings')
 
 
 # ----------------- SCRAPBOOK -----------------
 
 @login_required
 def scrapbook_view(request, username=None):
+    if not request.user.orkut_profile.check_permission('can_use_scrapbook'):
+        messages.error(request, "Your account does not have permission to use the scrapbook.")
+        return redirect('home')
+
     if username is None or username == request.user.username:
         target_user = request.user
         is_self = True
@@ -403,7 +503,6 @@ def scrapbook_view(request, username=None):
 
     profile = target_user.orkut_profile
 
-    # Check privacy
     can_scrap = True
     if not is_self:
         if profile.scrapbook_privacy == 'ONLY_ME':
@@ -455,7 +554,7 @@ def scrapbook_view(request, username=None):
 def delete_scrap_view(request, scrap_id):
     scrap = get_object_or_404(ScrapbookMessage, id=scrap_id)
     recipient_username = scrap.recipient.username
-    if scrap.recipient == request.user or scrap.sender == request.user or request.user.is_staff:
+    if scrap.recipient == request.user or scrap.sender == request.user or request.user.orkut_profile.is_moderator_or_higher():
         scrap.delete()
         messages.success(request, "Scrap removed.")
     return redirect('scrapbook', username=recipient_username)
@@ -475,7 +574,6 @@ def friends_list_view(request, username=None):
     friendships = Friendship.objects.filter(Q(user1=target_user) | Q(user2=target_user)).select_related('user1', 'user2', 'user1__orkut_profile', 'user2__orkut_profile')
     friends = [f.user2 if f.user1 == target_user else f.user1 for f in friendships]
 
-    # Search filter within friends
     q = request.GET.get('q', '').strip()
     if q:
         friends = [f for f in friends if q.lower() in f.username.lower() or (f.orkut_profile.full_name and q.lower() in f.orkut_profile.full_name.lower())]
@@ -501,12 +599,15 @@ def friend_requests_view(request):
 
 @login_required
 def send_friend_request_view(request, username):
+    if not request.user.orkut_profile.check_permission('can_send_friend_requests'):
+        messages.error(request, "Your account does not have permission to send friend requests.")
+        return redirect('profile', username=username)
+
     target_user = get_object_or_404(User, username=username)
     if target_user == request.user:
         messages.warning(request, "You cannot send a friend request to yourself.")
         return redirect('profile', username=username)
 
-    # Check if already friends
     already_friends = Friendship.objects.filter(
         Q(user1=request.user, user2=target_user) | Q(user1=target_user, user2=request.user)
     ).exists()
@@ -538,7 +639,6 @@ def accept_friend_request_view(request, request_id):
     freq.status = 'ACCEPTED'
     freq.save()
 
-    # Create friendship
     Friendship.objects.get_or_create(user1=freq.from_user, user2=freq.to_user)
     
     Notification.objects.create(
@@ -587,7 +687,6 @@ def communities_list_view(request):
     if q:
         communities = communities.filter(Q(name__icontains=q) | Q(description__icontains=q))
 
-    # User's joined communities
     my_memberships = CommunityMember.objects.filter(user=request.user, status='ACTIVE').values_list('community_id', flat=True)
 
     return render(request, 'communities/communities_list.html', {
@@ -600,6 +699,10 @@ def communities_list_view(request):
 
 @login_required
 def create_community_view(request):
+    if not request.user.orkut_profile.check_permission('can_create_communities'):
+        messages.error(request, "Your account does not have permission to create communities.")
+        return redirect('communities_list')
+
     if request.method == 'POST':
         form = CommunityForm(request.POST, request.FILES)
         if form.is_valid():
@@ -624,7 +727,6 @@ def community_detail_view(request, community_id):
 
     members = CommunityMember.objects.filter(community=comm, status='ACTIVE').select_related('user', 'user__orkut_profile')[:12]
     topics = CommunityPost.objects.filter(community=comm).select_related('author', 'author__orkut_profile').annotate(reply_count=Count('replies'))
-
     topic_form = CommunityPostForm()
 
     return render(request, 'communities/community_detail.html', {
@@ -642,6 +744,10 @@ def community_detail_view(request, community_id):
 
 @login_required
 def join_community_view(request, community_id):
+    if not request.user.orkut_profile.check_permission('can_join_communities'):
+        messages.error(request, "Your account does not have permission to join communities.")
+        return redirect('communities_list')
+
     comm = get_object_or_404(Community, id=community_id)
     membership, created = CommunityMember.objects.get_or_create(community=comm, user=request.user)
     if comm.is_private:
@@ -669,7 +775,6 @@ def leave_community_view(request, community_id):
 @login_required
 def create_community_topic_view(request, community_id):
     comm = get_object_or_404(Community, id=community_id)
-    # Check if member
     membership = CommunityMember.objects.filter(community=comm, user=request.user, status='ACTIVE').first()
     if not membership:
         messages.error(request, "You must be a member to start a discussion in this community.")
@@ -735,6 +840,10 @@ def photos_list_view(request, username=None):
 
 @login_required
 def create_album_view(request):
+    if not request.user.orkut_profile.check_permission('can_create_albums'):
+        messages.error(request, "Your account does not have permission to create photo albums.")
+        return redirect('my_photos')
+
     if request.method == 'POST':
         form = PhotoAlbumForm(request.POST)
         if form.is_valid():
@@ -747,6 +856,10 @@ def create_album_view(request):
 
 @login_required
 def upload_photo_view(request):
+    if not request.user.orkut_profile.check_permission('can_upload_photos'):
+        messages.error(request, "Your account does not have permission to upload photos.")
+        return redirect('my_photos')
+
     if request.method == 'POST':
         form = PhotoUploadForm(request.POST, request.FILES)
         form.fields['album'].queryset = PhotoAlbum.objects.filter(user=request.user)
@@ -800,7 +913,7 @@ def photo_detail_view(request, photo_id):
 def delete_photo_view(request, photo_id):
     photo = get_object_or_404(Photo, id=photo_id)
     album_id = photo.album.id
-    if photo.user == request.user or request.user.is_staff:
+    if photo.user == request.user or request.user.orkut_profile.is_moderator_or_higher():
         photo.delete()
         messages.success(request, "Photo deleted.")
     return redirect('album_detail', album_id=album_id)
@@ -810,7 +923,10 @@ def delete_photo_view(request, photo_id):
 
 @login_required
 def messages_view(request, username=None):
-    # Distinct chat partners
+    if not request.user.orkut_profile.check_permission('can_send_messages'):
+        messages.error(request, "Your account does not have permission to send private messages.")
+        return redirect('home')
+
     sent_to = PrivateMessage.objects.filter(sender=request.user).values_list('recipient_id', flat=True)
     received_from = PrivateMessage.objects.filter(recipient=request.user).values_list('sender_id', flat=True)
     partner_ids = set(sent_to) | set(received_from)
@@ -821,9 +937,7 @@ def messages_view(request, username=None):
     chat_messages = []
     if username:
         active_partner = get_object_or_404(User, username=username)
-        # Mark as read
         PrivateMessage.objects.filter(sender=active_partner, recipient=request.user, is_read=False).update(is_read=True)
-        # Fetch conversation
         chat_messages = PrivateMessage.objects.filter(
             (Q(sender=request.user, recipient=active_partner) | Q(sender=active_partner, recipient=request.user))
         ).order_by('created_at')
@@ -837,6 +951,9 @@ def messages_view(request, username=None):
 
 @login_required
 def send_message_api(request):
+    if not request.user.orkut_profile.check_permission('can_send_messages'):
+        return JsonResponse({'status': 'error', 'message': 'Permission denied.'}, status=403)
+
     if request.method == 'POST':
         recipient_username = request.POST.get('recipient')
         msg_text = request.POST.get('message', '').strip()
@@ -864,9 +981,7 @@ def send_message_api(request):
 @login_required
 def get_messages_api(request, username):
     partner = get_object_or_404(User, username=username)
-    # Mark as read
     PrivateMessage.objects.filter(sender=partner, recipient=request.user, is_read=False).update(is_read=True)
-    
     msgs = PrivateMessage.objects.filter(
         (Q(sender=request.user, recipient=partner) | Q(sender=partner, recipient=request.user))
     ).order_by('created_at')
@@ -905,9 +1020,7 @@ def fans_list_view(request, username=None):
         target_user = get_object_or_404(User, username=username)
         is_self = False
 
-    # Users who made target_user their fan
     fans = Fan.objects.filter(user=target_user).select_related('fan', 'fan__orkut_profile')
-    # Users target_user is a fan of (idols)
     idols = Fan.objects.filter(fan=target_user).select_related('user', 'user__orkut_profile')
 
     return render(request, 'fans/fans_list.html', {
@@ -952,7 +1065,7 @@ def profile_visitors_view(request):
     })
 
 
-# ----------------- NOTIFICATIONS -----------------
+# ----------------- NOTIFICATIONS & SEARCH -----------------
 
 @login_required
 def notifications_view(request):
@@ -974,8 +1087,6 @@ def mark_all_notifications_read_view(request):
     messages.success(request, "All notifications marked as read.")
     return redirect('notifications')
 
-
-# ----------------- SEARCH -----------------
 
 @login_required
 def search_view(request):
@@ -1013,8 +1124,6 @@ def search_view(request):
     })
 
 
-# ----------------- CONTENT REPORTING -----------------
-
 @login_required
 def report_content_view(request):
     if request.method == 'POST':
@@ -1032,64 +1141,571 @@ def report_content_view(request):
     return redirect('home')
 
 
-# ----------------- ADMIN DASHBOARD -----------------
+# =========================================================================
+# ----------------- TASK 2: COMPLETE ADMIN DASHBOARD ----------------------
+# =========================================================================
+
+# Helper to verify administrative access
+def check_admin_access(user):
+    if not user.is_authenticated:
+        return False
+    profile = getattr(user, 'orkut_profile', None)
+    return user.is_superuser or user.is_staff or (profile and profile.is_admin_or_super())
+
+
+def check_super_admin_access(user):
+    if not user.is_authenticated:
+        return False
+    profile = getattr(user, 'orkut_profile', None)
+    return user.is_superuser or (profile and profile.is_super_admin())
+
 
 @login_required
 def admin_dashboard_view(request):
-    if not request.user.is_staff and not request.user.is_superuser:
-        messages.error(request, "Administrator privileges required.")
+    if not check_admin_access(request.user):
+        messages.error(request, "Access Denied: Administrator privileges required.")
         return redirect('home')
 
+    # A. KPI Metrics
     total_users = User.objects.count()
+    active_users = UserProfile.objects.filter(account_status='ACTIVE', is_suspended=False).count()
+    inactive_users = UserProfile.objects.filter(account_status='INACTIVE').count()
+    blocked_users = UserProfile.objects.filter(Q(account_status='BLOCKED') | Q(is_suspended=True)).count()
+    online_users = UserProfile.objects.filter(is_online=True).count()
+    pending_deletions = AccountDeletionRequest.objects.filter(status='PENDING').count()
     total_posts = StatusPost.objects.count()
     total_communities = Community.objects.count()
     total_photos = Photo.objects.count()
-    total_scraps = ScrapbookMessage.objects.count()
+    total_friend_requests = FriendRequest.objects.count()
 
-    users_list = User.objects.all().select_related('orkut_profile').order_by('-date_joined')[:20]
-    reports = Report.objects.filter(status='PENDING').select_related('reported_by')[:20]
+    # Recent Data
+    recent_users = User.objects.all().select_related('orkut_profile').order_by('-date_joined')[:10]
+    recent_deletions = AccountDeletionRequest.objects.filter(status='PENDING').select_related('user', 'user__orkut_profile')[:5]
+    recent_reports = Report.objects.filter(status='PENDING').select_related('reported_by')[:5]
+    recent_logs = AdminActivityLog.objects.all().select_related('admin_user', 'affected_user')[:8]
 
     return render(request, 'admin_panel/dashboard.html', {
         'total_users': total_users,
+        'active_users': active_users,
+        'inactive_users': inactive_users,
+        'blocked_users': blocked_users,
+        'online_users': online_users,
+        'pending_deletions': pending_deletions,
         'total_posts': total_posts,
         'total_communities': total_communities,
         'total_photos': total_photos,
-        'total_scraps': total_scraps,
-        'users_list': users_list,
+        'total_friend_requests': total_friend_requests,
+        'recent_users': recent_users,
+        'recent_deletions': recent_deletions,
+        'recent_reports': recent_reports,
+        'recent_logs': recent_logs,
+        'is_super_admin': check_super_admin_access(request.user),
+    })
+
+
+# ----------------- B. USER MANAGEMENT -----------------
+
+@login_required
+def admin_users_view(request):
+    if not check_admin_access(request.user):
+        messages.error(request, "Access Denied: Administrator privileges required.")
+        return redirect('home')
+
+    q = request.GET.get('q', '').strip()
+    status_filter = request.GET.get('status', '')
+    role_filter = request.GET.get('role', '')
+
+    users_qs = User.objects.all().select_related('orkut_profile', 'orkut_profile__role').order_by('-date_joined')
+
+    if q:
+        users_qs = users_qs.filter(
+            Q(username__icontains=q) |
+            Q(email__icontains=q) |
+            Q(orkut_profile__full_name__icontains=q) |
+            Q(orkut_profile__mobile_number__icontains=q)
+        )
+
+    if status_filter:
+        users_qs = users_qs.filter(orkut_profile__account_status=status_filter)
+
+    if role_filter:
+        users_qs = users_qs.filter(orkut_profile__role__id=role_filter)
+
+    paginator = Paginator(users_qs, 15)
+    page_number = request.GET.get('page')
+    users_page = paginator.get_page(page_number)
+
+    roles = UserRole.objects.all()
+
+    return render(request, 'admin_panel/users.html', {
+        'users_page': users_page,
+        'search_query': q,
+        'status_filter': status_filter,
+        'role_filter': role_filter,
+        'roles': roles,
+        'is_super_admin': check_super_admin_access(request.user),
+    })
+
+
+@login_required
+def admin_edit_user_view(request, user_id):
+    if not check_admin_access(request.user):
+        return HttpResponseForbidden()
+
+    target_user = get_object_or_404(User, id=user_id)
+    profile, _ = UserProfile.objects.get_or_create(user=target_user)
+
+    # Prevent non-superadmins from modifying SuperAdmin accounts
+    if target_user.is_superuser and not check_super_admin_access(request.user):
+        messages.error(request, "Only a Super Administrator can edit a Super Admin account.")
+        return redirect('admin_users')
+
+    if request.method == 'POST':
+        form = AdminUserEditForm(request.POST, instance=profile)
+        if form.is_valid():
+            prev_status = profile.account_status
+            prev_role = profile.role.name if profile.role else "None"
+
+            # Update email on user model
+            target_user.email = form.cleaned_data['email']
+            target_user.first_name = form.cleaned_data['full_name']
+
+            # Only super admin can assign super admin role
+            assigned_role = form.cleaned_data.get('role')
+            if assigned_role and assigned_role.code == 'SUPER_ADMIN' and not check_super_admin_access(request.user):
+                messages.error(request, "You do not have permission to grant Super Admin role.")
+                return redirect('admin_users')
+
+            target_user.save()
+            updated_profile = form.save()
+
+            new_status = updated_profile.account_status
+            new_role = updated_profile.role.name if updated_profile.role else "None"
+
+            log_admin_action(
+                request,
+                "USER_PROFILE_UPDATED",
+                affected_user=target_user,
+                prev_val=f"Status: {prev_status}, Role: {prev_role}",
+                new_val=f"Status: {new_status}, Role: {new_role}"
+            )
+
+            messages.success(request, f"User @{target_user.username} updated successfully!")
+            return redirect('admin_users')
+    else:
+        form = AdminUserEditForm(instance=profile, initial={'email': target_user.email})
+
+    return render(request, 'admin_panel/edit_user.html', {
+        'form': form,
+        'target_user': target_user,
+        'profile': profile,
+    })
+
+
+@login_required
+def admin_toggle_user_block(request, user_id):
+    if not check_admin_access(request.user):
+        return HttpResponseForbidden()
+
+    target_user = get_object_or_404(User, id=user_id)
+    if target_user.is_superuser:
+        messages.error(request, "Cannot block a Super Admin account.")
+        return redirect('admin_users')
+
+    profile = target_user.orkut_profile
+    prev_status = profile.account_status
+    if profile.account_status == 'BLOCKED' or profile.is_suspended:
+        profile.account_status = 'ACTIVE'
+        profile.is_suspended = False
+        action_name = "USER_UNBLOCKED"
+        msg = f"User @{target_user.username} has been unblocked and activated."
+    else:
+        profile.account_status = 'BLOCKED'
+        profile.is_suspended = True
+        action_name = "USER_BLOCKED"
+        msg = f"User @{target_user.username} has been blocked."
+
+    profile.save()
+    log_admin_action(request, action_name, affected_user=target_user, prev_val=prev_status, new_val=profile.account_status)
+    messages.success(request, msg)
+    return redirect('admin_users')
+
+
+@login_required
+def admin_toggle_user_status(request, user_id):
+    if not check_admin_access(request.user):
+        return HttpResponseForbidden()
+
+    target_user = get_object_or_404(User, id=user_id)
+    if target_user.is_superuser:
+        messages.error(request, "Cannot deactivate a Super Admin account.")
+        return redirect('admin_users')
+
+    profile = target_user.orkut_profile
+    prev_status = profile.account_status
+    if profile.account_status == 'ACTIVE':
+        profile.account_status = 'INACTIVE'
+        action_name = "USER_DEACTIVATED"
+        msg = f"User @{target_user.username} deactivated."
+    else:
+        profile.account_status = 'ACTIVE'
+        action_name = "USER_ACTIVATED"
+        msg = f"User @{target_user.username} activated."
+
+    profile.save()
+    log_admin_action(request, action_name, affected_user=target_user, prev_val=prev_status, new_val=profile.account_status)
+    messages.info(request, msg)
+    return redirect('admin_users')
+
+
+@login_required
+def admin_reset_user_password(request, user_id):
+    if not check_super_admin_access(request.user):
+        messages.error(request, "Only Super Administrators can perform administrative password resets.")
+        return redirect('admin_users')
+
+    target_user = get_object_or_404(User, id=user_id)
+    if request.method == 'POST':
+        new_password = request.POST.get('new_password', '').strip()
+        if len(new_password) >= 6:
+            target_user.set_password(new_password)
+            target_user.save()
+            log_admin_action(request, "PASSWORD_RESET_BY_ADMIN", affected_user=target_user, new_val="New password applied")
+            messages.success(request, f"Password for @{target_user.username} has been reset.")
+        else:
+            messages.error(request, "Password must be at least 6 characters long.")
+    return redirect('admin_users')
+
+
+@login_required
+def admin_delete_user_view(request, user_id):
+    if not check_super_admin_access(request.user):
+        messages.error(request, "Only Super Administrators can permanently delete user accounts.")
+        return redirect('admin_users')
+
+    target_user = get_object_or_404(User, id=user_id)
+    if target_user == request.user:
+        messages.error(request, "You cannot delete your own account while logged in as Super Admin.")
+        return redirect('admin_users')
+
+    username = target_user.username
+    log_admin_action(request, "USER_DELETED_PERMANENTLY", affected_user=None, prev_val=f"Deleted user: @{username}")
+    target_user.delete()
+    messages.success(request, f"Account @{username} and all associated data have been permanently deleted.")
+    return redirect('admin_users')
+
+
+@login_required
+def admin_user_activity_view(request, user_id):
+    if not check_admin_access(request.user):
+        return HttpResponseForbidden()
+
+    target_user = get_object_or_404(User, id=user_id)
+    posts = StatusPost.objects.filter(author=target_user)
+    scraps_sent = ScrapbookMessage.objects.filter(sender=target_user)
+    scraps_received = ScrapbookMessage.objects.filter(recipient=target_user)
+    photos = Photo.objects.filter(user=target_user)
+    communities = CommunityMember.objects.filter(user=target_user).select_related('community')
+    audit_logs = AdminActivityLog.objects.filter(affected_user=target_user)
+
+    return render(request, 'admin_panel/user_activity.html', {
+        'target_user': target_user,
+        'posts': posts,
+        'scraps_sent': scraps_sent,
+        'scraps_received': scraps_received,
+        'photos': photos,
+        'communities': communities,
+        'audit_logs': audit_logs,
+    })
+
+
+# ----------------- C. USER AUTHORITIES & PERMISSION MANAGEMENT -----------------
+
+@login_required
+def admin_manage_authorities_view(request, user_id=None):
+    if not check_super_admin_access(request.user):
+        messages.error(request, "Only Super Administrators can manage individual user authorities and permissions.")
+        return redirect('admin_dashboard')
+
+    if user_id is None:
+        return redirect('admin_users')
+
+    target_user = get_object_or_404(User, id=user_id)
+    custom_perm, _ = UserPermission.objects.get_or_create(user=target_user)
+
+    if request.method == 'POST':
+        form = UserPermissionForm(request.POST, instance=custom_perm)
+        if form.is_valid():
+            form.save()
+            log_admin_action(request, "USER_PERMISSIONS_UPDATED", affected_user=target_user, new_val="Custom 12 authorities updated")
+            Notification.objects.create(
+                recipient=target_user,
+                notification_type='SYSTEM',
+                title="Account Permissions Updated",
+                message="An administrator has updated your account feature permissions.",
+                link='/settings/'
+            )
+            messages.success(request, f"Authorities and permissions for @{target_user.username} have been updated!")
+            return redirect('admin_manage_authorities', user_id=target_user.id)
+    else:
+        form = UserPermissionForm(instance=custom_perm)
+
+    return render(request, 'admin_panel/manage_authorities.html', {
+        'form': form,
+        'target_user': target_user,
+        'custom_perm': custom_perm,
+    })
+
+
+# ----------------- D. ROLE MANAGEMENT -----------------
+
+@login_required
+def admin_roles_view(request):
+    if not check_super_admin_access(request.user):
+        messages.error(request, "Only Super Administrators can manage system roles.")
+        return redirect('admin_dashboard')
+
+    roles = UserRole.objects.all().prefetch_related('permissions', 'users')
+    new_role_form = UserRoleForm()
+
+    if request.method == 'POST':
+        form = UserRoleForm(request.POST)
+        if form.is_valid():
+            role = form.save()
+            RolePermission.objects.get_or_create(role=role)
+            log_admin_action(request, "ROLE_CREATED", new_val=role.name)
+            messages.success(request, f"New role '{role.name}' created successfully!")
+            return redirect('admin_roles')
+
+    return render(request, 'admin_panel/roles.html', {
+        'roles': roles,
+        'new_role_form': new_role_form,
+    })
+
+
+@login_required
+def admin_edit_role_permissions_view(request, role_id):
+    if not check_super_admin_access(request.user):
+        messages.error(request, "Only Super Administrators can edit role authorities.")
+        return redirect('admin_dashboard')
+
+    role = get_object_or_404(UserRole, id=role_id)
+    perm, _ = RolePermission.objects.get_or_create(role=role)
+
+    if request.method == 'POST':
+        form = RolePermissionForm(request.POST, instance=perm)
+        if form.is_valid():
+            form.save()
+            log_admin_action(request, "ROLE_PERMISSIONS_UPDATED", new_val=f"Role: {role.name}")
+            messages.success(request, f"Default permissions for role '{role.name}' updated successfully!")
+            return redirect('admin_roles')
+    else:
+        form = RolePermissionForm(instance=perm)
+
+    return render(request, 'admin_panel/edit_role.html', {
+        'role': role,
+        'form': form,
+    })
+
+
+# ----------------- TASK 1 ADMIN: ACCOUNT DELETION REQUESTS -----------------
+
+@login_required
+def admin_deletion_requests_view(request):
+    if not check_admin_access(request.user):
+        messages.error(request, "Access Denied.")
+        return redirect('home')
+
+    status_filter = request.GET.get('status', 'ALL')
+    reqs = AccountDeletionRequest.objects.all().select_related('user', 'user__orkut_profile', 'reviewed_by').order_by('-created_at')
+
+    if status_filter != 'ALL':
+        reqs = reqs.filter(status=status_filter)
+
+    return render(request, 'admin_panel/deletion_requests.html', {
+        'deletion_requests': reqs,
+        'status_filter': status_filter,
+        'is_super_admin': check_super_admin_access(request.user),
+    })
+
+
+@login_required
+def admin_handle_deletion_request(request, request_id, action):
+    if not check_admin_access(request.user):
+        return HttpResponseForbidden()
+
+    del_req = get_object_or_404(AccountDeletionRequest, id=request_id)
+    prev_status = del_req.status
+    notes = request.POST.get('admin_notes', '').strip()
+
+    if action == 'approve':
+        del_req.status = 'APPROVED'
+        del_req.admin_notes = notes
+        del_req.reviewed_by = request.user
+        del_req.reviewed_at = timezone.now()
+        del_req.save()
+
+        # Update profile to pending deletion
+        profile = del_req.user.orkut_profile
+        profile.account_status = 'PENDING_DELETION'
+        profile.save()
+
+        Notification.objects.create(
+            recipient=del_req.user,
+            notification_type='DELETION',
+            title="Account Deletion Request Approved",
+            message=f"Your account deletion request has been approved by administrator @{request.user.username}. Account is scheduled for deletion.",
+            link='/settings/'
+        )
+        log_admin_action(request, "DELETION_REQUEST_APPROVED", affected_user=del_req.user, prev_val=prev_status, new_val='APPROVED')
+        messages.success(request, f"Deletion request for @{del_req.user.username} approved.")
+
+    elif action == 'reject':
+        del_req.status = 'REJECTED'
+        del_req.admin_notes = notes
+        del_req.reviewed_by = request.user
+        del_req.reviewed_at = timezone.now()
+        del_req.save()
+
+        profile = del_req.user.orkut_profile
+        profile.account_status = 'ACTIVE'
+        profile.save()
+
+        Notification.objects.create(
+            recipient=del_req.user,
+            notification_type='DELETION',
+            title="Account Deletion Request Rejected",
+            message=f"Your deletion request was reviewed and rejected. Admin Note: {notes or 'No reason specified'}",
+            link='/settings/'
+        )
+        log_admin_action(request, "DELETION_REQUEST_REJECTED", affected_user=del_req.user, prev_val=prev_status, new_val='REJECTED')
+        messages.info(request, f"Deletion request for @{del_req.user.username} rejected.")
+
+    elif action == 'complete':
+        # Must be super admin to complete full deletion
+        if not check_super_admin_access(request.user):
+            messages.error(request, "Only Super Administrators can execute the final account completion & deletion.")
+            return redirect('admin_deletion_requests')
+
+        del_req.status = 'COMPLETED'
+        del_req.admin_notes = notes or "Account deactivated and data anonymized/cleared per policy."
+        del_req.reviewed_by = request.user
+        del_req.reviewed_at = timezone.now()
+        del_req.save()
+
+        target_u = del_req.user
+        profile = target_u.orkut_profile
+        profile.account_status = 'DELETED'
+        profile.is_suspended = True
+        profile.full_name = "Deleted Orkut User"
+        profile.about_me = "This account was deleted per user request."
+        profile.save()
+
+        log_admin_action(request, "DELETION_REQUEST_COMPLETED", affected_user=target_u, prev_val=prev_status, new_val='COMPLETED')
+        messages.success(request, f"Account deletion completed for @{target_u.username}.")
+
+    return redirect('admin_deletion_requests')
+
+
+# ----------------- E. CONTENT MANAGEMENT -----------------
+
+@login_required
+def admin_content_view(request):
+    if not check_admin_access(request.user):
+        messages.error(request, "Access Denied.")
+        return redirect('home')
+
+    tab = request.GET.get('tab', 'posts')
+    posts = StatusPost.objects.all().select_related('author', 'author__orkut_profile').order_by('-created_at')[:25]
+    scraps = ScrapbookMessage.objects.all().select_related('sender', 'recipient').order_by('-created_at')[:25]
+    photos = Photo.objects.all().select_related('user', 'album').order_by('-created_at')[:25]
+    communities = Community.objects.all().select_related('creator').order_by('-created_at')[:25]
+    reports = Report.objects.filter(status='PENDING').select_related('reported_by').order_by('-created_at')
+
+    return render(request, 'admin_panel/content.html', {
+        'tab': tab,
+        'posts': posts,
+        'scraps': scraps,
+        'photos': photos,
+        'communities': communities,
         'reports': reports,
     })
 
 
 @login_required
-def admin_toggle_user_status(request, user_id):
-    if not request.user.is_staff:
+def admin_delete_content(request, content_type, content_id):
+    if not check_admin_access(request.user):
         return HttpResponseForbidden()
-    target_user = get_object_or_404(User, id=user_id)
-    profile = target_user.orkut_profile
-    profile.is_suspended = not profile.is_suspended
-    profile.save()
-    status_str = "Suspended" if profile.is_suspended else "Reactivated"
-    messages.info(request, f"User {target_user.username} is now {status_str}.")
-    return redirect('admin_dashboard')
+
+    if content_type == 'post':
+        p = get_object_or_404(StatusPost, id=content_id)
+        author = p.author
+        p.delete()
+        log_admin_action(request, "ADMIN_DELETED_POST", affected_user=author)
+        messages.success(request, "Post deleted by admin.")
+    elif content_type == 'scrap':
+        s = get_object_or_404(ScrapbookMessage, id=content_id)
+        author = s.sender
+        s.delete()
+        log_admin_action(request, "ADMIN_DELETED_SCRAP", affected_user=author)
+        messages.success(request, "Scrap deleted by admin.")
+    elif content_type == 'photo':
+        ph = get_object_or_404(Photo, id=content_id)
+        owner = ph.user
+        ph.delete()
+        log_admin_action(request, "ADMIN_DELETED_PHOTO", affected_user=owner)
+        messages.success(request, "Photo deleted by admin.")
+    elif content_type == 'community':
+        c = get_object_or_404(Community, id=content_id)
+        cname = c.name
+        c.delete()
+        log_admin_action(request, "ADMIN_DELETED_COMMUNITY", new_val=cname)
+        messages.success(request, f"Community '{cname}' removed by admin.")
+
+    return redirect(f"/admin-dashboard/content/?tab={content_type}s")
+
+
+# ----------------- F. ADMIN ACTIVITY & AUDIT LOGS -----------------
+
+@login_required
+def admin_audit_logs_view(request):
+    if not check_admin_access(request.user):
+        messages.error(request, "Access Denied.")
+        return redirect('home')
+
+    logs_qs = AdminActivityLog.objects.all().select_related('admin_user', 'affected_user').order_by('-created_at')
+    action_filter = request.GET.get('action')
+    if action_filter:
+        logs_qs = logs_qs.filter(action__icontains=action_filter)
+
+    paginator = Paginator(logs_qs, 20)
+    page_number = request.GET.get('page')
+    logs_page = paginator.get_page(page_number)
+
+    return render(request, 'admin_panel/audit_logs.html', {
+        'logs_page': logs_page,
+        'action_filter': action_filter,
+    })
 
 
 @login_required
 def admin_resolve_report(request, report_id, action):
-    if not request.user.is_staff:
+    if not check_admin_access(request.user):
         return HttpResponseForbidden()
     report = get_object_or_404(Report, id=report_id)
     if action == 'resolve':
         report.status = 'RESOLVED'
-        # Delete reported content if applicable
         if report.content_type == 'post':
             StatusPost.objects.filter(id=report.content_id).delete()
         elif report.content_type == 'scrap':
             ScrapbookMessage.objects.filter(id=report.content_id).delete()
         elif report.content_type == 'photo':
             Photo.objects.filter(id=report.content_id).delete()
+        log_admin_action(request, "REPORT_RESOLVED", new_val=f"{report.content_type} #{report.content_id}")
         messages.success(request, "Report resolved and violating content removed.")
     else:
         report.status = 'DISMISSED'
+        log_admin_action(request, "REPORT_DISMISSED", new_val=f"{report.content_type} #{report.content_id}")
         messages.info(request, "Report dismissed.")
     report.save()
     return redirect('admin_dashboard')

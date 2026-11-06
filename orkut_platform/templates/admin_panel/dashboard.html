@@ -1,145 +1,321 @@
 {% extends 'base.html' %}
 
-{% block title %}orkut - administration dashboard{% endblock %}
+{% block title %}orkut - administration overview{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-md-4">
-    <div class="orkut-card">
-        <div class="orkut-card-header bg-danger text-white">
-            <span class="text-white"><i class="fas fa-shield-halved me-1"></i> Orkut Administrator Control Panel</span>
-            <span class="small badge bg-white text-danger fw-bold">Admin Level Access</span>
-        </div>
+<div class="container-fluid px-md-4 py-3">
+    {% with active_tab='dashboard' %}
+        {% include 'admin_panel/_nav.html' %}
+    {% endwith %}
 
-        <!-- Metric KPI Cards -->
-        <div class="row g-3 mb-4">
-            <div class="col-md-2 col-6">
-                <div class="p-3 bg-primary text-white rounded text-center shadow-sm">
-                    <h3 class="fw-bold mb-0">{{ total_users }}</h3>
-                    <div class="small">Total Users</div>
+    <!-- 10 SUMMARY KPI METRIC CARDS -->
+    <div class="row g-2 mb-3">
+        <!-- 1. Total Registered Users -->
+        <div class="col-xl-2 col-md-3 col-6">
+            <div class="p-3 bg-white border rounded shadow-sm d-flex align-items-center justify-content-between h-100">
+                <div>
+                    <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Total Users</div>
+                    <div class="fs-4 fw-bold text-dark">{{ total_users }}</div>
                 </div>
-            </div>
-            <div class="col-md-2 col-6">
-                <div class="p-3 bg-success text-white rounded text-center shadow-sm">
-                    <h3 class="fw-bold mb-0">{{ total_posts }}</h3>
-                    <div class="small">Status Updates</div>
-                </div>
-            </div>
-            <div class="col-md-2 col-6">
-                <div class="p-3 bg-warning text-dark rounded text-center shadow-sm">
-                    <h3 class="fw-bold mb-0">{{ total_communities }}</h3>
-                    <div class="small">Communities</div>
-                </div>
-            </div>
-            <div class="col-md-2 col-6">
-                <div class="p-3 bg-info text-white rounded text-center shadow-sm">
-                    <h3 class="fw-bold mb-0">{{ total_photos }}</h3>
-                    <div class="small">Photos Uploaded</div>
-                </div>
-            </div>
-            <div class="col-md-2 col-6">
-                <div class="p-3 bg-secondary text-white rounded text-center shadow-sm">
-                    <h3 class="fw-bold mb-0">{{ total_scraps }}</h3>
-                    <div class="small">Total Scraps</div>
-                </div>
-            </div>
-            <div class="col-md-2 col-6">
-                <div class="p-3 bg-danger text-white rounded text-center shadow-sm">
-                    <h3 class="fw-bold mb-0">{{ reports|length }}</h3>
-                    <div class="small">Pending Reports</div>
+                <div class="rounded-circle p-2 bg-primary-subtle text-primary fs-5">
+                    <i class="fas fa-users"></i>
                 </div>
             </div>
         </div>
 
-        <div class="row g-3">
-            <!-- User Management Table -->
-            <div class="col-lg-8">
-                <div class="border rounded p-3 bg-white">
-                    <h6 class="fw-bold text-primary mb-3">
-                        <i class="fas fa-users-gear me-1"></i> User Accounts Management (Recent 20)
-                    </h6>
-                    <div class="table-responsive">
-                        <table class="table table-sm table-hover align-middle small mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>User</th>
-                                    <th>Email / City</th>
-                                    <th>Joined</th>
-                                    <th>Status</th>
-                                    <th class="text-end">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for u in users_list %}
-                                <tr>
-                                    <td>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <img src="{{ u.orkut_profile.avatar_url }}" alt="avatar" class="rounded-circle border" style="width: 32px; height: 32px; object-fit: cover;">
-                                            <div>
-                                                <a href="{% url 'profile' u.username %}" class="fw-bold text-decoration-none text-dark">
-                                                    {{ u.orkut_profile.full_name|default:u.username }}
-                                                </a>
-                                                <div class="text-muted" style="font-size: 0.68rem;">@{{ u.username }}</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div>{{ u.email|default:'No email' }}</div>
-                                        <div class="text-muted" style="font-size: 0.68rem;">{{ u.orkut_profile.city|default:'Worldwide' }}</div>
-                                    </td>
-                                    <td class="text-muted" style="font-size: 0.72rem;">{{ u.date_joined|date:"M d, Y" }}</td>
-                                    <td>
-                                        {% if u.orkut_profile.is_suspended %}
-                                            <span class="badge bg-danger">Suspended</span>
-                                        {% else %}
-                                            <span class="badge bg-success">Active</span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="text-end">
-                                        <a href="{% url 'admin_toggle_user_status' u.id %}" class="btn btn-sm {% if u.orkut_profile.is_suspended %}btn-success{% else %}btn-outline-danger{% endif %} py-0 px-2" style="font-size: 0.72rem;">
-                                            {% if u.orkut_profile.is_suspended %}Activate{% else %}Suspend{% endif %}
-                                        </a>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+        <!-- 2. Active Users -->
+        <div class="col-xl-2 col-md-3 col-6">
+            <div class="p-3 bg-white border rounded shadow-sm d-flex align-items-center justify-content-between h-100">
+                <div>
+                    <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Active Users</div>
+                    <div class="fs-4 fw-bold text-success">{{ active_users }}</div>
+                </div>
+                <div class="rounded-circle p-2 bg-success-subtle text-success fs-5">
+                    <i class="fas fa-user-check"></i>
                 </div>
             </div>
+        </div>
 
-            <!-- Moderation / Reported Content Queue -->
-            <div class="col-lg-4">
-                <div class="border rounded p-3 bg-white">
-                    <h6 class="fw-bold text-danger mb-3">
-                        <i class="fas fa-flag me-1"></i> Reported Content Review Queue
-                    </h6>
-                    {% if reports %}
-                        <div class="list-group list-group-flush small">
-                            {% for rep in reports %}
-                            <div class="list-group-item px-0 py-2">
-                                <div class="d-flex justify-content-between">
-                                    <span class="badge bg-warning text-dark text-uppercase">{{ rep.content_type }} #{{ rep.content_id }}</span>
-                                    <span class="text-muted" style="font-size: 0.65rem;">{{ rep.created_at|timesince }} ago</span>
-                                </div>
-                                <div class="text-dark fw-semibold mt-1">"{{ rep.reason }}"</div>
-                                <div class="text-muted" style="font-size: 0.68rem;">Reported by: @{{ rep.reported_by.username }}</div>
-                                <div class="d-flex gap-2 mt-2">
-                                    <a href="{% url 'admin_resolve_report' rep.id 'resolve' %}" class="btn btn-sm btn-danger py-0 px-2" style="font-size: 0.7rem;">Delete Content</a>
-                                    <a href="{% url 'admin_resolve_report' rep.id 'dismiss' %}" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.7rem;">Dismiss</a>
-                                </div>
-                            </div>
+        <!-- 3. Inactive Users -->
+        <div class="col-xl-2 col-md-3 col-6">
+            <div class="p-3 bg-white border rounded shadow-sm d-flex align-items-center justify-content-between h-100">
+                <div>
+                    <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Inactive Users</div>
+                    <div class="fs-4 fw-bold text-secondary">{{ inactive_users }}</div>
+                </div>
+                <div class="rounded-circle p-2 bg-secondary-subtle text-secondary fs-5">
+                    <i class="fas fa-user-slash"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Blocked Users -->
+        <div class="col-xl-2 col-md-3 col-6">
+            <div class="p-3 bg-white border rounded shadow-sm d-flex align-items-center justify-content-between h-100">
+                <div>
+                    <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Blocked Users</div>
+                    <div class="fs-4 fw-bold text-danger">{{ blocked_users }}</div>
+                </div>
+                <div class="rounded-circle p-2 bg-danger-subtle text-danger fs-5">
+                    <i class="fas fa-user-lock"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Online Users -->
+        <div class="col-xl-2 col-md-3 col-6">
+            <div class="p-3 bg-white border rounded shadow-sm d-flex align-items-center justify-content-between h-100">
+                <div>
+                    <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Online Users</div>
+                    <div class="fs-4 fw-bold text-info">{{ online_users }}</div>
+                </div>
+                <div class="rounded-circle p-2 bg-info-subtle text-info fs-5">
+                    <i class="fas fa-globe"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. Pending Deletions -->
+        <div class="col-xl-2 col-md-3 col-6">
+            <div class="p-3 bg-white border rounded shadow-sm d-flex align-items-center justify-content-between h-100 border-warning">
+                <div>
+                    <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Pending Deletions</div>
+                    <div class="fs-4 fw-bold text-warning">{{ pending_deletions }}</div>
+                </div>
+                <div class="rounded-circle p-2 bg-warning-subtle text-warning fs-5">
+                    <i class="fas fa-user-xmark"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. Total Posts -->
+        <div class="col-xl-2 col-md-3 col-6">
+            <div class="p-3 bg-white border rounded shadow-sm d-flex align-items-center justify-content-between h-100">
+                <div>
+                    <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Total Posts</div>
+                    <div class="fs-4 fw-bold text-dark">{{ total_posts }}</div>
+                </div>
+                <div class="rounded-circle p-2 bg-primary-subtle text-primary fs-5">
+                    <i class="fas fa-comment-dots"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- 8. Total Communities -->
+        <div class="col-xl-2 col-md-3 col-6">
+            <div class="p-3 bg-white border rounded shadow-sm d-flex align-items-center justify-content-between h-100">
+                <div>
+                    <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Communities</div>
+                    <div class="fs-4 fw-bold text-dark">{{ total_communities }}</div>
+                </div>
+                <div class="rounded-circle p-2 bg-info-subtle text-info fs-5">
+                    <i class="fas fa-users-rectangle"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- 9. Total Photos -->
+        <div class="col-xl-2 col-md-3 col-6">
+            <div class="p-3 bg-white border rounded shadow-sm d-flex align-items-center justify-content-between h-100">
+                <div>
+                    <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Total Photos</div>
+                    <div class="fs-4 fw-bold text-dark">{{ total_photos }}</div>
+                </div>
+                <div class="rounded-circle p-2 bg-success-subtle text-success fs-5">
+                    <i class="fas fa-image"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- 10. Total Friend Requests -->
+        <div class="col-xl-2 col-md-3 col-6">
+            <div class="p-3 bg-white border rounded shadow-sm d-flex align-items-center justify-content-between h-100">
+                <div>
+                    <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Friend Requests</div>
+                    <div class="fs-4 fw-bold text-dark">{{ total_friend_requests }}</div>
+                </div>
+                <div class="rounded-circle p-2 bg-warning-subtle text-warning fs-5">
+                    <i class="fas fa-user-plus"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN TWO-COLUMN DASHBOARD SECTIONS -->
+    <div class="row g-3">
+        <!-- Left Column: Pending Deletions & User Overview -->
+        <div class="col-lg-7">
+            <!-- Pending Deletion Requests Alert Box -->
+            {% if pending_deletions > 0 %}
+            <div class="orkut-card mb-3 border border-warning">
+                <div class="orkut-card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                    <span class="fw-bold"><i class="fas fa-bell me-1"></i> Urgent: Pending Account Deletion Requests ({{ pending_deletions }})</span>
+                    <a href="{% url 'admin_deletion_requests' %}" class="btn btn-sm btn-dark py-0 px-2 small">View All Requests</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle small mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>User</th>
+                                <th>Requested On</th>
+                                <th>Reason</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for req in recent_deletions %}
+                            <tr>
+                                <td>
+                                    <strong>{{ req.user.orkut_profile.full_name|default:req.user.username }}</strong>
+                                    <div class="text-muted" style="font-size: 0.7rem;">@{{ req.user.username }} | {{ req.user.email }}</div>
+                                </td>
+                                <td class="text-muted" style="font-size: 0.75rem;">{{ req.created_at|timesince }} ago</td>
+                                <td class="text-truncate" style="max-width: 180px;">{{ req.reason|default:"No reason stated" }}</td>
+                                <td class="text-end">
+                                    <a href="{% url 'admin_deletion_requests' %}" class="btn btn-sm btn-primary py-0 px-2" style="font-size: 0.72rem;">
+                                        Review
+                                    </a>
+                                </td>
+                            </tr>
                             {% endfor %}
-                        </div>
-                    {% else %}
-                        <div class="text-center py-4 text-muted">
-                            <i class="fas fa-shield-check fa-2x text-success mb-2"></i>
-                            <p class="small mb-0">No pending reports! Everything is clean.</p>
-                        </div>
-                    {% endif %}
+                        </tbody>
+                    </table>
                 </div>
+            </div>
+            {% endif %}
+
+            <!-- Recent Registered Users -->
+            <div class="orkut-card mb-3">
+                <div class="orkut-card-header d-flex justify-content-between align-items-center">
+                    <span class="fw-bold text-primary"><i class="fas fa-user-clock me-1"></i> Recently Registered Users</span>
+                    <a href="{% url 'admin_users' %}" class="small text-decoration-none">Manage All Users &rarr;</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle small mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>User</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Joined</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for u in recent_users %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <img src="{{ u.orkut_profile.avatar_url }}" alt="avatar" class="rounded-circle border" style="width: 28px; height: 28px; object-fit: cover;">
+                                        <div>
+                                            <a href="{% url 'profile' u.username %}" class="fw-bold text-decoration-none text-dark">
+                                                {{ u.orkut_profile.full_name|default:u.username }}
+                                            </a>
+                                            <div class="text-muted" style="font-size: 0.68rem;">@{{ u.username }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if u.orkut_profile.role %}
+                                        <span class="badge bg-secondary-subtle text-secondary border">{{ u.orkut_profile.role.name }}</span>
+                                    {% else %}
+                                        <span class="badge bg-light text-muted">Normal User</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if u.orkut_profile.account_status == 'ACTIVE' %}
+                                        <span class="badge bg-success-subtle text-success">Active</span>
+                                    {% elif u.orkut_profile.account_status == 'BLOCKED' %}
+                                        <span class="badge bg-danger-subtle text-danger">Blocked</span>
+                                    {% elif u.orkut_profile.account_status == 'PENDING_DELETION' %}
+                                        <span class="badge bg-warning-subtle text-warning text-dark">Pending Deletion</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary-subtle text-secondary">{{ u.orkut_profile.account_status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-muted" style="font-size: 0.72rem;">{{ u.date_joined|date:"M d, Y" }}</td>
+                                <td class="text-end">
+                                    <a href="{% url 'admin_edit_user' u.id %}" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size: 0.72rem;">Edit</a>
+                                    {% if is_super_admin %}
+                                    <a href="{% url 'admin_manage_authorities' u.id %}" class="btn btn-sm btn-outline-secondary py-0 px-1" style="font-size: 0.72rem;" title="Manage Authorities">
+                                        <i class="fas fa-key"></i>
+                                    </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Audit Logs & Reports -->
+        <div class="col-lg-5">
+            <!-- Pending Content Reports -->
+            <div class="orkut-card mb-3">
+                <div class="orkut-card-header d-flex justify-content-between align-items-center">
+                    <span class="fw-bold text-danger"><i class="fas fa-flag me-1"></i> Content Reports Queue</span>
+                    <a href="{% url 'admin_content' %}?tab=reports" class="small text-decoration-none">View All &rarr;</a>
+                </div>
+                {% if recent_reports %}
+                    <div class="list-group list-group-flush small">
+                        {% for rep in recent_reports %}
+                        <div class="list-group-item px-3 py-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge bg-warning text-dark text-uppercase">{{ rep.content_type }} #{{ rep.content_id }}</span>
+                                <span class="text-muted" style="font-size: 0.68rem;">{{ rep.created_at|timesince }} ago</span>
+                            </div>
+                            <div class="text-dark fw-semibold mt-1">"{{ rep.reason }}"</div>
+                            <div class="text-muted" style="font-size: 0.7rem;">Reporter: @{{ rep.reported_by.username }}</div>
+                            <div class="d-flex gap-2 mt-2">
+                                <a href="{% url 'admin_resolve_report' rep.id 'resolve' %}" class="btn btn-sm btn-danger py-0 px-2" style="font-size: 0.7rem;">Delete Content</a>
+                                <a href="{% url 'admin_resolve_report' rep.id 'dismiss' %}" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.7rem;">Dismiss</a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="p-3 text-center text-muted">
+                        <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                        <p class="small mb-0">No pending reports! Community is running smoothly.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Recent Administrative Audit Logs -->
+            <div class="orkut-card">
+                <div class="orkut-card-header d-flex justify-content-between align-items-center">
+                    <span class="fw-bold text-dark"><i class="fas fa-clock-rotate-left me-1"></i> Recent Administrative Audit Logs</span>
+                    <a href="{% url 'admin_audit_logs' %}" class="small text-decoration-none">Full Audit Trail &rarr;</a>
+                </div>
+                {% if recent_logs %}
+                    <div class="list-group list-group-flush small">
+                        {% for log in recent_logs %}
+                        <div class="list-group-item px-3 py-2">
+                            <div class="d-flex justify-content-between">
+                                <span class="fw-bold text-primary">@{{ log.admin_user.username|default:"System" }}</span>
+                                <span class="text-muted" style="font-size: 0.68rem;">{{ log.created_at|date:"M d, H:i" }}</span>
+                            </div>
+                            <div class="text-dark">
+                                <span class="badge bg-light text-dark border">{{ log.action }}</span>
+                                {% if log.affected_user %}
+                                    on @{{ log.affected_user.username }}
+                                {% endif %}
+                            </div>
+                            {% if log.updated_value %}
+                                <div class="text-muted mt-1 text-truncate" style="font-size: 0.7rem;">{{ log.updated_value }}</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="p-3 text-center text-muted small">
+                        No administrative logs recorded yet.
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>
 </div>
 {% endblock %}
-

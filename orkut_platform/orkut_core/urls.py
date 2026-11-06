@@ -18,12 +18,14 @@ urlpatterns = [
     path('post/comment/<int:post_id>/', views.add_comment_view, name='add_comment'),
     path('comment/delete/<int:comment_id>/', views.delete_comment_view, name='delete_comment'),
 
-    # Profile
+    # Profile & Settings
     path('profile/', views.profile_view, name='my_profile'),
     path('profile/edit/', views.edit_profile_view, name='edit_profile'),
     path('profile/rate/<str:username>/', views.rate_user_view, name='rate_user'),
     path('profile/<str:username>/', views.profile_view, name='profile'),
     path('settings/', views.settings_view, name='settings'),
+    path('settings/delete-account/', views.request_account_deletion_view, name='request_account_deletion'),
+    path('settings/delete-account/cancel/<int:request_id>/', views.cancel_account_deletion_view, name='cancel_account_deletion'),
 
     # Scrapbook
     path('scrapbook/', views.scrapbook_view, name='my_scrapbook'),
@@ -79,7 +81,22 @@ urlpatterns = [
 
     # Admin Panel
     path('admin-dashboard/', views.admin_dashboard_view, name='admin_dashboard'),
-    path('admin-dashboard/user/<int:user_id>/toggle/', views.admin_toggle_user_status, name='admin_toggle_user_status'),
+    path('admin-dashboard/users/', views.admin_users_view, name='admin_users'),
+    path('admin-dashboard/users/<int:user_id>/edit/', views.admin_edit_user_view, name='admin_edit_user'),
+    path('admin-dashboard/users/<int:user_id>/block/', views.admin_toggle_user_block, name='admin_toggle_user_block'),
+    path('admin-dashboard/users/<int:user_id>/status/', views.admin_toggle_user_status, name='admin_toggle_user_status'),
+    path('admin-dashboard/users/<int:user_id>/reset-password/', views.admin_reset_user_password, name='admin_reset_user_password'),
+    path('admin-dashboard/users/<int:user_id>/delete/', views.admin_delete_user_view, name='admin_delete_user'),
+    path('admin-dashboard/users/<int:user_id>/activity/', views.admin_user_activity_view, name='admin_user_activity'),
+    path('admin-dashboard/users/<int:user_id>/authorities/', views.admin_manage_authorities_view, name='admin_manage_authorities'),
+    path('admin-dashboard/authorities/', views.admin_manage_authorities_view, name='admin_manage_authorities_all'),
+    path('admin-dashboard/roles/', views.admin_roles_view, name='admin_roles'),
+    path('admin-dashboard/roles/<int:role_id>/edit/', views.admin_edit_role_permissions_view, name='admin_edit_role_permissions'),
+    path('admin-dashboard/deletion-requests/', views.admin_deletion_requests_view, name='admin_deletion_requests'),
+    path('admin-dashboard/deletion-requests/<int:request_id>/<str:action>/', views.admin_handle_deletion_request, name='admin_handle_deletion_request'),
+    path('admin-dashboard/content/', views.admin_content_view, name='admin_content'),
+    path('admin-dashboard/content/delete/<str:content_type>/<int:content_id>/', views.admin_delete_content, name='admin_delete_content'),
+    path('admin-dashboard/audit-logs/', views.admin_audit_logs_view, name='admin_audit_logs'),
     path('admin-dashboard/report/<int:report_id>/<str:action>/', views.admin_resolve_report, name='admin_resolve_report'),
 ]
 
