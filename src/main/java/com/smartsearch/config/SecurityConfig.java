@@ -39,7 +39,7 @@ public class SecurityConfig {
                 // Error handling
                 .requestMatchers("/error", "/error/**").permitAll()
                 // Public search and homepage aliases
-                .requestMatchers("/", "/index", "/index.html", "/home", "/employment", "/employment/**", "/services/**", "/blogs", "/blogs/**").permitAll()
+                .requestMatchers("/", "/index", "/index.html", "/home", "/employment", "/employment/**", "/services/**", "/social-media", "/social-media/**", "/blogs", "/blogs/**").permitAll()
                 .requestMatchers("/search", "/api/search", "/api/search/**", "/api/suggest", "/api/voice/**").permitAll()
                 .requestMatchers("/login", "/register", "/forgot-password").permitAll()
                 // Admin dashboard and management

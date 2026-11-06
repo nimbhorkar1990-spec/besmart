@@ -116,6 +116,16 @@
                                 </div>
                             </a>
                         </li>
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center gap-2 py-2" th:href="@{/social-media}">
+                                <span class="badge bg-info text-white px-2 py-1 rounded-pill small fw-bold">2</span>
+                                <i class="fas fa-share-nodes text-info fa-lg"></i>
+                                <div>
+                                    <div class="fw-semibold text-body">Social Media</div>
+                                    <div class="text-muted small" style="font-size: 0.75rem;">Social Networking &amp; Community</div>
+                                </div>
+                            </a>
+                        </li>
                         <!-- Option for Logged-In Employer to Post Ads -->
                         <li th:if="${currentUser != null and currentUser.isEmployer()}">
                             <hr class="dropdown-divider my-1">
