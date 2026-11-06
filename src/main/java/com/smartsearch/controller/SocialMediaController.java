@@ -1,13 +1,15 @@
 package com.smartsearch.controller;
 
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 @Controller
 public class SocialMediaController {
 
-    @GetMapping({"/social-media", "/services/social-media", "/services/social-media-platform"})
-    public String socialMedia() {
-        return "redirect:http://localhost:8000/";
+    @GetMapping({"/services/social-media-platform", "/social-media-platform", "/services/social-media", "/social-media"})
+    public String socialMediaPlatform(Model model) {
+        model.addAttribute("title", "Social Media Platform");
+        return "social-media-platform";
     }
 }
