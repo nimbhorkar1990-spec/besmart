@@ -32,7 +32,7 @@
                     <a href="{% url 'register' %}" class="small text-decoration-none">New user?</a>
                 </div>
 
-                <form method="post" action="{% url 'login' %}">
+                <form method="post" action="">
                     {% csrf_token %}
                     <div class="mb-3">
                         <label class="form-label small fw-bold">Username or Email</label>
