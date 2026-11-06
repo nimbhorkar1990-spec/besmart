@@ -6,17 +6,41 @@ from django.contrib import messages
 from django.http import JsonResponse, HttpResponseForbidden
 from django.db.models import Q, Count
 from django.views.decorators.http import require_POST
+from django.core.paginator import Paginator
+from django.utils import timezone
 import json
 
 from .models import (
     UserProfile, Connection, Follow, Block,
     Group, CompanyPage, Post, Comment,
-    Message, Notification, ReportedContent
+    Message, Notification, ReportedContent,
+    UserRole, RolePermission, UserPermission,
+    AccountDeletionRequest, AdminActivityLog
 )
 from .forms import (
     UserRegistrationForm, UserProfileForm, PostForm,
-    CommentForm, GroupForm, CompanyPageForm, MessageForm, ReportForm
+    CommentForm, GroupForm, CompanyPageForm, MessageForm, ReportForm,
+    AccountDeletionRequestForm, UserRoleForm, RolePermissionForm,
+    UserPermissionForm, AdminUserEditForm, PERM_FIELDS
 )
+
+
+# Helper: Activity & Audit Logging
+def log_admin_action(request, action, module_name="General", affected_user=None, prev_val="", new_val=""):
+    ip = request.META.get('REMOTE_ADDR', '') if request else ''
+    admin_u = request.user if (request and request.user.is_authenticated) else None
+    AdminActivityLog.objects.create(
+        admin_user=admin_u,
+        admin_id=admin_u.id if admin_u else None,
+        admin_username=admin_u.username if admin_u else 'System',
+        action=action,
+        module_name=module_name,
+        affected_user_id=affected_user.id if affected_user else None,
+        affected_username=affected_user.username if affected_user else '',
+        previous_value=str(prev_val)[:500],
+        updated_value=str(new_val)[:500],
+        ip_address=ip
+    )
 
 
 # Helper: send notification
@@ -192,6 +216,13 @@ def feed_view(request):
 @login_required
 @require_POST
 def create_post_view(request):
+    if not request.user.profile.check_permission('can_create_posts'):
+        messages.error(request, "Permission Denied: Your account does not have authority to create posts.")
+        return redirect('feed')
+    if request.FILES.get('image') and not request.user.profile.check_permission('can_upload_photos'):
+        messages.error(request, "Permission Denied: Your account does not have authority to upload photos.")
+        return redirect('feed')
+
     form = PostForm(request.POST, request.FILES)
     group_id = request.POST.get('group_id')
     company_id = request.POST.get('company_id')
@@ -238,6 +269,10 @@ def post_detail_view(request, post_id):
 @login_required
 def edit_post_view(request, post_id):
     post = get_object_or_404(Post, id=post_id, author=request.user)
+    if not request.user.profile.check_permission('can_edit_posts'):
+        messages.error(request, "Permission Denied: Your account does not have authority to edit posts.")
+        return redirect('post_detail', post_id=post.id)
+
     if request.method == 'POST':
         form = PostForm(request.POST, request.FILES, instance=post)
         if form.is_valid():
@@ -253,17 +288,21 @@ def edit_post_view(request, post_id):
 @require_POST
 def delete_post_view(request, post_id):
     post = get_object_or_404(Post, id=post_id)
-    if post.author == request.user or request.user.is_staff:
+    can_delete = (post.author == request.user and request.user.profile.check_permission('can_delete_posts')) or request.user.profile.is_moderator_or_higher()
+    if can_delete:
         post.delete()
         messages.success(request, "Post deleted successfully.")
     else:
-        messages.error(request, "You are not authorized to delete this post.")
+        messages.error(request, "Permission Denied: You are not authorized to delete this post.")
     return redirect('feed')
 
 
 @login_required
 @require_POST
 def toggle_like_view(request, post_id):
+    if not request.user.profile.check_permission('can_like_posts'):
+        return JsonResponse({'error': 'Permission denied: Cannot like posts.'}, status=403)
+
     post = get_object_or_404(Post, id=post_id)
     user = request.user
     liked = False
@@ -300,6 +339,10 @@ def toggle_save_view(request, post_id):
 @login_required
 @require_POST
 def add_comment_view(request, post_id):
+    if not request.user.profile.check_permission('can_comment_posts'):
+        messages.error(request, "Permission Denied: Your account does not have authority to comment on posts.")
+        return redirect('post_detail', post_id=post_id)
+
     post = get_object_or_404(Post, id=post_id)
     content = request.POST.get('content', '').strip()
     parent_id = request.POST.get('parent_id')
@@ -414,6 +457,10 @@ def profile_view(request, username):
 
 @login_required
 def edit_profile_view(request):
+    if not request.user.profile.check_permission('can_edit_profile'):
+        messages.error(request, "Permission Denied: Your account does not have authority to edit profile.")
+        return redirect('profile', username=request.user.username)
+
     profile = request.user.profile
     if request.method == 'POST':
         form = UserProfileForm(request.POST, request.FILES, instance=profile)
@@ -441,13 +488,107 @@ def edit_profile_view(request):
 
 @login_required
 def deactivate_account_view(request):
+    profile = request.user.profile
+    deletion_request = AccountDeletionRequest.objects.filter(user=request.user).first()
+    deletion_form = AccountDeletionRequestForm()
+
     if request.method == 'POST':
-        request.user.is_active = False
-        request.user.save()
-        logout(request)
-        messages.info(request, "Your account has been deactivated. You can reactivate by contacting support.")
-        return redirect('login')
-    return render(request, 'profile/deactivate.html')
+        action = request.POST.get('action')
+        if action == 'deactivate':
+            profile.account_status = 'INACTIVE'
+            profile.is_active_account = False
+            profile.save()
+            request.user.is_active = False
+            request.user.save()
+            logout(request)
+            messages.info(request, "Your account has been deactivated. You can reactivate by contacting support.")
+            return redirect('login')
+
+    return render(request, 'profile/deactivate.html', {
+        'profile': profile,
+        'deletion_request': deletion_request,
+        'deletion_form': deletion_form,
+    })
+
+
+@login_required
+def request_account_deletion_view(request):
+    existing_request = AccountDeletionRequest.objects.filter(
+        user=request.user,
+        status__in=['PENDING', 'UNDER_REVIEW', 'APPROVED']
+    ).first()
+
+    if existing_request:
+        messages.warning(request, f"You already have an active deletion request with status '{existing_request.get_status_display()}'.")
+        return redirect('deactivate_account')
+
+    if request.method == 'POST':
+        form = AccountDeletionRequestForm(request.POST)
+        if form.is_valid():
+            del_req = form.save(commit=False)
+            del_req.user = request.user
+            del_req.status = 'PENDING'
+            del_req.save()
+
+            profile = request.user.profile
+            profile.account_status = 'PENDING_DELETION'
+            profile.save()
+
+            # In-app notification
+            create_notification(
+                recipient=request.user,
+                sender=request.user,
+                notification_type='deletion',
+                text="Your account deletion request has been submitted. Status: Pending.",
+                link='/account/deactivate/'
+            )
+
+            # Audit log
+            log_admin_action(
+                request,
+                "DELETION_REQUEST_SUBMITTED",
+                module_name="Account Deletion",
+                affected_user=request.user,
+                new_val=del_req.reason
+            )
+
+            messages.success(request, "Your account deletion request has been successfully submitted. The administration team will review it.")
+            return redirect('deactivate_account')
+
+    return redirect('deactivate_account')
+
+
+@login_required
+def cancel_account_deletion_view(request, request_id):
+    del_req = get_object_or_404(AccountDeletionRequest, id=request_id, user=request.user)
+    if del_req.status in ('COMPLETED', 'CANCELLED'):
+        messages.error(request, "This deletion request cannot be cancelled.")
+        return redirect('deactivate_account')
+
+    del_req.status = 'CANCELLED'
+    del_req.save()
+
+    profile = request.user.profile
+    profile.account_status = 'ACTIVE'
+    profile.save()
+
+    create_notification(
+        recipient=request.user,
+        sender=request.user,
+        notification_type='deletion',
+        text="You have cancelled your account deletion request. Your account remains Active.",
+        link='/account/deactivate/'
+    )
+
+    log_admin_action(
+        request,
+        "DELETION_REQUEST_CANCELLED_BY_USER",
+        module_name="Account Deletion",
+        affected_user=request.user
+    )
+
+    messages.success(request, "Your account deletion request has been cancelled. Your account remains active!")
+    return redirect('deactivate_account')
 
 
 # -------------------------------------------------------------
@@ -495,6 +636,10 @@ def network_view(request):
 @login_required
 @require_POST
 def send_connection_view(request, user_id):
+    if not request.user.profile.check_permission('can_send_friend_requests'):
+        messages.error(request, "Permission Denied: Your account does not have authority to send connection requests.")
+        return redirect('network')
+
     target = get_object_or_404(User, id=user_id)
     if target != request.user:
         conn, created = Connection.objects.get_or_create(
@@ -519,6 +664,10 @@ def send_connection_view(request, user_id):
 @login_required
 @require_POST
 def accept_connection_view(request, connection_id):
+    if not request.user.profile.check_permission('can_accept_friend_requests'):
+        messages.error(request, "Permission Denied: Your account does not have authority to accept connection requests.")
+        return redirect('network')
+
     conn = get_object_or_404(Connection, id=connection_id, receiver=request.user)
     conn.status = 'accepted'
     conn.save()
@@ -611,6 +760,10 @@ def unblock_user_view(request, user_id):
 # -------------------------------------------------------------
 @login_required
 def messages_view(request, username=None):
+    if not request.user.profile.check_permission('can_send_messages'):
+        messages.error(request, "Permission Denied: Your account does not have authority to use messaging.")
+        return redirect('feed')
+
     user = request.user
     active_chat_user = None
 
@@ -661,6 +814,9 @@ def messages_view(request, username=None):
 @login_required
 @require_POST
 def send_message_api(request, username):
+    if not request.user.profile.check_permission('can_send_messages'):
+        return JsonResponse({'status': 'error', 'message': 'Permission denied: Cannot send messages.'}, status=403)
+
     recipient = get_object_or_404(User, username__iexact=username)
     content = request.POST.get('content', '').strip()
     attachment = request.FILES.get('attachment')
@@ -811,6 +967,10 @@ def groups_list_view(request):
 @login_required
 @require_POST
 def create_group_view(request):
+    if not request.user.profile.check_permission('can_create_communities'):
+        messages.error(request, "Permission Denied: Your account does not have authority to create communities.")
+        return redirect('groups_list')
+
     form = GroupForm(request.POST, request.FILES)
     if form.is_valid():
         group = form.save(commit=False)
@@ -846,6 +1006,10 @@ def group_detail_view(request, slug):
 @login_required
 @require_POST
 def join_group_view(request, slug):
+    if not request.user.profile.check_permission('can_join_communities'):
+        messages.error(request, "Permission Denied: Your account does not have authority to join communities.")
+        return redirect('groups_list')
+
     group = get_object_or_404(Group, slug=slug)
     if group.members.filter(id=request.user.id).exists():
         group.members.remove(request.user)
@@ -920,35 +1084,612 @@ def toggle_follow_company_view(request, slug):
 
 
 # -------------------------------------------------------------
-# 10. Admin Dashboard & Content Moderation
+# 10. Comprehensive Admin Dashboard & Authority Governance
 # -------------------------------------------------------------
+
+def check_admin_access(user):
+    if not user.is_authenticated:
+        return False
+    profile = getattr(user, 'profile', None)
+    return user.is_superuser or user.is_staff or (profile and profile.is_admin_or_super())
+
+
+def check_super_admin_access(user):
+    if not user.is_authenticated:
+        return False
+    profile = getattr(user, 'profile', None)
+    return user.is_superuser or (profile and profile.is_super_admin())
+
+
 @login_required
 def admin_dashboard_view(request):
-    if not request.user.is_staff:
+    if not check_admin_access(request.user):
         messages.error(request, "Access restricted to platform administrators.")
         return redirect('feed')
 
+    # A. 10 Summary KPI Metrics
     total_users = User.objects.count()
+    active_users = UserProfile.objects.filter(account_status='ACTIVE', user__is_active=True).count()
+    inactive_users = UserProfile.objects.filter(Q(account_status='INACTIVE') | Q(user__is_active=False)).exclude(account_status='BLOCKED').count()
+    blocked_users = UserProfile.objects.filter(account_status='BLOCKED').count()
+    online_users = UserProfile.objects.filter(is_online=True).count()
+    pending_deletions = AccountDeletionRequest.objects.filter(status__in=['PENDING', 'UNDER_REVIEW']).count()
     total_posts = Post.objects.count()
-    total_comments = Comment.objects.count()
-    total_groups = Group.objects.count()
-    total_companies = CompanyPage.objects.count()
-    pending_reports = ReportedContent.objects.filter(status='pending').select_related('reporter', 'post', 'reported_user')
+    total_photos = Post.objects.filter(image__isnull=False).exclude(image='').count()
+    total_communities = Group.objects.count()
+    total_friend_requests = Connection.objects.count()
 
-    recent_users = User.objects.select_related('profile').order_by('-date_joined')[:15]
-    recent_posts = Post.objects.select_related('author').order_by('-created_at')[:10]
+    recent_users = User.objects.select_related('profile', 'profile__role').order_by('-date_joined')[:10]
+    recent_deletions = AccountDeletionRequest.objects.filter(status__in=['PENDING', 'UNDER_REVIEW']).select_related('user', 'user__profile')[:5]
+    recent_reports = ReportedContent.objects.filter(status='pending').select_related('reporter', 'post', 'reported_user')[:5]
+    recent_logs = AdminActivityLog.objects.order_by('-created_at')[:8]
 
     context = {
         'total_users': total_users,
+        'active_users': active_users,
+        'inactive_users': inactive_users,
+        'blocked_users': blocked_users,
+        'online_users': online_users,
+        'pending_deletions': pending_deletions,
         'total_posts': total_posts,
-        'total_comments': total_comments,
-        'total_groups': total_groups,
-        'total_companies': total_companies,
-        'pending_reports': pending_reports,
+        'total_photos': total_photos,
+        'total_communities': total_communities,
+        'total_friend_requests': total_friend_requests,
         'recent_users': recent_users,
-        'recent_posts': recent_posts,
+        'recent_deletions': recent_deletions,
+        'recent_reports': recent_reports,
+        'recent_logs': recent_logs,
+        'is_super_admin': check_super_admin_access(request.user),
     }
     return render(request, 'admin_panel/dashboard.html', context)
+
+
+# ----------------- B. USER MANAGEMENT -----------------
+
+@login_required
+def admin_users_view(request):
+    if not check_admin_access(request.user):
+        messages.error(request, "Access Denied: Administrator privileges required.")
+        return redirect('feed')
+
+    q = request.GET.get('q', '').strip()
+    status_filter = request.GET.get('status', '')
+    role_filter = request.GET.get('role', '')
+
+    users_qs = User.objects.select_related('profile', 'profile__role').order_by('-date_joined')
+
+    if q:
+        users_qs = users_qs.filter(
+            Q(username__icontains=q) |
+            Q(email__icontains=q) |
+            Q(first_name__icontains=q) |
+            Q(last_name__icontains=q) |
+            Q(profile__mobile_number__icontains=q) |
+            Q(profile__company_name__icontains=q)
+        )
+
+    if status_filter:
+        users_qs = users_qs.filter(profile__account_status=status_filter)
+
+    if role_filter:
+        users_qs = users_qs.filter(profile__role__id=role_filter)
+
+    paginator = Paginator(users_qs, 15)
+    page_number = request.GET.get('page')
+    users_page = paginator.get_page(page_number)
+
+    roles = UserRole.objects.all()
+
+    return render(request, 'admin_panel/users.html', {
+        'users_page': users_page,
+        'search_query': q,
+        'status_filter': status_filter,
+        'role_filter': role_filter,
+        'roles': roles,
+        'is_super_admin': check_super_admin_access(request.user),
+    })
+
+
+@login_required
+def admin_edit_user_view(request, user_id):
+    if not check_admin_access(request.user):
+        return HttpResponseForbidden()
+
+    target_user = get_object_or_404(User, id=user_id)
+    profile, _ = UserProfile.objects.get_or_create(user=target_user)
+
+    if target_user.is_superuser and not check_super_admin_access(request.user):
+        messages.error(request, "Only Super Administrators can edit a Super Admin account.")
+        return redirect('admin_users')
+
+    if request.method == 'POST':
+        form = AdminUserEditForm(request.POST, instance=profile)
+        if form.is_valid():
+            prev_status = profile.account_status
+            prev_role = profile.role.name if profile.role else "None"
+
+            target_user.email = form.cleaned_data['email']
+            target_user.first_name = form.cleaned_data.get('first_name', '')
+            target_user.last_name = form.cleaned_data.get('last_name', '')
+
+            assigned_role = form.cleaned_data.get('role')
+            if assigned_role and assigned_role.code == 'SUPER_ADMIN' and not check_super_admin_access(request.user):
+                messages.error(request, "You do not have permission to grant Super Admin privileges.")
+                return redirect('admin_users')
+
+            target_user.save()
+            updated_profile = form.save()
+
+            new_status = updated_profile.account_status
+            new_role = updated_profile.role.name if updated_profile.role else "None"
+
+            log_admin_action(
+                request,
+                "USER_PROFILE_UPDATED",
+                module_name="User Management",
+                affected_user=target_user,
+                prev_val=f"Status: {prev_status}, Role: {prev_role}",
+                new_val=f"Status: {new_status}, Role: {new_role}"
+            )
+
+            messages.success(request, f"User @{target_user.username} updated successfully!")
+            return redirect('admin_users')
+    else:
+        form = AdminUserEditForm(
+            instance=profile,
+            initial={
+                'email': target_user.email,
+                'first_name': target_user.first_name,
+                'last_name': target_user.last_name,
+            }
+        )
+
+    return render(request, 'admin_panel/edit_user.html', {
+        'form': form,
+        'target_user': target_user,
+        'profile': profile,
+    })
+
+
+@login_required
+def admin_toggle_user_status_view(request, user_id):
+    if not check_admin_access(request.user):
+        return HttpResponseForbidden()
+
+    target_user = get_object_or_404(User, id=user_id)
+    if target_user.is_superuser:
+        messages.error(request, "Cannot deactivate a Super Admin account.")
+        return redirect('admin_users')
+
+    profile = target_user.profile
+    prev_status = profile.account_status
+    if profile.account_status == 'ACTIVE':
+        profile.account_status = 'INACTIVE'
+        profile.is_active_account = False
+        target_user.is_active = False
+        action_name = "USER_DEACTIVATED"
+        msg = f"User @{target_user.username} deactivated."
+    else:
+        profile.account_status = 'ACTIVE'
+        profile.is_active_account = True
+        target_user.is_active = True
+        action_name = "USER_ACTIVATED"
+        msg = f"User @{target_user.username} activated."
+
+    profile.save()
+    target_user.save()
+    log_admin_action(request, action_name, module_name="User Management", affected_user=target_user, prev_val=prev_status, new_val=profile.account_status)
+    messages.info(request, msg)
+    return redirect('admin_users')
+
+
+@login_required
+def admin_toggle_user_block_view(request, user_id):
+    if not check_admin_access(request.user):
+        return HttpResponseForbidden()
+
+    target_user = get_object_or_404(User, id=user_id)
+    if target_user.is_superuser:
+        messages.error(request, "Cannot block a Super Admin account.")
+        return redirect('admin_users')
+
+    profile = target_user.profile
+    prev_status = profile.account_status
+    if profile.account_status == 'BLOCKED':
+        profile.account_status = 'ACTIVE'
+        profile.is_active_account = True
+        target_user.is_active = True
+        action_name = "USER_UNBLOCKED"
+        msg = f"User @{target_user.username} has been unblocked and activated."
+    else:
+        profile.account_status = 'BLOCKED'
+        profile.is_active_account = False
+        target_user.is_active = False
+        action_name = "USER_BLOCKED"
+        msg = f"User @{target_user.username} has been blocked."
+
+    profile.save()
+    target_user.save()
+    log_admin_action(request, action_name, module_name="User Management", affected_user=target_user, prev_val=prev_status, new_val=profile.account_status)
+    messages.success(request, msg)
+    return redirect('admin_users')
+
+
+@login_required
+def admin_reset_user_password_view(request, user_id):
+    if not check_super_admin_access(request.user):
+        messages.error(request, "Only Super Administrators can perform administrative password resets.")
+        return redirect('admin_users')
+
+    target_user = get_object_or_404(User, id=user_id)
+    if request.method == 'POST':
+        new_password = request.POST.get('new_password', '').strip()
+        if len(new_password) >= 6:
+            target_user.set_password(new_password)
+            target_user.save()
+            log_admin_action(request, "PASSWORD_RESET_BY_ADMIN", module_name="User Management", affected_user=target_user, new_val="Password reset executed")
+            messages.success(request, f"Password for @{target_user.username} has been reset successfully.")
+        else:
+            messages.error(request, "Password must be at least 6 characters long.")
+    return redirect('admin_users')
+
+
+@login_required
+def admin_delete_user_view(request, user_id):
+    if not check_super_admin_access(request.user):
+        messages.error(request, "Only Super Administrators can permanently delete user accounts.")
+        return redirect('admin_users')
+
+    target_user = get_object_or_404(User, id=user_id)
+    if target_user == request.user:
+        messages.error(request, "You cannot delete your own account while logged in as Super Admin.")
+        return redirect('admin_users')
+
+    username = target_user.username
+    log_admin_action(request, "USER_DELETED_PERMANENTLY", module_name="User Management", affected_user=None, prev_val=f"Deleted user: @{username}")
+    target_user.delete()
+    messages.success(request, f"Account @{username} and all associated data have been permanently deleted.")
+    return redirect('admin_users')
+
+
+@login_required
+def admin_user_activity_view(request, user_id):
+    if not check_admin_access(request.user):
+        return HttpResponseForbidden()
+
+    target_user = get_object_or_404(User, id=user_id)
+    posts = Post.objects.filter(author=target_user)
+    comments = Comment.objects.filter(author=target_user).select_related('post')
+    messages_sent = Message.objects.filter(sender=target_user).select_related('receiver')
+    messages_received = Message.objects.filter(receiver=target_user).select_related('sender')
+    groups = target_user.joined_groups.all()
+    audit_logs = AdminActivityLog.objects.filter(affected_user_id=target_user.id)
+
+    return render(request, 'admin_panel/user_activity.html', {
+        'target_user': target_user,
+        'posts': posts,
+        'comments': comments,
+        'messages_sent': messages_sent,
+        'messages_received': messages_received,
+        'groups': groups,
+        'audit_logs': audit_logs,
+    })
+
+
+# ----------------- C. USER AUTHORITIES & PERMISSION MANAGEMENT (18 AUTHORITIES) -----------------
+
+@login_required
+def admin_manage_authorities_view(request, user_id=None):
+    if not check_super_admin_access(request.user):
+        messages.error(request, "Only Super Administrators can manage individual user authorities.")
+        return redirect('admin_dashboard')
+
+    if user_id is None:
+        return redirect('admin_users')
+
+    target_user = get_object_or_404(User, id=user_id)
+    custom_perm, _ = UserPermission.objects.get_or_create(user=target_user)
+
+    action = request.GET.get('action')
+    if action == 'grant_all':
+        for field in PERM_FIELDS:
+            setattr(custom_perm, field, True)
+        custom_perm.save()
+        log_admin_action(request, "USER_AUTHORITIES_GRANT_ALL", module_name="Authorities", affected_user=target_user, new_val="All 18 authorities ON")
+        messages.success(request, f"All 18 authorities granted (ON) for @{target_user.username}!")
+        return redirect('admin_manage_authorities', user_id=target_user.id)
+    elif action == 'revoke_all':
+        for field in PERM_FIELDS:
+            setattr(custom_perm, field, False)
+        custom_perm.save()
+        log_admin_action(request, "USER_AUTHORITIES_REVOKE_ALL", module_name="Authorities", affected_user=target_user, new_val="All 18 authorities OFF")
+        messages.warning(request, f"All 18 authorities revoked (OFF) for @{target_user.username}!")
+        return redirect('admin_manage_authorities', user_id=target_user.id)
+    elif action == 'restore_defaults':
+        if target_user.profile.role and hasattr(target_user.profile.role, 'permissions'):
+            role_perm = target_user.profile.role.permissions
+            for field in PERM_FIELDS:
+                setattr(custom_perm, field, getattr(role_perm, field, True))
+        else:
+            for field in PERM_FIELDS:
+                setattr(custom_perm, field, True)
+        custom_perm.save()
+        log_admin_action(request, "USER_AUTHORITIES_RESTORE_DEFAULTS", module_name="Authorities", affected_user=target_user, new_val="Restored to Role Defaults")
+        messages.info(request, f"Authorities for @{target_user.username} restored to system role defaults.")
+        return redirect('admin_manage_authorities', user_id=target_user.id)
+
+    if request.method == 'POST':
+        form = UserPermissionForm(request.POST, instance=custom_perm)
+        if form.is_valid():
+            form.save()
+            log_admin_action(
+                request,
+                "USER_AUTHORITIES_UPDATED",
+                module_name="Authorities",
+                affected_user=target_user,
+                new_val="18 configurable authorities updated"
+            )
+            create_notification(
+                recipient=target_user,
+                sender=request.user,
+                notification_type='system',
+                text="An administrator has updated your account feature authorities.",
+                link='/profile-edit/'
+            )
+            messages.success(request, f"Authorities and permissions for @{target_user.username} have been saved immediately!")
+            return redirect('admin_manage_authorities', user_id=target_user.id)
+    else:
+        form = UserPermissionForm(instance=custom_perm)
+
+    return render(request, 'admin_panel/manage_authorities.html', {
+        'form': form,
+        'target_user': target_user,
+        'custom_perm': custom_perm,
+    })
+
+
+# ----------------- D. ROLE MANAGEMENT -----------------
+
+@login_required
+def admin_roles_view(request):
+    if not check_super_admin_access(request.user):
+        messages.error(request, "Only Super Administrators can manage system roles.")
+        return redirect('admin_dashboard')
+
+    roles = UserRole.objects.all().prefetch_related('permissions', 'users')
+    new_role_form = UserRoleForm()
+
+    if request.method == 'POST':
+        form = UserRoleForm(request.POST)
+        if form.is_valid():
+            role = form.save()
+            RolePermission.objects.get_or_create(role=role)
+            log_admin_action(request, "ROLE_CREATED", module_name="Role Management", new_val=role.name)
+            messages.success(request, f"New role '{role.name}' created successfully!")
+            return redirect('admin_roles')
+
+    return render(request, 'admin_panel/roles.html', {
+        'roles': roles,
+        'new_role_form': new_role_form,
+    })
+
+
+@login_required
+def admin_edit_role_permissions_view(request, role_id):
+    if not check_super_admin_access(request.user):
+        messages.error(request, "Only Super Administrators can edit role authorities.")
+        return redirect('admin_dashboard')
+
+    role = get_object_or_404(UserRole, id=role_id)
+    perm, _ = RolePermission.objects.get_or_create(role=role)
+
+    if request.method == 'POST':
+        form = RolePermissionForm(request.POST, instance=perm)
+        if form.is_valid():
+            form.save()
+            log_admin_action(request, "ROLE_PERMISSIONS_UPDATED", module_name="Role Management", new_val=f"Role: {role.name}")
+            messages.success(request, f"Default permissions for role '{role.name}' updated successfully!")
+            return redirect('admin_roles')
+    else:
+        form = RolePermissionForm(instance=perm)
+
+    return render(request, 'admin_panel/edit_role.html', {
+        'role': role,
+        'form': form,
+    })
+
+
+# ----------------- TASK 1 ADMIN: ACCOUNT DELETION REQUESTS -----------------
+
+@login_required
+def admin_deletion_requests_view(request):
+    if not check_admin_access(request.user):
+        messages.error(request, "Access Denied.")
+        return redirect('feed')
+
+    status_filter = request.GET.get('status', 'ALL')
+    reqs = AccountDeletionRequest.objects.all().select_related('user', 'user__profile', 'reviewed_by').order_by('-created_at')
+
+    if status_filter != 'ALL':
+        reqs = reqs.filter(status=status_filter)
+
+    return render(request, 'admin_panel/deletion_requests.html', {
+        'deletion_requests': reqs,
+        'status_filter': status_filter,
+        'is_super_admin': check_super_admin_access(request.user),
+    })
+
+
+@login_required
+def admin_handle_deletion_request_view(request, request_id, action):
+    if not check_admin_access(request.user):
+        return HttpResponseForbidden()
+
+    del_req = get_object_or_404(AccountDeletionRequest, id=request_id)
+    prev_status = del_req.status
+    notes = request.POST.get('admin_notes', '').strip()
+
+    if action == 'under_review':
+        del_req.status = 'UNDER_REVIEW'
+        del_req.admin_notes = notes
+        del_req.reviewed_by = request.user
+        del_req.reviewed_at = timezone.now()
+        del_req.save()
+
+        create_notification(
+            recipient=del_req.user,
+            sender=request.user,
+            notification_type='deletion',
+            text=f"Your account deletion request is now Under Review by administrator @{request.user.username}.",
+            link='/account/deactivate/'
+        )
+        log_admin_action(request, "DELETION_REQUEST_UNDER_REVIEW", module_name="Account Deletion", affected_user=del_req.user, prev_val=prev_status, new_val='UNDER_REVIEW')
+        messages.info(request, f"Deletion request for @{del_req.user.username} marked as Under Review.")
+
+    elif action == 'approve':
+        del_req.status = 'APPROVED'
+        del_req.admin_notes = notes
+        del_req.reviewed_by = request.user
+        del_req.reviewed_at = timezone.now()
+        del_req.save()
+
+        profile = del_req.user.profile
+        profile.account_status = 'PENDING_DELETION'
+        profile.save()
+
+        create_notification(
+            recipient=del_req.user,
+            sender=request.user,
+            notification_type='deletion',
+            text=f"Your account deletion request has been Approved by @{request.user.username}. Account scheduled for permanent removal.",
+            link='/account/deactivate/'
+        )
+        log_admin_action(request, "DELETION_REQUEST_APPROVED", module_name="Account Deletion", affected_user=del_req.user, prev_val=prev_status, new_val='APPROVED')
+        messages.success(request, f"Deletion request for @{del_req.user.username} approved.")
+
+    elif action == 'reject':
+        del_req.status = 'REJECTED'
+        del_req.admin_notes = notes
+        del_req.reviewed_by = request.user
+        del_req.reviewed_at = timezone.now()
+        del_req.save()
+
+        profile = del_req.user.profile
+        profile.account_status = 'ACTIVE'
+        profile.save()
+
+        create_notification(
+            recipient=del_req.user,
+            sender=request.user,
+            notification_type='deletion',
+            text=f"Your account deletion request was Rejected. Note: {notes or 'No reason specified'}",
+            link='/account/deactivate/'
+        )
+        log_admin_action(request, "DELETION_REQUEST_REJECTED", module_name="Account Deletion", affected_user=del_req.user, prev_val=prev_status, new_val='REJECTED')
+        messages.info(request, f"Deletion request for @{del_req.user.username} rejected.")
+
+    elif action == 'complete':
+        if not check_super_admin_access(request.user):
+            messages.error(request, "Only Super Administrators can execute complete account deletion.")
+            return redirect('admin_deletion_requests')
+
+        del_req.status = 'COMPLETED'
+        del_req.admin_notes = notes or "Account data purged and deactivated per policy."
+        del_req.reviewed_by = request.user
+        del_req.reviewed_at = timezone.now()
+        del_req.save()
+
+        target_u = del_req.user
+        target_u.is_active = False
+        target_u.save()
+
+        profile = target_u.profile
+        profile.account_status = 'DELETED'
+        profile.headline = "Deleted Member"
+        profile.bio = "This account was deleted per user request in compliance with retention policies."
+        profile.mobile_number = ""
+        profile.whatsapp_number = ""
+        profile.save()
+
+        log_admin_action(request, "DELETION_REQUEST_COMPLETED", module_name="Account Deletion", affected_user=target_u, prev_val=prev_status, new_val='COMPLETED')
+        messages.success(request, f"Account deletion completed for @{target_u.username}.")
+
+    return redirect('admin_deletion_requests')
+
+
+# ----------------- E. CONTENT MANAGEMENT -----------------
+
+@login_required
+def admin_content_view(request):
+    if not check_admin_access(request.user):
+        messages.error(request, "Access Denied.")
+        return redirect('feed')
+
+    tab = request.GET.get('tab', 'posts')
+    posts = Post.objects.all().select_related('author', 'author__profile').order_by('-created_at')[:25]
+    comments = Comment.objects.all().select_related('author', 'post').order_by('-created_at')[:25]
+    photos = Post.objects.filter(image__isnull=False).exclude(image='').select_related('author', 'author__profile').order_by('-created_at')[:25]
+    groups = Group.objects.all().select_related('creator').order_by('-created_at')[:25]
+    reports = ReportedContent.objects.filter(status='pending').select_related('reporter', 'post', 'reported_user').order_by('-created_at')
+
+    return render(request, 'admin_panel/content.html', {
+        'tab': tab,
+        'posts': posts,
+        'comments': comments,
+        'photos': photos,
+        'groups': groups,
+        'reports': reports,
+    })
+
+
+@login_required
+def admin_delete_content_view(request, content_type, content_id):
+    if not check_admin_access(request.user):
+        return HttpResponseForbidden()
+
+    if content_type == 'post':
+        p = get_object_or_404(Post, id=content_id)
+        author = p.author
+        p.delete()
+        log_admin_action(request, "ADMIN_DELETED_POST", module_name="Content Management", affected_user=author)
+        messages.success(request, "Post removed by admin.")
+    elif content_type == 'comment':
+        c = get_object_or_404(Comment, id=content_id)
+        author = c.author
+        c.delete()
+        log_admin_action(request, "ADMIN_DELETED_COMMENT", module_name="Content Management", affected_user=author)
+        messages.success(request, "Comment removed by admin.")
+    elif content_type == 'group':
+        g = get_object_or_404(Group, id=content_id)
+        gname = g.name
+        g.delete()
+        log_admin_action(request, "ADMIN_DELETED_COMMUNITY", module_name="Content Management", new_val=gname)
+        messages.success(request, f"Community '{gname}' deleted by admin.")
+
+    return redirect(f"/admin-dashboard/content/?tab={content_type}s")
+
+
+# ----------------- F. ADMIN ACTIVITY LOGS -----------------
+
+@login_required
+def admin_audit_logs_view(request):
+    if not check_admin_access(request.user):
+        messages.error(request, "Access Denied.")
+        return redirect('feed')
+
+    logs_qs = AdminActivityLog.objects.all().order_by('-created_at')
+    action_filter = request.GET.get('action')
+    if action_filter:
+        logs_qs = logs_qs.filter(Q(action__icontains=action_filter) | Q(module_name__icontains=action_filter))
+
+    paginator = Paginator(logs_qs, 20)
+    page_number = request.GET.get('page')
+    logs_page = paginator.get_page(page_number)
+
+    return render(request, 'admin_panel/audit_logs.html', {
+        'logs_page': logs_page,
+        'action_filter': action_filter,
+    })
 
 
 @login_required
@@ -976,32 +1717,22 @@ def report_content_view(request):
 @login_required
 @require_POST
 def admin_resolve_report_view(request, report_id):
-    if not request.user.is_staff:
+    if not check_admin_access(request.user):
         return HttpResponseForbidden()
     report = get_object_or_404(ReportedContent, id=report_id)
     action = request.POST.get('action', 'dismiss')
     if action == 'delete_post' and report.post:
         report.post.delete()
         report.status = 'resolved'
+        log_admin_action(request, "REPORT_RESOLVED_DELETED_POST", module_name="Moderation", new_val=f"Report #{report.id}")
     elif action == 'deactivate_user' and report.reported_user:
         report.reported_user.is_active = False
         report.reported_user.save()
         report.status = 'resolved'
+        log_admin_action(request, "REPORT_RESOLVED_DEACTIVATED_USER", module_name="Moderation", affected_user=report.reported_user)
     else:
         report.status = 'dismissed'
+        log_admin_action(request, "REPORT_DISMISSED", module_name="Moderation", new_val=f"Report #{report.id}")
     report.save()
     messages.success(request, f"Report #{report.id} marked as {report.status}.")
-    return redirect('admin_dashboard')
-
-
-@login_required
-@require_POST
-def admin_toggle_user_status_view(request, user_id):
-    if not request.user.is_staff:
-        return HttpResponseForbidden()
-    target = get_object_or_404(User, id=user_id)
-    target.is_active = not target.is_active
-    target.save()
-    state = "activated" if target.is_active else "deactivated"
-    messages.success(request, f"User {target.username} has been {state}.")
     return redirect('admin_dashboard')

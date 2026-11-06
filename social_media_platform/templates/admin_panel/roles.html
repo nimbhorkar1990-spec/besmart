@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+
+{% block title %}SmartSocial - Role &amp; Access Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-md-4 py-4">
+    {% with active_tab='roles' %}
+        {% include 'admin_panel/_nav.html' %}
+    {% endwith %}
+
+    <div class="row g-4">
+        <!-- Roles List (Left 8 cols) -->
+        <div class="col-lg-8">
+            <div class="card-social p-0 shadow-sm border-0 overflow-hidden">
+                <div class="p-3 bg-white border-bottom d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="fw-bold text-primary fs-5"><i class="fas fa-shield-halved me-2"></i>Platform Roles</span>
+                        <span class="badge bg-secondary-subtle text-secondary ms-2">{{ roles.count }} Roles Configured</span>
+                    </div>
+                    <span class="badge bg-warning text-dark"><i class="fas fa-crown me-1"></i>Super Admin Exclusive</span>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Role Name</th>
+                                <th>Role Code</th>
+                                <th>Assigned Users</th>
+                                <th>Description</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in roles %}
+                            <tr>
+                                <td>
+                                    <div class="fw-bold text-dark">
+                                        {% if r.code == 'SUPER_ADMIN' %}
+                                            <i class="fas fa-crown text-warning me-1"></i>
+                                        {% elif r.code == 'ADMIN' %}
+                                            <i class="fas fa-shield text-primary me-1"></i>
+                                        {% elif r.code == 'MODERATOR' %}
+                                            <i class="fas fa-user-check text-info me-1"></i>
+                                        {% else %}
+                                            <i class="fas fa-user text-secondary me-1"></i>
+                                        {% endif %}
+                                        {{ r.name }}
+                                    </div>
+                                    <span class="small text-muted">{{ r.created_at|date:"M d, Y" }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border font-monospace">{{ r.code }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary-subtle text-primary border px-2 py-1">
+                                        <i class="fas fa-users me-1"></i>{{ r.users.count }} members
+                                    </span>
+                                </td>
+                                <td class="small text-muted" style="max-width: 250px;">
+                                    {{ r.description|default:"Standard platform role privileges." }}
+                                </td>
+                                <td class="text-end">
+                                    <a href="{% url 'admin_edit_role_permissions' r.id %}" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">
+                                        <i class="fas fa-sliders me-1"></i> Configure Authorities
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted">No roles configured.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create New Role Form (Right 4 cols) -->
+        <div class="col-lg-4">
+            <div class="card-social p-4 shadow-sm border-0 bg-white">
+                <h5 class="fw-bold text-primary mb-3"><i class="fas fa-plus-circle me-2"></i>Create Custom Role</h5>
+                <p class="small text-muted mb-4">Define custom platform roles with specialized authority profiles for community moderation or team administrators.</p>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Role Display Name</label>
+                        {{ new_role_form.name }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">System Role Code</label>
+                        {{ new_role_form.code }}
+                        <div class="form-text small">Select the base archetype for system security checks.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Description</label>
+                        {{ new_role_form.description }}
+                    </div>
+                    <button type="submit" class="btn btn-primary rounded-pill w-100 fw-bold">
+                        <i class="fas fa-shield-cat me-1"></i> Save New Role
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

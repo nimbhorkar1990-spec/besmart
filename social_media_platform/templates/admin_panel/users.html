@@ -1,0 +1,295 @@
+{% extends 'base.html' %}
+
+{% block title %}SmartSocial - User Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-md-4 py-4">
+    {% with active_tab='users' %}
+        {% include 'admin_panel/_nav.html' %}
+    {% endwith %}
+
+    <div class="card-social p-0 shadow-sm overflow-hidden border-0">
+        <div class="p-3 bg-white border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <span class="fw-bold text-primary fs-5"><i class="fas fa-users-gear me-2"></i>User Management</span>
+                <span class="badge bg-secondary-subtle text-secondary ms-2">{{ users_page.paginator.count }} Total Users</span>
+            </div>
+            <div class="small text-muted">
+                Manage registered user accounts, activation, authorities, and moderation
+            </div>
+        </div>
+
+        <!-- Search and Filter Bar -->
+        <div class="p-3 bg-light border-bottom">
+            <form method="get" class="row g-2 align-items-center">
+                <div class="col-md-5">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+                        <input type="text" name="q" class="form-control" placeholder="Search by name, username, email, phone, company..." value="{{ search_query }}">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select name="status" class="form-select form-select-sm">
+                        <option value="">All Statuses</option>
+                        <option value="ACTIVE" {% if status_filter == 'ACTIVE' %}selected{% endif %}>Active</option>
+                        <option value="INACTIVE" {% if status_filter == 'INACTIVE' %}selected{% endif %}>Inactive</option>
+                        <option value="BLOCKED" {% if status_filter == 'BLOCKED' %}selected{% endif %}>Blocked</option>
+                        <option value="PENDING_DELETION" {% if status_filter == 'PENDING_DELETION' %}selected{% endif %}>Pending Deletion</option>
+                        <option value="DELETED" {% if status_filter == 'DELETED' %}selected{% endif %}>Deleted</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select name="role" class="form-select form-select-sm">
+                        <option value="">All Roles</option>
+                        {% for r in roles %}
+                            <option value="{{ r.id }}" {% if role_filter == r.id|stringformat:"s" %}selected{% endif %}>{{ r.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex gap-1">
+                    <button type="submit" class="btn btn-primary btn-sm rounded-pill flex-grow-1">Filter</button>
+                    {% if search_query or status_filter or role_filter %}
+                        <a href="{% url 'admin_users' %}" class="btn btn-outline-secondary btn-sm rounded-circle" title="Clear Filters"><i class="fas fa-times"></i></a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+
+        <!-- User Table -->
+        <div class="table-responsive">
+            <table class="table table-hover align-middle small mb-0">
+                <thead class="table-light text-nowrap">
+                    <tr>
+                        <th style="width: 50px;">Serial No</th>
+                        <th>User ID</th>
+                        <th>Full Name</th>
+                        <th>Username</th>
+                        <th>Email Address</th>
+                        <th>Mobile Number</th>
+                        <th>Registration Date</th>
+                        <th>Account Status</th>
+                        <th>Last Login</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in users_page %}
+                    <tr>
+                        <!-- 1. Serial Number -->
+                        <td class="text-muted fw-bold">
+                            {{ forloop.counter|add:users_page.start_index|add:"-1" }}
+                        </td>
+
+                        <!-- 2. User ID -->
+                        <td>
+                            <span class="badge bg-light text-dark border">#{{ u.id }}</span>
+                        </td>
+
+                        <!-- 3. Full Name -->
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <img src="{{ u.profile.get_avatar }}" alt="avatar" class="rounded-circle border" style="width: 32px; height: 32px; object-fit: cover;">
+                                <div>
+                                    <a href="{% url 'profile' u.username %}" class="fw-bold text-decoration-none text-dark" title="View Public Profile">
+                                        {{ u.get_full_name|default:u.username }}
+                                    </a>
+                                    {% if u.profile.role %}
+                                        <div class="badge bg-secondary-subtle text-secondary border py-0 px-1" style="font-size: 0.65rem;">
+                                            {{ u.profile.role.name }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- 4. Username -->
+                        <td>
+                            <code class="text-primary">@{{ u.username }}</code>
+                        </td>
+
+                        <!-- 5. Email Address -->
+                        <td>
+                            {{ u.email|default:"-" }}
+                        </td>
+
+                        <!-- 6. Mobile Number -->
+                        <td>
+                            {{ u.profile.mobile_number|default:"-" }}
+                        </td>
+
+                        <!-- 7. Registration Date -->
+                        <td class="text-nowrap text-muted" style="font-size: 0.72rem;">
+                            {{ u.date_joined|date:"M d, Y" }}
+                        </td>
+
+                        <!-- 8. Account Status -->
+                        <td>
+                            {% if u.profile.account_status == 'ACTIVE' %}
+                                <span class="badge bg-success-subtle text-success border border-success-subtle">Active</span>
+                            {% elif u.profile.account_status == 'BLOCKED' %}
+                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Blocked</span>
+                            {% elif u.profile.account_status == 'PENDING_DELETION' %}
+                                <span class="badge bg-warning-subtle text-warning text-dark border border-warning-subtle">Pending Deletion</span>
+                            {% elif u.profile.account_status == 'INACTIVE' or not u.is_active %}
+                                <span class="badge bg-secondary-subtle text-secondary border">Inactive</span>
+                            {% elif u.profile.account_status == 'DELETED' %}
+                                <span class="badge bg-dark-subtle text-dark border">Deleted</span>
+                            {% else %}
+                                <span class="badge bg-light text-dark border">{{ u.profile.account_status }}</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- 9. Last Login -->
+                        <td class="text-nowrap text-muted" style="font-size: 0.72rem;">
+                            {{ u.last_login|date:"M d, H:i"|default:"Never" }}
+                        </td>
+
+                        <!-- 10. Action -->
+                        <td class="text-end text-nowrap">
+                            <div class="dropdown d-inline-block">
+                                <button class="btn btn-sm btn-outline-secondary py-0 px-2 rounded-pill dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.75rem;">
+                                    Actions
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-sm small">
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'profile' u.username %}">
+                                            <i class="fas fa-eye text-primary me-2"></i> View User Details
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'admin_edit_user' u.id %}">
+                                            <i class="fas fa-user-pen text-info me-2"></i> Edit User Details
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'admin_user_activity' u.id %}">
+                                            <i class="fas fa-chart-line text-success me-2"></i> View User Activity
+                                        </a>
+                                    </li>
+
+                                    {% if is_super_admin %}
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'admin_manage_authorities' u.id %}">
+                                            <i class="fas fa-key text-warning me-2"></i> Manage User Permissions
+                                        </a>
+                                    </li>
+                                    {% endif %}
+
+                                    <li><hr class="dropdown-divider"></li>
+
+                                    <!-- Status Toggle: Activate / Deactivate -->
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'admin_toggle_user_status' u.id %}">
+                                            {% if u.profile.account_status == 'ACTIVE' and u.is_active %}
+                                                <i class="fas fa-pause text-secondary me-2"></i> Deactivate Account
+                                            {% else %}
+                                                <i class="fas fa-play text-success me-2"></i> Activate Account
+                                            {% endif %}
+                                        </a>
+                                    </li>
+
+                                    <!-- Block / Unblock -->
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'admin_toggle_user_block' u.id %}">
+                                            {% if u.profile.account_status == 'BLOCKED' %}
+                                                <i class="fas fa-unlock text-success me-2"></i> Unblock User
+                                            {% else %}
+                                                <i class="fas fa-ban text-danger me-2"></i> Block User
+                                            {% endif %}
+                                        </a>
+                                    </li>
+
+                                    {% if is_super_admin %}
+                                    <!-- Reset Password Modal Trigger -->
+                                    <li>
+                                        <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#resetPwdModal{{ u.id }}">
+                                            <i class="fas fa-lock text-warning me-2"></i> Reset Password
+                                        </button>
+                                    </li>
+
+                                    <li><hr class="dropdown-divider"></li>
+
+                                    <!-- Permanent Delete User -->
+                                    <li>
+                                        <a class="dropdown-item text-danger" href="{% url 'admin_delete_user' u.id %}" onclick="return confirm('CRITICAL WARNING: Are you sure you want to permanently delete user @{{ u.username }} and all their posts, photos, and messages? This action CANNOT be undone.');">
+                                            <i class="fas fa-trash-can me-2"></i> Delete User
+                                        </a>
+                                    </li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+
+                            {% if is_super_admin %}
+                            <!-- Reset Password Modal for this User -->
+                            <div class="modal fade" id="resetPwdModal{{ u.id }}" tabindex="-1" aria-hidden="true" style="text-align: left;">
+                                <div class="modal-dialog modal-sm">
+                                    <div class="modal-content">
+                                        <form method="post" action="{% url 'admin_reset_user_password' u.id %}">
+                                            {% csrf_token %}
+                                            <div class="modal-header py-2 bg-light">
+                                                <h6 class="modal-title fw-bold" style="font-size: 0.9rem;">
+                                                    <i class="fas fa-key text-warning me-1"></i> Reset Password
+                                                </h6>
+                                                <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body py-3">
+                                                <p class="small text-muted mb-2">
+                                                    Enter a new password for user <strong>@{{ u.username }}</strong>:
+                                                </p>
+                                                <input type="password" name="new_password" class="form-control form-control-sm" placeholder="Minimum 6 characters" minlength="6" required>
+                                            </div>
+                                            <div class="modal-footer py-2">
+                                                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-danger btn-sm">Reset Password</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="10" class="text-center py-4 text-muted">
+                            <i class="fas fa-users-slash fa-2x mb-2"></i>
+                            <div>No users match the search criteria.</div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if users_page.has_other_pages %}
+        <div class="p-3 bg-light border-top d-flex justify-content-between align-items-center">
+            <span class="small text-muted">
+                Showing page {{ users_page.number }} of {{ users_page.paginator.num_pages }}
+            </span>
+            <ul class="pagination pagination-sm mb-0">
+                {% if users_page.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page={{ users_page.previous_page_number }}&q={{ search_query }}&status={{ status_filter }}&role={{ role_filter }}">&laquo; Prev</a></li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">&laquo; Prev</span></li>
+                {% endif %}
+
+                {% for p in users_page.paginator.page_range %}
+                    {% if p == users_page.number %}
+                        <li class="page-item active"><span class="page-link">{{ p }}</span></li>
+                    {% elif p >= users_page.number|add:"-2" and p <= users_page.number|add:"2" %}
+                        <li class="page-item"><a class="page-link" href="?page={{ p }}&q={{ search_query }}&status={{ status_filter }}&role={{ role_filter }}">{{ p }}</a></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if users_page.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ users_page.next_page_number }}&q={{ search_query }}&status={{ status_filter }}&role={{ role_filter }}">Next &raquo;</a></li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">Next &raquo;</span></li>
+                {% endif %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

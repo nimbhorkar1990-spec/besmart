@@ -1,6 +1,9 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import UserProfile, Post, Comment, Group, CompanyPage, Message, ReportedContent
+from .models import (
+    UserProfile, Post, Comment, Group, CompanyPage, Message, ReportedContent,
+    UserRole, RolePermission, UserPermission, AccountDeletionRequest
+)
 
 
 class UserRegistrationForm(forms.ModelForm):
@@ -162,5 +165,82 @@ class ReportForm(forms.ModelForm):
                 ('other', 'Other Issue'),
             ]),
             'details': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Additional context or specifics...'}),
+        }
+
+
+class AccountDeletionRequestForm(forms.ModelForm):
+    confirm_checkbox = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        label="I understand that submitting this request will schedule my Smart Social account and all profile data for deletion."
+    )
+
+    class Meta:
+        model = AccountDeletionRequest
+        fields = ['reason']
+        widgets = {
+            'reason': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Optional: Tell us why you wish to delete your account (e.g. privacy concerns, leaving platform, switching accounts)...'
+            }),
+        }
+
+
+class UserRoleForm(forms.ModelForm):
+    class Meta:
+        model = UserRole
+        fields = ['name', 'code', 'description']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Senior Community Moderator'}),
+            'code': forms.Select(attrs={'class': 'form-select'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Role authority level and responsibilities...'}),
+        }
+
+
+PERM_FIELDS = [
+    'can_create_profile', 'can_edit_profile', 'can_upload_photos', 'can_delete_photos',
+    'can_create_posts', 'can_edit_posts', 'can_delete_posts', 'can_like_posts',
+    'can_comment_posts', 'can_send_messages', 'can_send_friend_requests', 'can_accept_friend_requests',
+    'can_create_communities', 'can_join_communities', 'can_manage_communities',
+    'can_create_albums', 'can_manage_scrapbook', 'can_access_social_features'
+]
+
+
+class RolePermissionForm(forms.ModelForm):
+    class Meta:
+        model = RolePermission
+        fields = PERM_FIELDS
+        widgets = {field: forms.CheckboxInput(attrs={'class': 'form-check-input'}) for field in PERM_FIELDS}
+
+
+class UserPermissionForm(forms.ModelForm):
+    class Meta:
+        model = UserPermission
+        fields = PERM_FIELDS
+        widgets = {field: forms.CheckboxInput(attrs={'class': 'form-check-input'}) for field in PERM_FIELDS}
+
+
+class AdminUserEditForm(forms.ModelForm):
+    email = forms.EmailField(required=True, widget=forms.EmailInput(attrs={'class': 'form-control'}))
+    first_name = forms.CharField(max_length=50, required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
+    last_name = forms.CharField(max_length=50, required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
+
+    class Meta:
+        model = UserProfile
+        fields = [
+            'headline', 'profession', 'company_name', 'location', 'education',
+            'mobile_number', 'role', 'account_status', 'is_active_account'
+        ]
+        widgets = {
+            'headline': forms.TextInput(attrs={'class': 'form-control'}),
+            'profession': forms.TextInput(attrs={'class': 'form-control'}),
+            'company_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'location': forms.TextInput(attrs={'class': 'form-control'}),
+            'education': forms.TextInput(attrs={'class': 'form-control'}),
+            'mobile_number': forms.TextInput(attrs={'class': 'form-control'}),
+            'role': forms.Select(attrs={'class': 'form-select'}),
+            'account_status': forms.Select(attrs={'class': 'form-select'}),
+            'is_active_account': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 

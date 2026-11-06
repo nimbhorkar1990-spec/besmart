@@ -1,0 +1,61 @@
+<div class="card-social mb-4 p-0 overflow-hidden shadow-sm">
+    <div class="bg-dark text-white px-4 py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+            <span class="fs-5 fw-bold text-white"><i class="fas fa-shield-halved text-danger me-2"></i>SmartSocial Control Center</span>
+            {% if is_super_admin %}
+                <span class="badge bg-warning text-dark"><i class="fas fa-crown me-1"></i>Super Admin</span>
+            {% else %}
+                <span class="badge bg-primary text-white"><i class="fas fa-user-shield me-1"></i>Staff Administrator</span>
+            {% endif %}
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'feed' %}" class="btn btn-outline-light btn-sm rounded-pill px-3" style="font-size: 0.8rem;">
+                <i class="fas fa-arrow-left me-1"></i>Back to Feed
+            </a>
+            <a href="http://localhost:8080/" class="btn btn-primary btn-sm rounded-pill px-3 fw-bold" style="font-size: 0.8rem;">
+                <i class="fas fa-house me-1"></i>SmartSearch
+            </a>
+        </div>
+    </div>
+
+    <!-- Admin Navigation Tabs -->
+    <div class="bg-white border-bottom px-4 pt-2">
+        <ul class="nav nav-tabs border-0 flex-nowrap overflow-x-auto text-nowrap" style="font-size: 0.875rem;">
+            <li class="nav-item">
+                <a class="nav-link {% if active_tab == 'dashboard' %}active fw-bold text-primary border-bottom-0{% else %}text-secondary{% endif %}" href="{% url 'admin_dashboard' %}">
+                    <i class="fas fa-gauge me-1"></i> Overview &amp; KPIs
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if active_tab == 'users' %}active fw-bold text-primary border-bottom-0{% else %}text-secondary{% endif %}" href="{% url 'admin_users' %}">
+                    <i class="fas fa-users-gear me-1"></i> User Management
+                </a>
+            </li>
+            {% if is_super_admin %}
+            <li class="nav-item">
+                <a class="nav-link {% if active_tab == 'roles' %}active fw-bold text-primary border-bottom-0{% else %}text-secondary{% endif %}" href="{% url 'admin_roles' %}">
+                    <i class="fas fa-user-shield me-1"></i> Role Management
+                </a>
+            </li>
+            {% endif %}
+            <li class="nav-item">
+                <a class="nav-link {% if active_tab == 'deletions' %}active fw-bold text-danger border-bottom-0{% else %}text-secondary{% endif %} position-relative" href="{% url 'admin_deletion_requests' %}">
+                    <i class="fas fa-user-xmark me-1"></i> Deletion Requests
+                    {% if pending_deletions_count > 0 %}
+                        <span class="badge bg-warning text-dark rounded-pill ms-1">{{ pending_deletions_count }}</span>
+                    {% endif %}
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if active_tab == 'content' %}active fw-bold text-primary border-bottom-0{% else %}text-secondary{% endif %}" href="{% url 'admin_content' %}">
+                    <i class="fas fa-photo-film me-1"></i> Content Moderation
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if active_tab == 'audit_logs' %}active fw-bold text-primary border-bottom-0{% else %}text-secondary{% endif %}" href="{% url 'admin_audit_logs' %}">
+                    <i class="fas fa-clock-rotate-left me-1"></i> Activity Logs
+                </a>
+            </li>
+        </ul>
+    </div>
+</div>

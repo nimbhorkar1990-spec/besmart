@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+
+{% block title %}SmartSocial - Configure Role Authorities: {{ role.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-md-4 py-4">
+    {% with active_tab='roles' %}
+        {% include 'admin_panel/_nav.html' %}
+    {% endwith %}
+
+    <div class="row justify-content-center">
+        <div class="col-lg-11">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <a href="{% url 'admin_roles' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                    <i class="fas fa-arrow-left me-1"></i> Back to Role Management
+                </a>
+                <span class="badge bg-warning text-dark"><i class="fas fa-crown me-1"></i>Super Admin Access</span>
+            </div>
+
+            <!-- Role Summary Card -->
+            <div class="card-social border-0 shadow-sm p-4 mb-4 bg-white d-flex flex-row align-items-center justify-content-between flex-wrap gap-3">
+                <div>
+                    <h4 class="fw-bold mb-1 text-primary">
+                        <i class="fas fa-shield-halved me-2"></i>{{ role.name }}
+                    </h4>
+                    <div class="small text-muted">
+                        Code: <span class="badge bg-dark font-monospace">{{ role.code }}</span> &bull; 
+                        Assigned Users: <span class="badge bg-primary-subtle text-primary">{{ role.users.count }} members</span> &bull;
+                        {{ role.description|default:"Configuring base authority set for this role." }}
+                    </div>
+                </div>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="row g-4">
+                    <!-- Profile Authorities -->
+                    <div class="col-md-6">
+                        <div class="card border-0 shadow-sm h-100 bg-white">
+                            <div class="card-header bg-white border-bottom fw-bold text-primary">
+                                <i class="fas fa-id-card me-2"></i>1. Profile Authorities
+                            </div>
+                            <div class="card-body">
+                                <div class="form-check form-switch mb-3 p-2 rounded bg-light">
+                                    {{ form.can_create_profile }}
+                                    <label class="form-check-label fw-bold small ms-2" for="{{ form.can_create_profile.id_for_label }}">
+                                        1. Create Profile
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch mb-2 p-2 rounded bg-light">
+                                    {{ form.can_edit_profile }}
+                                    <label class="form-check-label fw-bold small ms-2" for="{{ form.can_edit_profile.id_for_label }}">
+                                        2. Edit Profile
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Media & Album Authorities -->
+                    <div class="col-md-6">
+                        <div class="card border-0 shadow-sm h-100 bg-white">
+                            <div class="card-header bg-white border-bottom fw-bold text-primary">
+                                <i class="fas fa-images me-2"></i>2. Media &amp; Album Authorities
+                            </div>
+                            <div class="card-body">
+                                <div class="form-check form-switch mb-3 p-2 rounded bg-light">
+                                    {{ form.can_upload_photos }}
+                                    <label class="form-check-label fw-bold small ms-2" for="{{ form.can_upload_photos.id_for_label }}">
+                                        3. Upload Photos
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch mb-3 p-2 rounded bg-light">
+                                    {{ form.can_delete_photos }}
+                                    <label class="form-check-label fw-bold small ms-2" for="{{ form.can_delete_photos.id_for_label }}">
+                                        4. Delete Photos
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch mb-2 p-2 rounded bg-light">
+                                    {{ form.can_create_albums }}
+                                    <label class="form-check-label fw-bold small ms-2" for="{{ form.can_create_albums.id_for_label }}">
+                                        16. Create Albums
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Posts & Interactions Authorities -->
+                    <div class="col-md-6">
+                        <div class="card border-0 shadow-sm h-100 bg-white">
+                            <div class="card-header bg-white border-bottom fw-bold text-primary">
+                                <i class="fas fa-pencil me-2"></i>3. Posts &amp; Interactions Authorities
+                            </div>
+                            <div class="card-body">
+                                <div class="form-check form-switch mb-3 p-2 rounded bg-light">
+                                    {{ form.can_create_posts }}
+                                    <label class="form-check-label fw-bold small ms-2" for="{{ form.can_create_posts.id_for_label }}">
+                                        5. Create and Publish Posts
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch mb-3 p-2 rounded bg-light">
+                                    {{ form.can_edit_posts }}
+                                    <label class="form-check-label fw-bold small ms-2" for="{{ form.can_edit_posts.id_for_label }}">
+                                        6. Edit Posts
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch mb-3 p-2 rounded bg-light">
+                                    {{ form.can_delete_posts }}
+                                    <label class="form-check-label fw-bold small ms-2" for="{{ form.can_delete_posts.id_for_label }}">
+                                        7. Delete Posts
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch mb-3 p-2 rounded bg-light">
+                                    {{ form.can_like_posts }}
+                                    <label class="form-check-label fw-bold small ms-2" for="{{ form.can_like_posts.id_for_label }}">
+                                        8. Like Posts
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch mb-2 p-2 rounded bg-light">
+                                    {{ form.can_comment_posts }}
+                                    <label class="form-check-label fw-bold small ms-2" for="{{ form.can_comment_posts.id_for_label }}">
+                                        9. Comment on Posts
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Social & Messaging Authorities -->
+                    <div class="col-md-6">
+                        <div class="card border-0 shadow-sm h-100 bg-white">
+                            <div class="card-header bg-white border-bottom fw-bold text-primary">
+                                <i class="fas fa-comments me-2"></i>4. Social &amp; Messaging Authorities
+                            </div>
+                            <div class="card-body">
+                                <div class="form-check form-switch mb-3 p-2 rounded bg-light">
+                                    {{ form.can_send_messages }}
+                                    <label class="form-check-label fw-bold small ms-2" for="{{ form.can_send_messages.id_for_label }}">
+                                        10. Send and Receive Messages
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch mb-3 p-2 rounded bg-light">
+                                    {{ form.can_send_friend_requests }}
+                                    <label class="form-check-label fw-bold small ms-2" for="{{ form.can_send_friend_requests.id_for_label }}">
+                                        11. Send Friend / Connection Requests
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch mb-3 p-2 rounded bg-light">
+                                    {{ form.can_accept_friend_requests }}
+                                    <label class="form-check-label fw-bold small ms-2" for="{{ form.can_accept_friend_requests.id_for_label }}">
+                                        12. Accept Friend / Connection Requests
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch mb-3 p-2 rounded bg-light">
+                                    {{ form.can_manage_scrapbook }}
+                                    <label class="form-check-label fw-bold small ms-2" for="{{ form.can_manage_scrapbook.id_for_label }}">
+                                        17. Manage Scrapbook &amp; Testimonials
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch mb-2 p-2 rounded bg-light">
+                                    {{ form.can_access_social_features }}
+                                    <label class="form-check-label fw-bold small ms-2" for="{{ form.can_access_social_features.id_for_label }}">
+                                        18. Access All Social Features
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Communities Authorities -->
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm bg-white">
+                            <div class="card-header bg-white border-bottom fw-bold text-primary">
+                                <i class="fas fa-people-group me-2"></i>5. Communities &amp; Groups Authorities
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <div class="form-check form-switch p-2 rounded bg-light h-100">
+                                            {{ form.can_create_communities }}
+                                            <label class="form-check-label fw-bold small ms-2" for="{{ form.can_create_communities.id_for_label }}">
+                                                13. Create Communities
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check form-switch p-2 rounded bg-light h-100">
+                                            {{ form.can_join_communities }}
+                                            <label class="form-check-label fw-bold small ms-2" for="{{ form.can_join_communities.id_for_label }}">
+                                                14. Join Communities
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check form-switch p-2 rounded bg-light h-100">
+                                            {{ form.can_manage_communities }}
+                                            <label class="form-check-label fw-bold small ms-2" for="{{ form.can_manage_communities.id_for_label }}">
+                                                15. Manage Communities
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm bg-white p-3 mt-4 d-flex flex-row justify-content-between align-items-center">
+                    <span class="small text-muted">
+                        <i class="fas fa-shield me-1"></i> Changes will immediately take effect for all {{ role.users.count }} users assigned to this role who do not have custom authority overrides.
+                    </span>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'admin_roles' %}" class="btn btn-secondary rounded-pill px-4">Cancel</a>
+                        <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold">
+                            <i class="fas fa-floppy-disk me-1"></i> Save Role Authorities
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

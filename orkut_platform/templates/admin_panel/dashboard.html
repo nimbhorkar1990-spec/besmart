@@ -5,7 +5,7 @@
 {% block content %}
 <div class="container-fluid px-md-4 py-3">
     {% with active_tab='dashboard' %}
-        {% include 'admin_panel/_nav.html' %}
+    {% include 'admin_panel/_nav.html' %}
     {% endwith %}
 
     <!-- 10 SUMMARY KPI METRIC CARDS -->
@@ -77,9 +77,11 @@
 
         <!-- 6. Pending Deletions -->
         <div class="col-xl-2 col-md-3 col-6">
-            <div class="p-3 bg-white border rounded shadow-sm d-flex align-items-center justify-content-between h-100 border-warning">
+            <div
+                class="p-3 bg-white border rounded shadow-sm d-flex align-items-center justify-content-between h-100 border-warning">
                 <div>
-                    <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Pending Deletions</div>
+                    <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Pending Deletions
+                    </div>
                     <div class="fs-4 fw-bold text-warning">{{ pending_deletions }}</div>
                 </div>
                 <div class="rounded-circle p-2 bg-warning-subtle text-warning fs-5">
@@ -149,8 +151,10 @@
             {% if pending_deletions > 0 %}
             <div class="orkut-card mb-3 border border-warning">
                 <div class="orkut-card-header bg-warning text-dark d-flex justify-content-between align-items-center">
-                    <span class="fw-bold"><i class="fas fa-bell me-1"></i> Urgent: Pending Account Deletion Requests ({{ pending_deletions }})</span>
-                    <a href="{% url 'admin_deletion_requests' %}" class="btn btn-sm btn-dark py-0 px-2 small">View All Requests</a>
+                    <span class="fw-bold"><i class="fas fa-bell me-1"></i> Urgent: Pending Account Deletion Requests ({{
+                        pending_deletions }})</span>
+                    <a href="{% url 'admin_deletion_requests' %}" class="btn btn-sm btn-dark py-0 px-2 small">View All
+                        Requests</a>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-sm table-hover align-middle small mb-0">
@@ -167,12 +171,16 @@
                             <tr>
                                 <td>
                                     <strong>{{ req.user.orkut_profile.full_name|default:req.user.username }}</strong>
-                                    <div class="text-muted" style="font-size: 0.7rem;">@{{ req.user.username }} | {{ req.user.email }}</div>
+                                    <div class="text-muted" style="font-size: 0.7rem;">@{{ req.user.username }} | {{
+                                        req.user.email }}</div>
                                 </td>
-                                <td class="text-muted" style="font-size: 0.75rem;">{{ req.created_at|timesince }} ago</td>
-                                <td class="text-truncate" style="max-width: 180px;">{{ req.reason|default:"No reason stated" }}</td>
+                                <td class="text-muted" style="font-size: 0.75rem;">{{ req.created_at|timesince }} ago
+                                </td>
+                                <td class="text-truncate" style="max-width: 180px;">{{ req.reason|default:"No reason
+                                    stated" }}</td>
                                 <td class="text-end">
-                                    <a href="{% url 'admin_deletion_requests' %}" class="btn btn-sm btn-primary py-0 px-2" style="font-size: 0.72rem;">
+                                    <a href="{% url 'admin_deletion_requests' %}"
+                                        class="btn btn-sm btn-primary py-0 px-2" style="font-size: 0.72rem;">
                                         Review
                                     </a>
                                 </td>
@@ -187,7 +195,8 @@
             <!-- Recent Registered Users -->
             <div class="orkut-card mb-3">
                 <div class="orkut-card-header d-flex justify-content-between align-items-center">
-                    <span class="fw-bold text-primary"><i class="fas fa-user-clock me-1"></i> Recently Registered Users</span>
+                    <span class="fw-bold text-primary"><i class="fas fa-user-clock me-1"></i> Recently Registered
+                        Users</span>
                     <a href="{% url 'admin_users' %}" class="small text-decoration-none">Manage All Users &rarr;</a>
                 </div>
                 <div class="table-responsive">
@@ -206,9 +215,12 @@
                             <tr>
                                 <td>
                                     <div class="d-flex align-items-center gap-2">
-                                        <img src="{{ u.orkut_profile.avatar_url }}" alt="avatar" class="rounded-circle border" style="width: 28px; height: 28px; object-fit: cover;">
+                                        <img src="{{ u.orkut_profile.avatar_url }}" alt="avatar"
+                                            class="rounded-circle border"
+                                            style="width: 28px; height: 28px; object-fit: cover;">
                                         <div>
-                                            <a href="{% url 'profile' u.username %}" class="fw-bold text-decoration-none text-dark">
+                                            <a href="{% url 'profile' u.username %}"
+                                                class="fw-bold text-decoration-none text-dark">
                                                 {{ u.orkut_profile.full_name|default:u.username }}
                                             </a>
                                             <div class="text-muted" style="font-size: 0.68rem;">@{{ u.username }}</div>
@@ -217,27 +229,34 @@
                                 </td>
                                 <td>
                                     {% if u.orkut_profile.role %}
-                                        <span class="badge bg-secondary-subtle text-secondary border">{{ u.orkut_profile.role.name }}</span>
+                                    <span class="badge bg-secondary-subtle text-secondary border">{{
+                                        u.orkut_profile.role.name }}</span>
                                     {% else %}
-                                        <span class="badge bg-light text-muted">Normal User</span>
+                                    <span class="badge bg-light text-muted">Normal User</span>
                                     {% endif %}
                                 </td>
                                 <td>
                                     {% if u.orkut_profile.account_status == 'ACTIVE' %}
-                                        <span class="badge bg-success-subtle text-success">Active</span>
+                                    <span class="badge bg-success-subtle text-success">Active</span>
                                     {% elif u.orkut_profile.account_status == 'BLOCKED' %}
-                                        <span class="badge bg-danger-subtle text-danger">Blocked</span>
+                                    <span class="badge bg-danger-subtle text-danger">Blocked</span>
                                     {% elif u.orkut_profile.account_status == 'PENDING_DELETION' %}
-                                        <span class="badge bg-warning-subtle text-warning text-dark">Pending Deletion</span>
+                                    <span class="badge bg-warning-subtle text-warning text-dark">Pending Deletion</span>
                                     {% else %}
-                                        <span class="badge bg-secondary-subtle text-secondary">{{ u.orkut_profile.account_status }}</span>
+                                    <span class="badge bg-secondary-subtle text-secondary">{{
+                                        u.orkut_profile.account_status }}</span>
                                     {% endif %}
                                 </td>
-                                <td class="text-muted" style="font-size: 0.72rem;">{{ u.date_joined|date:"M d, Y" }}</td>
+                                <td class="text-muted" style="font-size: 0.72rem;">{{ u.date_joined|date:"M d, Y" }}
+                                </td>
                                 <td class="text-end">
-                                    <a href="{% url 'admin_edit_user' u.id %}" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size: 0.72rem;">Edit</a>
+                                    <a href="{% url 'admin_edit_user' u.id %}"
+                                        class="btn btn-sm btn-outline-primary py-0 px-2"
+                                        style="font-size: 0.72rem;">Edit</a>
                                     {% if is_super_admin %}
-                                    <a href="{% url 'admin_manage_authorities' u.id %}" class="btn btn-sm btn-outline-secondary py-0 px-1" style="font-size: 0.72rem;" title="Manage Authorities">
+                                    <a href="{% url 'admin_manage_authorities' u.id %}"
+                                        class="btn btn-sm btn-outline-secondary py-0 px-1" style="font-size: 0.72rem;"
+                                        title="Manage Authorities">
                                         <i class="fas fa-key"></i>
                                     </a>
                                     {% endif %}
@@ -256,63 +275,74 @@
             <div class="orkut-card mb-3">
                 <div class="orkut-card-header d-flex justify-content-between align-items-center">
                     <span class="fw-bold text-danger"><i class="fas fa-flag me-1"></i> Content Reports Queue</span>
-                    <a href="{% url 'admin_content' %}?tab=reports" class="small text-decoration-none">View All &rarr;</a>
+                    <a href="{% url 'admin_content' %}?tab=reports" class="small text-decoration-none">View All
+                        &rarr;</a>
                 </div>
                 {% if recent_reports %}
-                    <div class="list-group list-group-flush small">
-                        {% for rep in recent_reports %}
-                        <div class="list-group-item px-3 py-2">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="badge bg-warning text-dark text-uppercase">{{ rep.content_type }} #{{ rep.content_id }}</span>
-                                <span class="text-muted" style="font-size: 0.68rem;">{{ rep.created_at|timesince }} ago</span>
-                            </div>
-                            <div class="text-dark fw-semibold mt-1">"{{ rep.reason }}"</div>
-                            <div class="text-muted" style="font-size: 0.7rem;">Reporter: @{{ rep.reported_by.username }}</div>
-                            <div class="d-flex gap-2 mt-2">
-                                <a href="{% url 'admin_resolve_report' rep.id 'resolve' %}" class="btn btn-sm btn-danger py-0 px-2" style="font-size: 0.7rem;">Delete Content</a>
-                                <a href="{% url 'admin_resolve_report' rep.id 'dismiss' %}" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.7rem;">Dismiss</a>
-                            </div>
+                <div class="list-group list-group-flush small">
+                    {% for rep in recent_reports %}
+                    <div class="list-group-item px-3 py-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="badge bg-warning text-dark text-uppercase">{{ rep.content_type }} #{{
+                                rep.content_id }}</span>
+                            <span class="text-muted" style="font-size: 0.68rem;">{{ rep.created_at|timesince }}
+                                ago</span>
                         </div>
-                        {% endfor %}
+                        <div class="text-dark fw-semibold mt-1">"{{ rep.reason }}"</div>
+                        <div class="text-muted" style="font-size: 0.7rem;">Reporter: @{{ rep.reported_by.username }}
+                        </div>
+                        <div class="d-flex gap-2 mt-2">
+                            <a href="{% url 'admin_resolve_report' rep.id 'resolve' %}"
+                                class="btn btn-sm btn-danger py-0 px-2" style="font-size: 0.7rem;">Delete Content</a>
+                            <a href="{% url 'admin_resolve_report' rep.id 'dismiss' %}"
+                                class="btn btn-sm btn-outline-secondary py-0 px-2"
+                                style="font-size: 0.7rem;">Dismiss</a>
+                        </div>
                     </div>
+                    {% endfor %}
+                </div>
                 {% else %}
-                    <div class="p-3 text-center text-muted">
-                        <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
-                        <p class="small mb-0">No pending reports! Community is running smoothly.</p>
-                    </div>
+                <div class="p-3 text-center text-muted">
+                    <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                    <p class="small mb-0">No pending reports! Community is running smoothly.</p>
+                </div>
                 {% endif %}
             </div>
 
             <!-- Recent Administrative Audit Logs -->
             <div class="orkut-card">
                 <div class="orkut-card-header d-flex justify-content-between align-items-center">
-                    <span class="fw-bold text-dark"><i class="fas fa-clock-rotate-left me-1"></i> Recent Administrative Audit Logs</span>
-                    <a href="{% url 'admin_audit_logs' %}" class="small text-decoration-none">Full Audit Trail &rarr;</a>
+                    <span class="fw-bold text-dark"><i class="fas fa-clock-rotate-left me-1"></i> Recent Administrative
+                        Audit Logs</span>
+                    <a href="{% url 'admin_audit_logs' %}" class="small text-decoration-none">Full Audit Trail
+                        &rarr;</a>
                 </div>
                 {% if recent_logs %}
-                    <div class="list-group list-group-flush small">
-                        {% for log in recent_logs %}
-                        <div class="list-group-item px-3 py-2">
-                            <div class="d-flex justify-content-between">
-                                <span class="fw-bold text-primary">@{{ log.admin_user.username|default:"System" }}</span>
-                                <span class="text-muted" style="font-size: 0.68rem;">{{ log.created_at|date:"M d, H:i" }}</span>
-                            </div>
-                            <div class="text-dark">
-                                <span class="badge bg-light text-dark border">{{ log.action }}</span>
-                                {% if log.affected_user %}
-                                    on @{{ log.affected_user.username }}
-                                {% endif %}
-                            </div>
-                            {% if log.updated_value %}
-                                <div class="text-muted mt-1 text-truncate" style="font-size: 0.7rem;">{{ log.updated_value }}</div>
+                <div class="list-group list-group-flush small">
+                    {% for log in recent_logs %}
+                    <div class="list-group-item px-3 py-2">
+                        <div class="d-flex justify-content-between">
+                            <span class="fw-bold text-primary">@{{ log.admin_user.username|default:"System" }}</span>
+                            <span class="text-muted" style="font-size: 0.68rem;">{{ log.created_at|date:"M d, H:i"
+                                }}</span>
+                        </div>
+                        <div class="text-dark">
+                            <span class="badge bg-light text-dark border">{{ log.action }}</span>
+                            {% if log.affected_user %}
+                            on @{{ log.affected_user.username }}
                             {% endif %}
                         </div>
-                        {% endfor %}
+                        {% if log.updated_value %}
+                        <div class="text-muted mt-1 text-truncate" style="font-size: 0.7rem;">{{ log.updated_value }}
+                        </div>
+                        {% endif %}
                     </div>
+                    {% endfor %}
+                </div>
                 {% else %}
-                    <div class="p-3 text-center text-muted small">
-                        No administrative logs recorded yet.
-                    </div>
+                <div class="p-3 text-center text-muted small">
+                    No administrative logs recorded yet.
+                </div>
                 {% endif %}
             </div>
         </div>

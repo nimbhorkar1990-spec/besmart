@@ -1,0 +1,361 @@
+{% extends 'base.html' %}
+
+{% block title %}SmartSocial - Account Deletion Requests{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-md-4 py-4">
+    {% with active_tab='deletions' %}
+        {% include 'admin_panel/_nav.html' %}
+    {% endwith %}
+
+    <div class="card-social p-0 shadow-sm border-0 overflow-hidden">
+        <!-- Header -->
+        <div class="p-3 bg-white border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <span class="fw-bold text-danger fs-5"><i class="fas fa-user-xmark me-2"></i>Account Deletion Requests</span>
+                <span class="badge bg-secondary-subtle text-secondary ms-2">{{ deletion_requests.count }} Requests</span>
+            </div>
+            <div class="small text-muted">
+                Audit, review, approve, reject, and complete user account removal requests
+            </div>
+        </div>
+
+        <!-- Filter Pills -->
+        <div class="p-3 bg-light border-bottom d-flex gap-2 flex-wrap align-items-center">
+            <span class="small fw-bold text-muted me-2">Filter Status:</span>
+            <a href="{% url 'admin_deletion_requests' %}?status=ALL" class="btn btn-sm {% if status_filter == 'ALL' %}btn-dark{% else %}btn-outline-secondary bg-white{% endif %} rounded-pill px-3">
+                All
+            </a>
+            <a href="{% url 'admin_deletion_requests' %}?status=PENDING" class="btn btn-sm {% if status_filter == 'PENDING' %}btn-warning text-dark fw-bold{% else %}btn-outline-warning text-dark bg-white{% endif %} rounded-pill px-3">
+                <i class="fas fa-clock me-1"></i>Pending
+            </a>
+            <a href="{% url 'admin_deletion_requests' %}?status=UNDER_REVIEW" class="btn btn-sm {% if status_filter == 'UNDER_REVIEW' %}btn-info text-white fw-bold{% else %}btn-outline-info bg-white{% endif %} rounded-pill px-3">
+                <i class="fas fa-magnifying-glass me-1"></i>Under Review
+            </a>
+            <a href="{% url 'admin_deletion_requests' %}?status=APPROVED" class="btn btn-sm {% if status_filter == 'APPROVED' %}btn-primary fw-bold{% else %}btn-outline-primary bg-white{% endif %} rounded-pill px-3">
+                <i class="fas fa-check-circle me-1"></i>Approved
+            </a>
+            <a href="{% url 'admin_deletion_requests' %}?status=REJECTED" class="btn btn-sm {% if status_filter == 'REJECTED' %}btn-secondary fw-bold{% else %}btn-outline-secondary bg-white{% endif %} rounded-pill px-3">
+                <i class="fas fa-ban me-1"></i>Rejected
+            </a>
+            <a href="{% url 'admin_deletion_requests' %}?status=COMPLETED" class="btn btn-sm {% if status_filter == 'COMPLETED' %}btn-success fw-bold{% else %}btn-outline-success bg-white{% endif %} rounded-pill px-3">
+                <i class="fas fa-user-slash me-1"></i>Completed
+            </a>
+            <a href="{% url 'admin_deletion_requests' %}?status=CANCELLED" class="btn btn-sm {% if status_filter == 'CANCELLED' %}btn-light text-muted border fw-bold{% else %}btn-outline-secondary bg-white{% endif %} rounded-pill px-3">
+                Cancelled
+            </a>
+        </div>
+
+        <!-- Table with Exact 10 Required Columns -->
+        <div class="table-responsive">
+            <table class="table table-hover align-middle small mb-0">
+                <thead class="table-light text-nowrap">
+                    <tr>
+                        <th style="width: 45px;">SN</th>
+                        <th>User ID</th>
+                        <th>Full Name</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Mobile Number</th>
+                        <th>Request Date &amp; Time</th>
+                        <th>Reason</th>
+                        <th>Status</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in deletion_requests %}
+                    <tr>
+                        <!-- 1. Serial Number -->
+                        <td class="text-muted fw-bold">{{ forloop.counter }}</td>
+
+                        <!-- 2. User ID -->
+                        <td><span class="badge bg-light text-dark border">#{{ req.user.id }}</span></td>
+
+                        <!-- 3. Full Name -->
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <img src="{{ req.user.profile.get_avatar }}" alt="avatar" class="rounded-circle border" style="width: 28px; height: 28px; object-fit: cover;">
+                                <span class="fw-bold">{{ req.user.get_full_name|default:req.user.username }}</span>
+                            </div>
+                        </td>
+
+                        <!-- 4. Username -->
+                        <td><a href="{% url 'profile' req.user.username %}" class="text-decoration-none fw-semibold">@{{ req.user.username }}</a></td>
+
+                        <!-- 5. Email -->
+                        <td class="text-nowrap">{{ req.user.email|default:"N/A" }}</td>
+
+                        <!-- 6. Mobile Number -->
+                        <td class="text-nowrap">{{ req.user.profile.mobile_number|default:"N/A" }}</td>
+
+                        <!-- 7. Request Date & Time -->
+                        <td class="text-nowrap text-muted">
+                            <i class="far fa-clock me-1"></i>{{ req.created_at|date:"Y-m-d H:i" }}
+                        </td>
+
+                        <!-- 8. Reason -->
+                        <td style="max-width: 200px;">
+                            <span class="text-truncate d-inline-block" style="max-width: 180px;" title="{{ req.reason }}">
+                                {{ req.reason|default:"No reason provided" }}
+                            </span>
+                        </td>
+
+                        <!-- 9. Status -->
+                        <td>
+                            {% if req.status == 'PENDING' %}
+                                <span class="badge bg-warning text-dark"><i class="fas fa-hourglass-start me-1"></i>Pending</span>
+                            {% elif req.status == 'UNDER_REVIEW' %}
+                                <span class="badge bg-info text-white"><i class="fas fa-magnifying-glass me-1"></i>Under Review</span>
+                            {% elif req.status == 'APPROVED' %}
+                                <span class="badge bg-primary text-white"><i class="fas fa-check-circle me-1"></i>Approved</span>
+                            {% elif req.status == 'REJECTED' %}
+                                <span class="badge bg-secondary text-white"><i class="fas fa-ban me-1"></i>Rejected</span>
+                            {% elif req.status == 'COMPLETED' %}
+                                <span class="badge bg-success text-white"><i class="fas fa-user-slash me-1"></i>Completed</span>
+                            {% elif req.status == 'CANCELLED' %}
+                                <span class="badge bg-light text-muted border">Cancelled</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- 10. Available Admin Actions -->
+                        <td class="text-end text-nowrap">
+                            <!-- View Button -->
+                            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2 py-0 me-1" data-bs-toggle="modal" data-bs-target="#viewModal{{ req.id }}" title="View Request Details">
+                                <i class="fas fa-eye"></i> View
+                            </button>
+
+                            <!-- Actions Dropdown -->
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle rounded-pill px-2 py-0" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Action
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-sm small">
+                                    {% if req.status == 'PENDING' or req.status == 'UNDER_REVIEW' %}
+                                    <li>
+                                        <button class="dropdown-item text-info" data-bs-toggle="modal" data-bs-target="#reviewModal{{ req.id }}">
+                                            <i class="fas fa-magnifying-glass me-2"></i>Mark as Under Review
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button class="dropdown-item text-primary" data-bs-toggle="modal" data-bs-target="#approveModal{{ req.id }}">
+                                            <i class="fas fa-check-circle me-2"></i>Approve Request
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button class="dropdown-item text-secondary" data-bs-toggle="modal" data-bs-target="#rejectModal{{ req.id }}">
+                                            <i class="fas fa-ban me-2"></i>Reject Request
+                                        </button>
+                                    </li>
+                                    {% endif %}
+
+                                    {% if req.status == 'APPROVED' %}
+                                    <li>
+                                        <button class="dropdown-item text-danger fw-bold" data-bs-toggle="modal" data-bs-target="#completeModal{{ req.id }}">
+                                            <i class="fas fa-user-slash me-2"></i>Complete Deletion
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button class="dropdown-item text-secondary" data-bs-toggle="modal" data-bs-target="#rejectModal{{ req.id }}">
+                                            <i class="fas fa-ban me-2"></i>Revoke / Reject
+                                        </button>
+                                    </li>
+                                    {% endif %}
+
+                                    {% if req.status == 'REJECTED' %}
+                                    <li>
+                                        <button class="dropdown-item text-primary" data-bs-toggle="modal" data-bs-target="#approveModal{{ req.id }}">
+                                            <i class="fas fa-redo me-2"></i>Re-approve Request
+                                        </button>
+                                    </li>
+                                    {% endif %}
+
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item text-muted" href="{% url 'admin_user_activity' req.user.id %}">
+                                            <i class="fas fa-chart-line me-2"></i>View User Activity
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Modal: View Request -->
+                    <div class="modal fade" id="viewModal{{ req.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content border-0 shadow">
+                                <div class="modal-header bg-light">
+                                    <h6 class="modal-title fw-bold">
+                                        <i class="fas fa-file-lines me-2 text-primary"></i>Deletion Request #{{ req.id }}
+                                    </h6>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body small">
+                                    <div class="d-flex align-items-center gap-3 p-3 bg-light rounded-3 mb-3">
+                                        <img src="{{ req.user.profile.get_avatar }}" alt="avatar" class="rounded-circle border" style="width: 44px; height: 44px; object-fit: cover;">
+                                        <div>
+                                            <div class="fw-bold">{{ req.user.get_full_name|default:req.user.username }} (@{{ req.user.username }})</div>
+                                            <div class="text-muted">{{ req.user.email }} &bull; Phone: {{ req.user.profile.mobile_number|default:"N/A" }}</div>
+                                        </div>
+                                    </div>
+                                    <ul class="list-group list-group-flush mb-3">
+                                        <li class="list-group-item d-flex justify-content-between px-0">
+                                            <span class="text-muted">User ID:</span>
+                                            <span class="fw-bold">#{{ req.user.id }}</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between px-0">
+                                            <span class="text-muted">Current Status:</span>
+                                            <span class="badge bg-secondary">{{ req.status }}</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between px-0">
+                                            <span class="text-muted">Submitted Date:</span>
+                                            <span>{{ req.created_at|date:"Y-m-d H:i:s" }}</span>
+                                        </li>
+                                        {% if req.reviewed_by %}
+                                        <li class="list-group-item d-flex justify-content-between px-0">
+                                            <span class="text-muted">Reviewed By:</span>
+                                            <span>@{{ req.reviewed_by.username }} ({{ req.reviewed_at|date:"Y-m-d H:i" }})</span>
+                                        </li>
+                                        {% endif %}
+                                    </ul>
+                                    <div class="mb-3">
+                                        <label class="fw-bold text-muted mb-1">User's Reason for Deletion:</label>
+                                        <div class="p-2 rounded bg-light border fst-italic">
+                                            {{ req.reason|default:"No reason stated by user." }}
+                                        </div>
+                                    </div>
+                                    {% if req.admin_notes %}
+                                    <div>
+                                        <label class="fw-bold text-muted mb-1">Admin Audit Notes:</label>
+                                        <div class="p-2 rounded bg-light border">
+                                            {{ req.admin_notes }}
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="modal-footer bg-light py-2">
+                                    <button type="button" class="btn btn-sm btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal: Mark Under Review -->
+                    <div class="modal fade" id="reviewModal{{ req.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <form method="post" action="{% url 'admin_handle_deletion_request' req.id 'under_review' %}" class="modal-content border-0 shadow">
+                                {% csrf_token %}
+                                <div class="modal-header bg-info text-white">
+                                    <h6 class="modal-title fw-bold">
+                                        <i class="fas fa-magnifying-glass me-2"></i>Mark Request Under Review
+                                    </h6>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body small">
+                                    <p class="mb-2">Marking request for <strong>@{{ req.user.username }}</strong> as Under Review will automatically notify the user that administrators are examining their request.</p>
+                                    <label class="form-label fw-bold">Admin Notes (Optional)</label>
+                                    <textarea name="admin_notes" class="form-control form-control-sm" rows="3" placeholder="Notes on pending verifications or audit checks...">{{ req.admin_notes }}</textarea>
+                                </div>
+                                <div class="modal-footer bg-light py-2">
+                                    <button type="button" class="btn btn-sm btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-sm btn-info text-white rounded-pill px-3 fw-bold">Confirm Under Review</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Modal: Approve Request -->
+                    <div class="modal fade" id="approveModal{{ req.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <form method="post" action="{% url 'admin_handle_deletion_request' req.id 'approve' %}" class="modal-content border-0 shadow">
+                                {% csrf_token %}
+                                <div class="modal-header bg-primary text-white">
+                                    <h6 class="modal-title fw-bold">
+                                        <i class="fas fa-check-circle me-2"></i>Approve Account Deletion
+                                    </h6>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body small">
+                                    <div class="alert alert-warning border-0 py-2 mb-3">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>
+                                        <strong>Confirmation Required:</strong> Approving this request will set user <strong>@{{ req.user.username }}</strong> account status to <code>PENDING_DELETION</code> and schedule account for execution.
+                                    </div>
+                                    <label class="form-label fw-bold">Admin Approval Notes</label>
+                                    <textarea name="admin_notes" class="form-control form-control-sm" rows="3" placeholder="Reason for approval / verification details...">Request approved. Account scheduled for permanent removal.</textarea>
+                                </div>
+                                <div class="modal-footer bg-light py-2">
+                                    <button type="button" class="btn btn-sm btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold">Approve Request</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Modal: Reject Request -->
+                    <div class="modal fade" id="rejectModal{{ req.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <form method="post" action="{% url 'admin_handle_deletion_request' req.id 'reject' %}" class="modal-content border-0 shadow">
+                                {% csrf_token %}
+                                <div class="modal-header bg-secondary text-white">
+                                    <h6 class="modal-title fw-bold">
+                                        <i class="fas fa-ban me-2"></i>Reject Deletion Request
+                                    </h6>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body small">
+                                    <p class="mb-2">Provide a reason explaining why the account deletion request for <strong>@{{ req.user.username }}</strong> was rejected. This will be sent as a notification to the user.</p>
+                                    <label class="form-label fw-bold">Rejection Reason</label>
+                                    <textarea name="admin_notes" class="form-control form-control-sm" rows="3" required placeholder="e.g. Active pending transactions, policy violation investigation, or identity verification required."></textarea>
+                                </div>
+                                <div class="modal-footer bg-light py-2">
+                                    <button type="button" class="btn btn-sm btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-sm btn-danger rounded-pill px-3 fw-bold">Reject Request</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Modal: Complete Deletion -->
+                    <div class="modal fade" id="completeModal{{ req.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <form method="post" action="{% url 'admin_handle_deletion_request' req.id 'complete' %}" class="modal-content border-0 shadow">
+                                {% csrf_token %}
+                                <div class="modal-header bg-danger text-white">
+                                    <h6 class="modal-title fw-bold">
+                                        <i class="fas fa-triangle-exclamation me-2"></i>Execute Complete Account Deletion
+                                    </h6>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body small">
+                                    <div class="alert alert-danger border-0 py-2 mb-3">
+                                        <strong class="d-block mb-1"><i class="fas fa-skull-crossbones me-1"></i>Permanent Destructive Action!</strong>
+                                        This action will permanently deactivate <strong>@{{ req.user.username }}</strong> (User #{{ req.user.id }}), sanitize personal PII details in compliance with data retention policies, mark request as <code>COMPLETED</code>, and log this execution in audit records.
+                                    </div>
+                                    <label class="form-label fw-bold">Final Audit Notes</label>
+                                    <textarea name="admin_notes" class="form-control form-control-sm" rows="2">Account data purged and deactivated per policy.</textarea>
+                                </div>
+                                <div class="modal-footer bg-light py-2">
+                                    <button type="button" class="btn btn-sm btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-sm btn-danger rounded-pill px-4 fw-bold">
+                                        <i class="fas fa-trash-can me-1"></i> Execute Complete Deletion
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    {% empty %}
+                    <tr>
+                        <td colspan="10" class="text-center py-5 text-muted">
+                            <i class="fas fa-inbox fs-3 d-block mb-2"></i>
+                            No account deletion requests found for the selected status.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

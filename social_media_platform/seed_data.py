@@ -7,11 +7,50 @@ django.setup()
 from django.contrib.auth.models import User
 from core.models import (
     UserProfile, Connection, Follow, Group, CompanyPage,
-    Post, Comment, Message, Notification
+    Post, Comment, Message, Notification,
+    UserRole, RolePermission, UserPermission, AccountDeletionRequest, AdminActivityLog
 )
 
 def run_seed():
     print("Starting Social Media Platform database seed...")
+
+    # 0. Seed System Roles and Role Permissions (18 Configurable Authorities)
+    roles_meta = [
+        ('Super Administrator', 'SUPER_ADMIN', 'Full unrestricted authority over the platform, users, roles, authorities, content, and deletions.'),
+        ('Administrator', 'ADMIN', 'Platform administrative oversight, user moderation, content governance, and request auditing.'),
+        ('Moderator', 'MODERATOR', 'Community and content moderation, review reports, and monitor forum discussions.'),
+        ('Standard User', 'NORMAL_USER', 'Standard registered social platform participant with all social communication and posting privileges.'),
+    ]
+
+    roles = {}
+    for name, code, desc in roles_meta:
+        role, _ = UserRole.objects.get_or_create(
+            code=code,
+            defaults={'name': name, 'description': desc}
+        )
+        roles[code] = role
+
+        # Ensure RolePermission exists with all 18 authorities
+        perm, _ = RolePermission.objects.get_or_create(role=role)
+        perm.can_create_profile = True
+        perm.can_edit_profile = True
+        perm.can_upload_photos = True
+        perm.can_delete_photos = True
+        perm.can_create_posts = True
+        perm.can_edit_posts = True
+        perm.can_delete_posts = True
+        perm.can_like_posts = True
+        perm.can_comment_posts = True
+        perm.can_send_messages = True
+        perm.can_send_friend_requests = True
+        perm.can_accept_friend_requests = True
+        perm.can_create_communities = True
+        perm.can_join_communities = True
+        perm.can_manage_communities = (code in ['SUPER_ADMIN', 'ADMIN', 'MODERATOR'])
+        perm.can_create_albums = True
+        perm.can_manage_scrapbook = True
+        perm.can_access_social_features = True
+        perm.save()
 
     # 1. Admin Superuser
     admin_user, created = User.objects.get_or_create(username='admin', defaults={
@@ -25,6 +64,9 @@ def run_seed():
     admin_user.save()
 
     admin_profile = admin_user.profile
+    admin_profile.role = roles['SUPER_ADMIN']
+    admin_profile.account_status = 'ACTIVE'
+    admin_profile.is_active_account = True
     admin_profile.headline = "Chief Technology Officer & Lead Architect @ SmartSearch"
     admin_profile.profession = "Chief Technology Officer"
     admin_profile.company_name = "SmartSearch Innovations"
@@ -112,6 +154,9 @@ def run_seed():
         u.save()
 
         p = u.profile
+        p.role = roles['NORMAL_USER']
+        p.account_status = 'ACTIVE'
+        p.is_active_account = True
         p.headline = udata['headline']
         p.profession = udata['profession']
         p.company_name = udata['company']
@@ -329,6 +374,88 @@ def run_seed():
         notification_type='like',
         text="Alex Rivera liked your post.",
         defaults={'link': '/feed/', 'is_read': True}
+    )
+
+    # 9. Seed Demo Users for Deletion Requests & Governance
+    david_user, _ = User.objects.get_or_create(username='david_cloud', defaults={
+        'email': 'david.cloud@enterprise.net',
+        'first_name': 'David',
+        'last_name': 'Miller',
+    })
+    david_user.set_password('Password@123')
+    david_user.save()
+    dp = david_user.profile
+    dp.role = roles['NORMAL_USER']
+    dp.account_status = 'PENDING_DELETION'
+    dp.headline = "DevOps Specialist & Cloud Architect"
+    dp.profession = "DevOps Engineer"
+    dp.mobile_number = "+1 (555) 382-9901"
+    dp.avatar_url = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=256&q=80"
+    dp.save()
+    users['david_cloud'] = david_user
+
+    lisa_user, _ = User.objects.get_or_create(username='lisa_arch', defaults={
+        'email': 'lisa.arch@designcorp.io',
+        'first_name': 'Lisa',
+        'last_name': 'Kowalski',
+    })
+    lisa_user.set_password('Password@123')
+    lisa_user.save()
+    lp = lisa_user.profile
+    lp.role = roles['NORMAL_USER']
+    lp.account_status = 'ACTIVE'
+    lp.headline = "Senior Enterprise Systems Architect"
+    lp.profession = "Systems Architect"
+    lp.mobile_number = "+44 20 7946 0912"
+    lp.avatar_url = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=256&q=80"
+    lp.save()
+    users['lisa_arch'] = lisa_user
+
+    # 10. Seed Account Deletion Requests
+    AccountDeletionRequest.objects.get_or_create(
+        user=david_user,
+        status='PENDING',
+        defaults={
+            'reason': 'Consolidating social presence into dedicated enterprise network. Please remove this account and personal data per privacy policy.',
+            'admin_notes': ''
+        }
+    )
+
+    AccountDeletionRequest.objects.get_or_create(
+        user=lisa_user,
+        status='UNDER_REVIEW',
+        defaults={
+            'reason': 'Privacy preferences and account cleanup.',
+            'reviewed_by': admin_user,
+            'admin_notes': 'Verifying backup status and user identity before final approval.'
+        }
+    )
+
+    # 11. Seed Admin Activity Logs
+    AdminActivityLog.objects.get_or_create(
+        admin_username='admin',
+        action='SYSTEM_INITIALIZATION',
+        module_name='Platform Governance',
+        defaults={
+            'admin_id': admin_user.id,
+            'admin_user': admin_user,
+            'updated_value': 'Initialized 18 Granular Authorities, 4 System Roles, and Account Deletion workflow.',
+            'ip_address': '127.0.0.1'
+        }
+    )
+    AdminActivityLog.objects.get_or_create(
+        admin_username='admin',
+        action='DELETION_REQUEST_UNDER_REVIEW',
+        module_name='Account Deletion',
+        affected_user_id=lisa_user.id,
+        defaults={
+            'admin_id': admin_user.id,
+            'admin_user': admin_user,
+            'affected_username': lisa_user.username,
+            'previous_value': 'PENDING',
+            'updated_value': 'UNDER_REVIEW',
+            'ip_address': '127.0.0.1'
+        }
     )
 
     print("Database seeding completed successfully!")

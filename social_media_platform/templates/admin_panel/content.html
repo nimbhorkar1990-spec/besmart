@@ -1,0 +1,274 @@
+{% extends 'base.html' %}
+
+{% block title %}SmartSocial - Content Moderation &amp; Governance{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-md-4 py-4">
+    {% with active_tab='content' %}
+        {% include 'admin_panel/_nav.html' %}
+    {% endwith %}
+
+    <div class="card-social p-0 shadow-sm border-0 overflow-hidden">
+        <div class="p-3 bg-white border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <span class="fw-bold text-primary fs-5"><i class="fas fa-photo-film me-2"></i>Content Moderation &amp; Management</span>
+            </div>
+            <div class="small text-muted">
+                Inspect and moderate User Posts, Comments, Uploaded Media, Communities, and Reported Content
+            </div>
+        </div>
+
+        <!-- Moderation Sub Tabs -->
+        <div class="bg-light border-bottom px-3 pt-2">
+            <ul class="nav nav-pills small gap-2">
+                <li class="nav-item">
+                    <a class="nav-link {% if tab == 'posts' %}active fw-bold{% else %}text-secondary{% endif %} rounded-pill px-3" href="{% url 'admin_content' %}?tab=posts">
+                        <i class="fas fa-pen-nib me-1"></i> Posts ({{ posts.count }})
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if tab == 'comments' %}active fw-bold{% else %}text-secondary{% endif %} rounded-pill px-3" href="{% url 'admin_content' %}?tab=comments">
+                        <i class="fas fa-comments me-1"></i> Comments ({{ comments.count }})
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if tab == 'photos' %}active fw-bold{% else %}text-secondary{% endif %} rounded-pill px-3" href="{% url 'admin_content' %}?tab=photos">
+                        <i class="fas fa-images me-1"></i> Photos ({{ photos.count }})
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if tab == 'groups' %}active fw-bold{% else %}text-secondary{% endif %} rounded-pill px-3" href="{% url 'admin_content' %}?tab=groups">
+                        <i class="fas fa-people-group me-1"></i> Communities ({{ groups.count }})
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if tab == 'reports' %}active fw-bold{% else %}text-danger{% endif %} rounded-pill px-3 position-relative" href="{% url 'admin_content' %}?tab=reports">
+                        <i class="fas fa-flag me-1"></i> Moderation Reports
+                        {% if reports.count > 0 %}
+                            <span class="badge bg-danger rounded-pill ms-1">{{ reports.count }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="p-3">
+            <!-- 1. POSTS TAB -->
+            {% if tab == 'posts' %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle small mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Post ID</th>
+                            <th>Author</th>
+                            <th>Content</th>
+                            <th>Media</th>
+                            <th>Engagement</th>
+                            <th>Published</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in posts %}
+                        <tr>
+                            <td><span class="badge bg-light text-dark border">#{{ p.id }}</span></td>
+                            <td>
+                                <a href="{% url 'profile' p.author.username %}" class="fw-bold text-decoration-none">
+                                    @{{ p.author.username }}
+                                </a>
+                            </td>
+                            <td style="max-width: 320px;">
+                                <div class="text-truncate">{{ p.content }}</div>
+                            </td>
+                            <td>
+                                {% if p.image %}
+                                    <a href="{{ p.image.url }}" target="_blank">
+                                        <img src="{{ p.image.url }}" alt="media" style="width: 36px; height: 36px; object-fit: cover; border-radius: 4px;">
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted fst-italic">None</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-nowrap">
+                                <span class="me-2"><i class="fas fa-heart text-danger me-1"></i>{{ p.likes.count }}</span>
+                                <span><i class="fas fa-comment text-primary me-1"></i>{{ p.comments.count }}</span>
+                            </td>
+                            <td class="text-muted text-nowrap">{{ p.created_at|date:"M d, H:i" }}</td>
+                            <td class="text-end">
+                                <a href="{% url 'admin_delete_content' 'post' p.id %}" class="btn btn-sm btn-outline-danger rounded-pill px-2 py-0" onclick="return confirm('Permanently delete Post #{{ p.id }}?');">
+                                    <i class="fas fa-trash me-1"></i>Delete
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="7" class="text-center py-4 text-muted">No posts available.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 2. COMMENTS TAB -->
+            {% elif tab == 'comments' %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle small mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Comment ID</th>
+                            <th>Author</th>
+                            <th>Comment Text</th>
+                            <th>On Post</th>
+                            <th>Date</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in comments %}
+                        <tr>
+                            <td><span class="badge bg-light text-dark border">#{{ c.id }}</span></td>
+                            <td>
+                                <a href="{% url 'profile' c.author.username %}" class="fw-bold text-decoration-none">
+                                    @{{ c.author.username }}
+                                </a>
+                            </td>
+                            <td style="max-width: 350px;">{{ c.content }}</td>
+                            <td>
+                                <a href="{% url 'post_detail' c.post.id %}" class="badge bg-light text-primary border text-decoration-none">
+                                    Post #{{ c.post.id }}
+                                </a>
+                            </td>
+                            <td class="text-muted text-nowrap">{{ c.created_at|date:"M d, H:i" }}</td>
+                            <td class="text-end">
+                                <a href="{% url 'admin_delete_content' 'comment' c.id %}" class="btn btn-sm btn-outline-danger rounded-pill px-2 py-0" onclick="return confirm('Delete this comment?');">
+                                    <i class="fas fa-trash me-1"></i>Delete
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6" class="text-center py-4 text-muted">No comments available.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 3. PHOTOS TAB -->
+            {% elif tab == 'photos' %}
+            <div class="row g-3">
+                {% for ph in photos %}
+                <div class="col-md-3 col-sm-4 col-6">
+                    <div class="card h-100 border shadow-sm overflow-hidden">
+                        <img src="{{ ph.image.url }}" alt="Uploaded photo" style="height: 160px; object-fit: cover;">
+                        <div class="card-body p-2 small">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <a href="{% url 'profile' ph.author.username %}" class="fw-bold text-decoration-none text-truncate">
+                                    @{{ ph.author.username }}
+                                </a>
+                                <span class="text-muted" style="font-size: 0.75rem;">{{ ph.created_at|date:"M d" }}</span>
+                            </div>
+                            <p class="text-muted text-truncate mb-2" style="font-size: 0.75rem;">{{ ph.content }}</p>
+                            <a href="{% url 'admin_delete_content' 'post' ph.id %}" class="btn btn-sm btn-outline-danger w-100 rounded-pill py-0" style="font-size: 0.75rem;" onclick="return confirm('Delete this photo and its post?');">
+                                <i class="fas fa-trash me-1"></i>Delete Photo
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12 text-center py-5 text-muted">No photos uploaded.</div>
+                {% endfor %}
+            </div>
+
+            <!-- 4. COMMUNITIES TAB -->
+            {% elif tab == 'groups' %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle small mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Community ID</th>
+                            <th>Community Name</th>
+                            <th>Creator</th>
+                            <th>Members</th>
+                            <th>Created</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for g in groups %}
+                        <tr>
+                            <td><span class="badge bg-light text-dark border">#{{ g.id }}</span></td>
+                            <td>
+                                <a href="{% url 'group_detail' g.slug %}" class="fw-bold text-decoration-none">
+                                    {{ g.name }}
+                                </a>
+                            </td>
+                            <td>@{{ g.creator.username }}</td>
+                            <td><span class="badge bg-info-subtle text-info border">{{ g.members.count }} members</span></td>
+                            <td class="text-muted text-nowrap">{{ g.created_at|date:"M d, Y" }}</td>
+                            <td class="text-end">
+                                <a href="{% url 'admin_delete_content' 'group' g.id %}" class="btn btn-sm btn-outline-danger rounded-pill px-2 py-0" onclick="return confirm('Delete community \'{{ g.name }}\'?');">
+                                    <i class="fas fa-trash me-1"></i>Delete
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6" class="text-center py-4 text-muted">No communities found.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 5. MODERATION REPORTS TAB -->
+            {% elif tab == 'reports' %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle small mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Report ID</th>
+                            <th>Reported By</th>
+                            <th>Target Content / User</th>
+                            <th>Reason</th>
+                            <th>Details</th>
+                            <th>Date</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in reports %}
+                        <tr>
+                            <td><span class="badge bg-danger">#{{ r.id }}</span></td>
+                            <td>@{{ r.reporter.username }}</td>
+                            <td>
+                                {% if r.post %}
+                                    <span class="badge bg-light text-dark border">Post #{{ r.post.id }} by @{{ r.post.author.username }}</span>
+                                {% elif r.reported_user %}
+                                    <span class="badge bg-light text-dark border">User @{{ r.reported_user.username }}</span>
+                                {% else %}
+                                    <span class="text-muted">General Platform Issue</span>
+                                {% endif %}
+                            </td>
+                            <td><span class="badge bg-warning text-dark">{{ r.reason }}</span></td>
+                            <td style="max-width: 250px;">{{ r.details|default:"No details provided" }}</td>
+                            <td class="text-muted text-nowrap">{{ r.created_at|date:"M d, H:i" }}</td>
+                            <td class="text-end text-nowrap">
+                                <form method="post" action="{% url 'admin_resolve_report' r.id %}" class="d-inline">
+                                    {% csrf_token %}
+                                    {% if r.post %}
+                                    <button type="submit" name="action" value="delete_post" class="btn btn-sm btn-danger rounded-pill px-2 py-0 me-1" onclick="return confirm('Delete reported post and mark resolved?');">
+                                        Delete Post
+                                    </button>
+                                    {% endif %}
+                                    <button type="submit" name="action" value="dismiss" class="btn btn-sm btn-outline-secondary rounded-pill px-2 py-0">
+                                        Dismiss
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="7" class="text-center py-4 text-muted">No pending reports to moderate.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

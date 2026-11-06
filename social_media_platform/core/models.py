@@ -4,10 +4,107 @@ from django.utils.text import slugify
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.db.models import Q
+from django.utils import timezone
+
+
+# ---------------------------------------------------------
+# RBAC: ROLES & 18 CONFIGURABLE USER AUTHORITIES
+# ---------------------------------------------------------
+
+class UserRole(models.Model):
+    ROLE_CHOICES = [
+        ('SUPER_ADMIN', 'Super Admin'),
+        ('ADMIN', 'Admin'),
+        ('MODERATOR', 'Moderator'),
+        ('NORMAL_USER', 'Normal User'),
+    ]
+    name = models.CharField(max_length=50, unique=True)
+    code = models.CharField(max_length=30, choices=ROLE_CHOICES, default='NORMAL_USER')
+    description = models.TextField(blank=True)
+    is_system_role = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'user_roles'
+        ordering = ['id']
+
+    def __str__(self):
+        return self.name
+
+
+class RolePermission(models.Model):
+    role = models.OneToOneField(UserRole, on_delete=models.CASCADE, related_name='permissions')
+    # 18 Configurable User Authorities
+    can_create_profile = models.BooleanField(default=True)
+    can_edit_profile = models.BooleanField(default=True)
+    can_upload_photos = models.BooleanField(default=True)
+    can_delete_photos = models.BooleanField(default=True)
+    can_create_posts = models.BooleanField(default=True)
+    can_edit_posts = models.BooleanField(default=True)
+    can_delete_posts = models.BooleanField(default=True)
+    can_like_posts = models.BooleanField(default=True)
+    can_comment_posts = models.BooleanField(default=True)
+    can_send_messages = models.BooleanField(default=True)
+    can_send_friend_requests = models.BooleanField(default=True)
+    can_accept_friend_requests = models.BooleanField(default=True)
+    can_create_communities = models.BooleanField(default=True)
+    can_join_communities = models.BooleanField(default=True)
+    can_manage_communities = models.BooleanField(default=True)
+    can_create_albums = models.BooleanField(default=True)
+    can_manage_scrapbook = models.BooleanField(default=True)
+    can_access_social_features = models.BooleanField(default=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'role_permissions'
+
+    def __str__(self):
+        return f"Role Authorities for {self.role.name}"
+
+
+class UserPermission(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='custom_permissions')
+    # 18 Configurable User Authorities (Individual User Overrides)
+    can_create_profile = models.BooleanField(default=True)
+    can_edit_profile = models.BooleanField(default=True)
+    can_upload_photos = models.BooleanField(default=True)
+    can_delete_photos = models.BooleanField(default=True)
+    can_create_posts = models.BooleanField(default=True)
+    can_edit_posts = models.BooleanField(default=True)
+    can_delete_posts = models.BooleanField(default=True)
+    can_like_posts = models.BooleanField(default=True)
+    can_comment_posts = models.BooleanField(default=True)
+    can_send_messages = models.BooleanField(default=True)
+    can_send_friend_requests = models.BooleanField(default=True)
+    can_accept_friend_requests = models.BooleanField(default=True)
+    can_create_communities = models.BooleanField(default=True)
+    can_join_communities = models.BooleanField(default=True)
+    can_manage_communities = models.BooleanField(default=True)
+    can_create_albums = models.BooleanField(default=True)
+    can_manage_scrapbook = models.BooleanField(default=True)
+    can_access_social_features = models.BooleanField(default=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'user_permissions'
+
+    def __str__(self):
+        return f"Custom Permissions for {self.user.username}"
 
 
 class UserProfile(models.Model):
+    ACCOUNT_STATUS_CHOICES = [
+        ('ACTIVE', 'Active'),
+        ('INACTIVE', 'Inactive'),
+        ('BLOCKED', 'Blocked'),
+        ('PENDING_DELETION', 'Pending Deletion'),
+        ('DELETED', 'Deleted'),
+    ]
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    role = models.ForeignKey(UserRole, on_delete=models.SET_NULL, null=True, blank=True, related_name='users')
+    account_status = models.CharField(max_length=25, choices=ACCOUNT_STATUS_CHOICES, default='ACTIVE')
     headline = models.CharField(max_length=255, blank=True, default='')
     bio = models.TextField(blank=True, default='')
     location = models.CharField(max_length=150, blank=True, default='')
@@ -118,12 +215,93 @@ class UserProfile(models.Model):
         mutual_ids = my_ids.intersection(other_ids)
         return User.objects.filter(id__in=mutual_ids).select_related('profile')
 
+    def check_permission(self, perm_name):
+        """
+        Check if user is granted a specific authority (out of the 18 configurable authorities).
+        Superuser always has full access.
+        User-level overrides take precedence over role-level defaults.
+        """
+        if self.user.is_superuser:
+            return True
+        if self.account_status in ('BLOCKED', 'DELETED'):
+            return False
+
+        # Check custom user permissions override
+        custom_perm = getattr(self.user, 'custom_permissions', None)
+        if custom_perm and hasattr(custom_perm, perm_name):
+            return getattr(custom_perm, perm_name)
+
+        # Fall back to role permissions
+        if self.role and hasattr(self.role, 'permissions'):
+            return getattr(self.role.permissions, perm_name, True)
+
+        return True
+
+    def is_super_admin(self):
+        return self.user.is_superuser or (self.role and self.role.code == 'SUPER_ADMIN')
+
+    def is_admin_or_super(self):
+        return self.user.is_superuser or self.user.is_staff or (self.role and self.role.code in ('SUPER_ADMIN', 'ADMIN'))
+
+    def is_moderator_or_higher(self):
+        return self.is_admin_or_super() or (self.role and self.role.code == 'MODERATOR')
+
+
+class AccountDeletionRequest(models.Model):
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('UNDER_REVIEW', 'Under Review'),
+        ('APPROVED', 'Approved'),
+        ('REJECTED', 'Rejected'),
+        ('COMPLETED', 'Completed'),
+        ('CANCELLED', 'Cancelled'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='deletion_requests')
+    reason = models.TextField(blank=True, default='')
+    status = models.CharField(max_length=25, choices=STATUS_CHOICES, default='PENDING')
+    admin_notes = models.TextField(blank=True, default='')
+    reviewed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_social_deletions')
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'account_deletion_requests'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Deletion Request by {self.user.username} [{self.status}]"
+
+
+class AdminActivityLog(models.Model):
+    admin_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='admin_social_actions')
+    admin_id = models.IntegerField(null=True, blank=True)
+    admin_username = models.CharField(max_length=150, blank=True, default='')
+    action = models.CharField(max_length=150)
+    module_name = models.CharField(max_length=100, default='General')
+    affected_user_id = models.IntegerField(null=True, blank=True)
+    affected_username = models.CharField(max_length=150, blank=True, default='')
+    previous_value = models.TextField(blank=True, default='')
+    updated_value = models.TextField(blank=True, default='')
+    ip_address = models.CharField(max_length=50, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'admin_activity_logs'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.admin_username or 'System'} - {self.action} on {self.created_at.strftime('%Y-%m-%d %H:%M')}"
+
 
 @receiver(post_save, sender=User)
 def create_or_update_user_profile(sender, instance, created, **kwargs):
     if created:
+        default_role = UserRole.objects.filter(code='NORMAL_USER').first()
         UserProfile.objects.create(
             user=instance,
+            role=default_role,
             contact_email=instance.email,
             headline='SmartSearch Network Member',
             bio=f'Hello! I am {instance.get_full_name() or instance.username} on SmartSearch Social Media Platform.'

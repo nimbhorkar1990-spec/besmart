@@ -1,38 +1,161 @@
 {% extends 'base.html' %}
 
-{% block title %}Account Privacy & Settings - SmartSearch Social{% endblock %}
+{% block title %}Account Privacy &amp; Deletion Settings - SmartSearch Social{% endblock %}
 
 {% block content %}
-<div class="container my-5">
+<div class="container my-4">
     <div class="row justify-content-center">
-        <div class="col-lg-6 col-md-8">
-            <div class="card-social p-4 p-md-5">
+        <div class="col-lg-7 col-md-9">
+
+            <!-- Breadcrumb Navigation -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <a href="{% url 'profile' username=user.username %}" class="btn btn-link text-decoration-none text-muted p-0 small">
+                    <i class="fas fa-arrow-left me-1"></i> Back to Profile
+                </a>
+                <a href="{% url 'edit_profile' %}" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                    <i class="fas fa-user-pen me-1"></i> Edit Profile
+                </a>
+            </div>
+
+            <div class="card-social p-4 p-md-5 mb-4 shadow-sm">
                 <div class="text-center mb-4">
-                    <span class="bg-danger-subtle text-danger rounded-circle p-3 d-inline-flex align-items-center justify-content-center mb-2" style="width: 60px; height: 60px;">
-                        <i class="fas fa-triangle-exclamation fa-xl"></i>
+                    <span class="bg-danger-subtle text-danger rounded-circle p-3 d-inline-flex align-items-center justify-content-center mb-2" style="width: 56px; height: 56px;">
+                        <i class="fas fa-shield-halved fa-xl"></i>
                     </span>
-                    <h3 class="fw-bold mb-1">Deactivate Account</h3>
-                    <p class="text-muted small">Temporarily disable your profile, posts and active networking footprint</p>
+                    <h3 class="fw-bold mb-1">Account &amp; Privacy Settings</h3>
+                    <p class="text-muted small">Manage temporary account deactivation or submit an account deletion request</p>
                 </div>
 
-                <div class="alert alert-warning small rounded-3 mb-4">
-                    <strong>Important:</strong> Deactivating your account will hide your profile, posts, comments and connections from other users. You can reactivate your profile anytime by signing back in.
-                </div>
-
-                <form method="post" action="{% url 'deactivate_account' %}" onsubmit="return confirm('Are you sure you want to deactivate your account?');">
-                    {% csrf_token %}
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-danger rounded-pill fw-semibold py-2">
-                            <i class="fas fa-power-off me-1"></i> Confirm Account Deactivation
+                <!-- 1. TEMPORARY DEACTIVATION -->
+                <div class="p-3 bg-light rounded-3 border mb-4">
+                    <h6 class="fw-bold text-dark mb-1">
+                        <i class="fas fa-pause text-secondary me-1"></i> Temporarily Deactivate Account
+                    </h6>
+                    <p class="small text-muted mb-3">
+                        Temporarily hide your profile, timeline posts, comments and connections. Your account information is preserved and can be reactivated anytime you log back in.
+                    </p>
+                    <form method="post" action="{% url 'deactivate_account' %}" onsubmit="return confirm('Are you sure you want to temporarily deactivate your account?');">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="deactivate">
+                        <button type="submit" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-semibold">
+                            <i class="fas fa-power-off me-1"></i> Deactivate Account Temporarily
                         </button>
-                        <a href="{% url 'profile' username=user.username %}" class="btn btn-light rounded-pill py-2">
-                            Never Mind, Keep Active
-                        </a>
+                    </form>
+                </div>
+
+                <!-- 2. TASK 1: PERMANENT ACCOUNT DELETION REQUEST -->
+                <div class="p-4 rounded-3 border border-danger-subtle bg-white">
+                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                        <h5 class="fw-bold text-danger mb-0">
+                            <i class="fas fa-user-xmark me-2"></i> Delete My Account
+                        </h5>
+                        {% if deletion_request %}
+                            {% if deletion_request.status == 'PENDING' %}
+                                <span class="badge bg-warning text-dark px-3 py-2 rounded-pill"><i class="fas fa-clock me-1"></i> Status: Pending</span>
+                            {% elif deletion_request.status == 'UNDER_REVIEW' %}
+                                <span class="badge bg-primary text-white px-3 py-2 rounded-pill"><i class="fas fa-magnifying-glass me-1"></i> Status: Under Review</span>
+                            {% elif deletion_request.status == 'APPROVED' %}
+                                <span class="badge bg-info text-dark px-3 py-2 rounded-pill"><i class="fas fa-check-circle me-1"></i> Status: Approved for Deletion</span>
+                            {% elif deletion_request.status == 'REJECTED' %}
+                                <span class="badge bg-danger text-white px-3 py-2 rounded-pill"><i class="fas fa-times-circle me-1"></i> Status: Rejected</span>
+                            {% elif deletion_request.status == 'COMPLETED' %}
+                                <span class="badge bg-dark text-white px-3 py-2 rounded-pill"><i class="fas fa-trash-can me-1"></i> Status: Completed</span>
+                            {% elif deletion_request.status == 'CANCELLED' %}
+                                <span class="badge bg-secondary text-white px-3 py-2 rounded-pill"><i class="fas fa-ban me-1"></i> Status: Cancelled</span>
+                            {% endif %}
+                        {% endif %}
                     </div>
-                </form>
+
+                    {% if deletion_request and deletion_request.status in 'PENDING UNDER_REVIEW' %}
+                        <!-- Active Request Display (Pending or Under Review) -->
+                        <div class="alert {% if deletion_request.status == 'PENDING' %}alert-warning{% else %}alert-primary{% endif %} py-3 small rounded-3 mb-3">
+                            <div class="fw-bold fs-6 mb-1">
+                                <i class="fas fa-info-circle me-1"></i> Active Deletion Request Submitted
+                            </div>
+                            <div><strong>Requested On:</strong> {{ deletion_request.created_at|date:"F d, Y \a\t H:i" }}</div>
+                            <div class="mt-1"><strong>Submitted Reason:</strong> {{ deletion_request.reason|default:"No reason specified" }}</div>
+                            <div class="mt-1"><strong>Current Status:</strong> <span class="fw-bold">{{ deletion_request.get_status_display }}</span></div>
+                            {% if deletion_request.admin_notes %}
+                                <div class="mt-1"><strong>Admin Review Note:</strong> {{ deletion_request.admin_notes }}</div>
+                            {% endif %}
+                            <div class="text-muted mt-2 border-top pt-2">
+                                While your request is under review, you may cancel it at any time to keep your account active.
+                            </div>
+                        </div>
+
+                        <a href="{% url 'cancel_account_deletion' deletion_request.id %}"
+                           class="btn btn-outline-secondary rounded-pill px-4 fw-semibold btn-sm"
+                           onclick="return confirm('Are you sure you want to cancel your pending deletion request and restore your active account?');">
+                            <i class="fas fa-undo me-1"></i> Cancel Deletion Request
+                        </a>
+
+                    {% elif deletion_request and deletion_request.status == 'APPROVED' %}
+                        <!-- Approved Request Display -->
+                        <div class="alert alert-info py-3 small rounded-3 mb-3">
+                            <div class="fw-bold fs-6 mb-1"><i class="fas fa-check-circle me-1"></i> Deletion Request Approved</div>
+                            <div>Your deletion request was approved by the administration team on {{ deletion_request.reviewed_at|date:"F d, Y H:i" }}.</div>
+                            {% if deletion_request.admin_notes %}
+                                <div class="mt-1"><strong>Admin Notes:</strong> {{ deletion_request.admin_notes }}</div>
+                            {% endif %}
+                            <div class="text-muted mt-2">
+                                Your account data and personal information are scheduled for permanent purge in accordance with our data-retention policy.
+                            </div>
+                        </div>
+
+                    {% elif deletion_request and deletion_request.status == 'COMPLETED' %}
+                        <!-- Completed Deletion -->
+                        <div class="alert alert-dark py-3 small rounded-3 mb-0">
+                            <strong>Notice:</strong> This account has been marked as Deleted. All profile information and uploaded media have been removed.
+                        </div>
+
+                    {% else %}
+                        <!-- No Active Request: Show Submission Form & Consequences -->
+                        <div class="alert alert-danger py-3 small rounded-3 mb-4">
+                            <div class="fw-bold fs-6 mb-2 text-danger">
+                                <i class="fas fa-triangle-exclamation me-1"></i> Consequences of Account Deletion:
+                            </div>
+                            <ul class="mb-0 ps-3">
+                                <li>All your published posts, photos, articles, and comments will be permanently erased.</li>
+                                <li>Your network connections, conversations, and community memberships will be terminated.</li>
+                                <li>Your username and handle will be deactivated and cannot be recovered.</li>
+                                <li>Your request will be submitted directly to the Super Admin for audit compliance and final review.</li>
+                            </ul>
+                        </div>
+
+                        {% if deletion_request and deletion_request.status == 'REJECTED' %}
+                            <div class="alert alert-secondary py-2 small rounded-3 mb-3">
+                                <strong>Previous Request (Rejected):</strong> On {{ deletion_request.reviewed_at|date:"M d, Y" }}, your prior request was reviewed and rejected.
+                                {% if deletion_request.admin_notes %}<br><strong>Admin Note:</strong> {{ deletion_request.admin_notes }}{% endif %}
+                                <div class="mt-1">You may submit a fresh deletion request below if desired.</div>
+                            </div>
+                        {% endif %}
+
+                        <form method="post" action="{% url 'request_account_deletion' %}" onsubmit="return confirm('Are you sure you want to submit an Account Deletion Request? This action will schedule your account and all associated profile data for permanent removal.');">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold text-dark">
+                                    Reason for Deleting Your Account (Optional):
+                                </label>
+                                <textarea name="reason" class="form-control" rows="3" placeholder="Tell us why you wish to delete your account (optional feedback helps us improve)..."></textarea>
+                                <div class="form-text small">Sharing your reason is completely optional.</div>
+                            </div>
+
+                            <div class="form-check mb-4">
+                                <input class="form-check-input" type="checkbox" name="confirm_checkbox" id="confirmDeletionCheck" required>
+                                <label class="form-check-label small text-danger fw-semibold" for="confirmDeletionCheck">
+                                    I understand that submitting this request will permanently schedule my Smart Social account and all profile data for deletion.
+                                </label>
+                            </div>
+
+                            <button type="submit" class="btn btn-danger rounded-pill px-4 py-2 fw-semibold shadow-sm">
+                                <i class="fas fa-paper-plane me-1"></i> Submit Account Deletion Request
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+
             </div>
         </div>
     </div>
 </div>
 {% endblock %}
-
