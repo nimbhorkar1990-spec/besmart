@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}orkut - view photo{% endblock %}
+
+{% block content %}
+<div class="container py-3">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="orkut-card">
+                <div class="orkut-card-header">
+                    <span><i class="fas fa-image me-1 text-primary"></i> Photo View</span>
+                    <a href="{% url 'album_detail' album.id %}" class="small text-decoration-none">Back to Album</a>
+                </div>
+
+                <!-- Big Photo Display -->
+                <div class="text-center bg-dark rounded p-2 mb-3">
+                    <img src="{{ photo.image.url }}" alt="{{ photo.caption }}" class="img-fluid rounded" style="max-height: 550px;">
+                </div>
+
+                {% if photo.caption %}
+                <h5 class="fw-semibold text-dark mb-2">{{ photo.caption }}</h5>
+                {% endif %}
+
+                <div class="d-flex justify-content-between align-items-center text-muted small pb-3 border-bottom">
+                    <div>
+                        Uploaded by <a href="{% url 'profile' photo.user.username %}" class="text-decoration-none fw-semibold">@{{ photo.user.username }}</a> &bull; {{ photo.created_at|date:"M d, Y h:i A" }}
+                    </div>
+                    {% if is_owner or user.is_staff %}
+                    <a href="{% url 'delete_photo' photo.id %}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Delete this photo?');">
+                        <i class="fas fa-trash me-1"></i> Delete Photo
+                    </a>
+                    {% endif %}
+                </div>
+
+                <!-- Comments on Photo -->
+                <div class="mt-4">
+                    <h6 class="fw-bold mb-3"><i class="fas fa-comments me-1 text-primary"></i> Comments ({{ comments|length }})</h6>
+                    
+                    {% if comments %}
+                        {% for comment in comments %}
+                        <div class="d-flex align-items-start gap-2 mb-2 p-2 bg-light rounded">
+                            <a href="{% url 'profile' comment.author.username %}">
+                                <img src="{{ comment.author.orkut_profile.avatar_url }}" alt="avatar" class="rounded-circle" style="width: 32px; height: 32px; object-fit: cover;">
+                            </a>
+                            <div class="flex-grow-1 small">
+                                <a href="{% url 'profile' comment.author.username %}" class="fw-bold text-decoration-none text-dark">
+                                    {{ comment.author.orkut_profile.full_name|default:comment.author.username }}
+                                </a>
+                                <span class="text-muted" style="font-size: 0.68rem;"> &bull; {{ comment.created_at|timesince }} ago</span>
+                                <div class="text-secondary mt-1">{{ comment.content }}</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="small text-muted">No comments on this photo yet.</p>
+                    {% endif %}
+
+                    <!-- Add Comment Form -->
+                    <form method="post" class="mt-3">
+                        {% csrf_token %}
+                        <div class="input-group">
+                            <input type="text" name="content" class="form-control form-control-sm" placeholder="Write a comment on this photo..." required>
+                            <button type="submit" class="btn btn-primary btn-sm px-3">Post Comment</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

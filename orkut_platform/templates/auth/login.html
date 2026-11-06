@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}orkut - login{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center align-items-center">
+        <!-- Left Banner / Classic Orkut Intro -->
+        <div class="col-lg-6 mb-4">
+            <div class="p-4 p-md-5 bg-white rounded-3 border shadow-sm">
+                <h1 class="display-6 fw-bold text-primary mb-3">
+                    <span style="color: #2b4f81;">orkut</span><span style="color: #d82b7d;">.</span>
+                </h1>
+                <h4 class="fw-semibold text-secondary mb-3">Connect, communicate &amp; build lifelong friendships</h4>
+                <p class="text-muted leading-relaxed">
+                    Welcome to the reimagined classic Orkut platform! Keep in touch with your friends, leave memorable scrap messages, join vibrant hobby and tech communities, share photo albums, and rate your buddies on the trusty, cool, and sexy meters.
+                </p>
+                <div class="d-flex flex-column gap-2 mt-4 text-secondary small">
+                    <div><i class="fas fa-check-circle text-success me-2"></i><strong>Scrapbook:</strong> Leave public and private scrap notes.</div>
+                    <div><i class="fas fa-check-circle text-success me-2"></i><strong>Communities:</strong> Join groups and take part in interactive forums.</div>
+                    <div><i class="fas fa-check-circle text-success me-2"></i><strong>Photo Albums:</strong> Share high-resolution photos with captions.</div>
+                    <div><i class="fas fa-check-circle text-success me-2"></i><strong>Fans &amp; Profile Visitors:</strong> See who visited your profile and become fans.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Login Form -->
+        <div class="col-lg-5">
+            <div class="orkut-card shadow">
+                <div class="orkut-card-header">
+                    <span><i class="fas fa-lock me-1"></i> Sign In to Orkut</span>
+                    <a href="{% url 'register' %}" class="small text-decoration-none">New user?</a>
+                </div>
+
+                <form method="post" action="{% url 'login' %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Username or Email</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="fas fa-user text-muted"></i></span>
+                            <input type="text" name="username" class="form-control" placeholder="Enter username or email" required autofocus>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <label class="form-label small fw-bold">Password</label>
+                            <a href="{% url 'forgot_password' %}" class="small text-decoration-none">Forgot password?</a>
+                        </div>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="fas fa-key text-muted"></i></span>
+                            <input type="password" name="password" class="form-control" placeholder="Enter your password" required>
+                        </div>
+                    </div>
+
+                    <div class="d-grid mb-3">
+                        <button type="submit" class="btn btn-orkut py-2 fs-6">
+                            <i class="fas fa-arrow-right-to-bracket me-2"></i>Login to Orkut
+                        </button>
+                    </div>
+
+                    <hr class="my-3">
+
+                    <div class="text-center">
+                        <p class="small text-muted mb-2">Don't have an Orkut account yet?</p>
+                        <a href="{% url 'register' %}" class="btn btn-orkut-blue w-100 py-2">
+                            <i class="fas fa-user-plus me-1"></i> Create Free Account
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

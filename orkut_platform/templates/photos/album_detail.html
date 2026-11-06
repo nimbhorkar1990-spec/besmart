@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block title %}orkut - {{ album.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-md-4">
+    <div class="row g-3">
+        <div class="col-lg-9 col-md-8">
+            <div class="orkut-card">
+                <div class="orkut-card-header">
+                    <span>
+                        <i class="fas fa-folder-open me-1 text-primary"></i>
+                        {{ album.title }} ({{ photos|length }} Photos)
+                    </span>
+                    <a href="{% url 'photos_list' album.user.username %}" class="small text-decoration-none">Back to Albums</a>
+                </div>
+
+                <div class="mb-3">
+                    <p class="text-secondary small mb-1">{{ album.description }}</p>
+                    <div class="text-muted" style="font-size: 0.72rem;">
+                        Created by <a href="{% url 'profile' album.user.username %}" class="text-decoration-none">@{{ album.user.username }}</a> &bull; {{ album.created_at|date:"M d, Y" }}
+                    </div>
+                </div>
+
+                {% if photos %}
+                <div class="row g-3">
+                    {% for photo in photos %}
+                    <div class="col-md-3 col-6">
+                        <div class="border rounded p-1 bg-light text-center">
+                            <a href="{% url 'photo_detail' photo.id %}">
+                                <img src="{{ photo.image.url }}" alt="{{ photo.caption }}" class="img-fluid rounded mb-1" style="height: 140px; width: 100%; object-fit: cover;">
+                            </a>
+                            {% if photo.caption %}
+                            <div class="small text-truncate text-secondary">{{ photo.caption }}</div>
+                            {% endif %}
+                            <div class="d-flex justify-content-between align-items-center mt-1 pt-1 border-top" style="font-size: 0.68rem;">
+                                <span class="text-muted"><i class="fas fa-comment me-1"></i>{{ photo.comments.count }}</span>
+                                {% if is_owner or user.is_staff %}
+                                <a href="{% url 'delete_photo' photo.id %}" class="text-danger" onclick="return confirm('Delete this photo?');"><i class="fas fa-trash"></i></a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-images fa-3x text-muted mb-2"></i>
+                    <h6 class="fw-bold text-secondary">This album is empty!</h6>
+                    {% if is_owner %}
+                    <p class="small text-muted">Use the upload box on the right to add your first photo.</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Right: Upload into this album -->
+        <div class="col-lg-3 col-md-4">
+            {% if is_owner %}
+            <div class="orkut-card">
+                <div class="orkut-card-header">
+                    <span><i class="fas fa-cloud-arrow-up me-1 text-success"></i> Add to this Album</span>
+                </div>
+                <form action="{% url 'upload_photo' %}" method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="d-none">
+                        {{ upload_form.album }}
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold">Select Photo:</label>
+                        {{ upload_form.image }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Caption:</label>
+                        {{ upload_form.caption }}
+                    </div>
+                    <button type="submit" class="btn btn-orkut btn-sm w-100">Upload Photo</button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

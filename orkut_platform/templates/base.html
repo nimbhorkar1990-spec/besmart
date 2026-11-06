@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}orkut - connect, communicate &amp; share{% endblock %}</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome 6 Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+    <!-- Orkut CSS -->
+    <link rel="stylesheet" href="/static/css/orkut.css">
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+    <!-- Top Blue Navigation Bar -->
+    <header class="orkut-navbar">
+        <div class="container-fluid d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <!-- Brand Logo -->
+            <div class="d-flex align-items-center gap-3">
+                <a href="{% url 'home' %}" class="orkut-logo">
+                    orkut<span>.</span>
+                </a>
+                <span class="text-white-50 small d-none d-md-inline">| connect &amp; share</span>
+            </div>
+
+            <!-- Global Search Form -->
+            {% if user.is_authenticated %}
+            <form action="{% url 'search' %}" method="get" class="d-flex my-1 mx-auto" style="max-width: 380px; width: 100%;">
+                <div class="input-group input-group-sm">
+                    <input type="text" name="q" class="form-control border-0" placeholder="Search people, communities, topics..." value="{{ query|default:'' }}" required>
+                    <button class="btn btn-warning text-dark px-3 fw-bold" type="submit">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </form>
+            {% endif %}
+
+            <!-- Right Navigation: User info, notifications, Back to SmartSearch & Logout -->
+            <div class="d-flex align-items-center gap-3">
+                {% if user.is_authenticated %}
+                    <!-- Notifications & Badges -->
+                    <div class="d-flex align-items-center gap-2">
+                        <!-- Scraps badge -->
+                        <a href="{% url 'my_scrapbook' %}" class="btn btn-sm btn-outline-light position-relative p-1 px-2" title="Scrapbook">
+                            <i class="fas fa-book-open"></i>
+                            {% if unread_scraps_count > 0 %}
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                    {{ unread_scraps_count }}
+                                </span>
+                            {% endif %}
+                        </a>
+
+                        <!-- Messages badge -->
+                        <a href="{% url 'messages' %}" class="btn btn-sm btn-outline-light position-relative p-1 px-2" title="Messages">
+                            <i class="fas fa-envelope"></i>
+                            {% if unread_messages_count > 0 %}
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                    {{ unread_messages_count }}
+                                </span>
+                            {% endif %}
+                        </a>
+
+                        <!-- Friend requests badge -->
+                        <a href="{% url 'friend_requests' %}" class="btn btn-sm btn-outline-light position-relative p-1 px-2" title="Friend Requests">
+                            <i class="fas fa-user-plus"></i>
+                            {% if pending_requests_count > 0 %}
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark">
+                                    {{ pending_requests_count }}
+                                </span>
+                            {% endif %}
+                        </a>
+
+                        <!-- Notifications list badge -->
+                        <a href="{% url 'notifications' %}" class="btn btn-sm btn-outline-light position-relative p-1 px-2" title="Notifications">
+                            <i class="fas fa-bell"></i>
+                            {% if unread_notifications_count > 0 %}
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                    {{ unread_notifications_count }}
+                                </span>
+                            {% endif %}
+                        </a>
+                    </div>
+
+                    <!-- User Pill -->
+                    <a href="{% url 'my_profile' %}" class="d-flex align-items-center gap-2 text-white text-decoration-none">
+                        <img src="{{ current_profile.avatar_url }}" alt="Avatar" class="rounded-circle border border-2 border-white" style="width: 32px; height: 32px; object-fit: cover;">
+                        <span class="d-none d-lg-inline fw-semibold small text-truncate" style="max-width: 140px;">
+                            {{ current_profile.full_name|default:user.username }}
+                        </span>
+                    </a>
+
+                    {% if user.is_staff %}
+                    <a href="{% url 'admin_dashboard' %}" class="btn btn-danger btn-sm py-1 px-2 small fw-bold">
+                        <i class="fas fa-shield-halved me-1"></i>Admin
+                    </a>
+                    {% endif %}
+
+                    <!-- Back to SmartSearch link -->
+                    <a href="http://localhost:8080/" class="btn btn-outline-light btn-sm py-1 px-2 small d-none d-md-inline" title="Return to Search Engine">
+                        <i class="fas fa-house me-1"></i>SmartSearch
+                    </a>
+
+                    <!-- Logout -->
+                    <a href="{% url 'logout' %}" class="btn btn-sm btn-outline-warning py-1 px-2 small fw-semibold">
+                        <i class="fas fa-power-off me-1"></i>Logout
+                    </a>
+                {% else %}
+                    <a href="http://localhost:8080/" class="btn btn-outline-light btn-sm py-1 px-2 small me-2">
+                        <i class="fas fa-house me-1"></i>SmartSearch
+                    </a>
+                    <a href="{% url 'login' %}" class="btn btn-light btn-sm px-3 fw-bold text-primary">Login</a>
+                    <a href="{% url 'register' %}" class="btn btn-warning btn-sm px-3 fw-bold text-dark">Register</a>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <!-- Secondary Main Navigation (The 9 Orkut Menu Tabs) -->
+    {% if user.is_authenticated %}
+    <nav class="orkut-subnav">
+        <div class="container-fluid d-flex flex-wrap justify-content-between align-items-center">
+            <div class="d-flex flex-wrap gap-1">
+                <a href="{% url 'home' %}" class="orkut-nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+                    <i class="fas fa-house text-primary"></i> 1. Home
+                </a>
+                <a href="{% url 'my_profile' %}" class="orkut-nav-link {% if 'profile' in request.path and not 'edit' in request.path and not 'settings' in request.path %}active{% endif %}">
+                    <i class="fas fa-user-circle text-info"></i> 2. Profile
+                </a>
+                <a href="{% url 'my_scrapbook' %}" class="orkut-nav-link {% if 'scrapbook' in request.path %}active{% endif %}">
+                    <i class="fas fa-book-open text-danger"></i> 3. Scrapbook
+                    {% if unread_scraps_count > 0 %}
+                    <span class="badge bg-danger rounded-pill" style="font-size: 0.65rem;">{{ unread_scraps_count }}</span>
+                    {% endif %}
+                </a>
+                <a href="{% url 'friends_list' %}" class="orkut-nav-link {% if 'friends' in request.path %}active{% endif %}">
+                    <i class="fas fa-users text-success"></i> 4. Friends ({{ total_friends_count }})
+                </a>
+                <a href="{% url 'communities_list' %}" class="orkut-nav-link {% if 'communities' in request.path %}active{% endif %}">
+                    <i class="fas fa-comments text-warning"></i> 5. Communities
+                </a>
+                <a href="{% url 'my_photos' %}" class="orkut-nav-link {% if 'photos' in request.path %}active{% endif %}">
+                    <i class="fas fa-images text-primary"></i> 6. Photos
+                </a>
+                <a href="{% url 'messages' %}" class="orkut-nav-link {% if 'messages' in request.path %}active{% endif %}">
+                    <i class="fas fa-envelope text-secondary"></i> 7. Messages
+                </a>
+                <a href="{% url 'my_fans' %}" class="orkut-nav-link {% if 'fans' in request.path or 'visitors' in request.path %}active{% endif %}">
+                    <i class="fas fa-heart text-danger"></i> 8. Fans
+                </a>
+                <a href="{% url 'settings' %}" class="orkut-nav-link {% if 'settings' in request.path %}active{% endif %}">
+                    <i class="fas fa-gear text-secondary"></i> 9. Settings
+                </a>
+            </div>
+            <div class="d-none d-xl-block small text-muted">
+                <i class="fas fa-quote-left text-primary me-1"></i><em>{{ current_profile.fortune|truncatechars:45 }}</em>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
+    <!-- Alert Messages -->
+    <div class="container-fluid mt-2">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show py-2 mb-2 shadow-sm" role="alert">
+                    <i class="fas fa-info-circle me-2"></i>{{ message }}
+                    <button type="button" class="btn-close py-2" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <!-- Main Content Body -->
+    <main class="flex-grow-1 py-3">
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="orkut-footer mt-auto">
+        <div class="container-fluid d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
+            <div class="d-flex align-items-center gap-3">
+                <span class="fw-bold text-primary">orkut</span>
+                <span>&copy; 2026 Orkut Social Networking Platform</span>
+                <span class="text-muted">|</span>
+                <span class="text-muted">Inspired by the classic Orkut experience</span>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <a href="{% url 'home' %}" class="text-decoration-none">Home</a>
+                <a href="{% url 'communities_list' %}" class="text-decoration-none">Communities</a>
+                <a href="{% url 'friends_list' %}" class="text-decoration-none">Friends</a>
+                <a href="http://localhost:8080/" class="text-decoration-none text-primary fw-semibold">SmartSearch</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    {% block scripts %}
+    {% endblock %}
+</body>
+</html>

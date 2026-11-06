@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}orkut - account settings{% endblock %}
+
+{% block content %}
+<div class="container py-3">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <!-- Account Settings Card -->
+            <div class="orkut-card">
+                <div class="orkut-card-header">
+                    <span><i class="fas fa-gear me-1 text-primary"></i> Account &amp; Privacy Settings</span>
+                    <a href="{% url 'my_profile' %}" class="small text-decoration-none">Back to Profile</a>
+                </div>
+
+                <!-- Daily Fortune Setting -->
+                <form method="post" class="mb-4 pb-3 border-bottom">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="fortune">
+                    <label class="form-label small fw-bold"><i class="fas fa-cookie text-warning me-1"></i> Today's Fortune / Status:</label>
+                    <div class="input-group">
+                        <input type="text" name="fortune" class="form-control" value="{{ profile.fortune }}" required>
+                        <button type="submit" class="btn btn-primary btn-sm">Update</button>
+                    </div>
+                </form>
+
+                <!-- Privacy Settings -->
+                <form method="post" class="mb-4 pb-3 border-bottom">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="privacy">
+                    <label class="form-label small fw-bold"><i class="fas fa-shield text-primary me-1"></i> Who can leave scraps on my scrapbook:</label>
+                    <div class="d-flex gap-2">
+                        <select name="scrapbook_privacy" class="form-select form-select-sm">
+                            <option value="EVERYONE" {% if profile.scrapbook_privacy == 'EVERYONE' %}selected{% endif %}>Everyone</option>
+                            <option value="FRIENDS" {% if profile.scrapbook_privacy == 'FRIENDS' %}selected{% endif %}>Friends Only</option>
+                            <option value="ONLY_ME" {% if profile.scrapbook_privacy == 'ONLY_ME' %}selected{% endif %}>Only Me</option>
+                        </select>
+                        <button type="submit" class="btn btn-primary btn-sm px-3">Save</button>
+                    </div>
+                </form>
+
+                <!-- Deactivate Account -->
+                <div class="p-3 bg-light rounded border border-danger-subtle">
+                    <h6 class="fw-bold text-danger mb-1"><i class="fas fa-triangle-exclamation me-1"></i> Deactivate Account</h6>
+                    <p class="small text-muted mb-3">
+                        Temporarily deactivate your Orkut profile. Your friends, scraps, and communities will be preserved and restored whenever you log back in.
+                    </p>
+                    <form method="post" onsubmit="return confirm('Are you sure you want to deactivate your Orkut account?');">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="deactivate">
+                        <button type="submit" class="btn btn-outline-danger btn-sm">
+                            <i class="fas fa-power-off me-1"></i> Deactivate My Account
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,223 @@
+/* Classic Orkut Retro-Modern Styling */
+:root {
+    --orkut-blue: #2b4f81;
+    --orkut-blue-light: #3b6899;
+    --orkut-blue-dark: #1e3960;
+    --orkut-pink: #d82b7d;
+    --orkut-pink-hover: #b81f66;
+    --orkut-bg: #ebf2f8;
+    --orkut-card-bg: #ffffff;
+    --orkut-border: #bfd0e0;
+    --orkut-subnav: #dbe7f2;
+}
+
+body {
+    background-color: var(--orkut-bg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #333333;
+    min-height: 100vh;
+}
+
+/* Header Top Blue Bar */
+.orkut-navbar {
+    background-color: var(--orkut-blue);
+    border-bottom: 2px solid var(--orkut-blue-dark);
+    padding: 0.5rem 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.12);
+}
+
+.orkut-logo {
+    font-family: Arial, sans-serif;
+    font-weight: 900;
+    font-size: 1.8rem;
+    letter-spacing: -1px;
+    color: #ffffff !important;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
+    text-decoration: none;
+}
+
+.orkut-logo span {
+    color: #ff91bf;
+}
+
+/* Secondary Sub-Navigation (Tabs) */
+.orkut-subnav {
+    background-color: var(--orkut-subnav);
+    border-bottom: 1px solid var(--orkut-border);
+    padding: 0.35rem 1rem;
+    font-size: 0.9rem;
+}
+
+.orkut-nav-link {
+    color: #1e3960;
+    text-decoration: none;
+    padding: 0.35rem 0.75rem;
+    font-weight: 600;
+    border-radius: 4px;
+    transition: all 0.15s ease-in-out;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.orkut-nav-link:hover, .orkut-nav-link.active {
+    background-color: #ffffff;
+    color: var(--orkut-pink);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+
+/* Orkut Card Container */
+.orkut-card {
+    background: var(--orkut-card-bg);
+    border: 1px solid var(--orkut-border);
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.orkut-card-header {
+    background: #edf3f8;
+    border-bottom: 1px solid var(--orkut-border);
+    padding: 0.5rem 0.75rem;
+    margin: -1rem -1rem 0.85rem -1rem;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    font-weight: 700;
+    font-size: 0.92rem;
+    color: var(--orkut-blue);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Profile Photo Framing */
+.profile-photo-frame {
+    border: 3px solid #bfd0e0;
+    border-radius: 6px;
+    padding: 2px;
+    background: #fff;
+    width: 100%;
+    max-width: 180px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Orkut Badges (Trusty / Cool / Sexy) */
+.orkut-meter {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.82rem;
+    margin-bottom: 0.35rem;
+}
+
+.orkut-meter .meter-label {
+    width: 60px;
+    font-weight: 600;
+    color: #4b6b94;
+}
+
+.orkut-meter .icons {
+    display: flex;
+    gap: 3px;
+}
+
+/* Online Indicator */
+.online-dot {
+    width: 9px;
+    height: 9px;
+    background-color: #28a745;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.offline-dot {
+    width: 9px;
+    height: 9px;
+    background-color: #adb5bd;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+/* Post and Scrap Cards */
+.scrap-entry {
+    border-bottom: 1px dashed var(--orkut-border);
+    padding: 0.75rem 0;
+}
+.scrap-entry:last-child {
+    border-bottom: none;
+}
+
+/* Right Sidebar My Friends Grid */
+.friend-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    text-align: center;
+}
+
+.friend-thumb {
+    width: 54px;
+    height: 54px;
+    object-fit: cover;
+    border: 1px solid var(--orkut-border);
+    border-radius: 4px;
+    transition: transform 0.15s ease;
+}
+
+.friend-thumb:hover {
+    transform: scale(1.08);
+}
+
+.friend-name {
+    font-size: 0.72rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+    color: var(--orkut-blue);
+    font-weight: 500;
+    text-decoration: none;
+}
+
+/* Orkut Buttons */
+.btn-orkut {
+    background-color: var(--orkut-pink);
+    color: #ffffff;
+    font-weight: 600;
+    border: 1px solid #b81f66;
+    border-radius: 4px;
+    padding: 0.35rem 0.85rem;
+    font-size: 0.88rem;
+    transition: background-color 0.15s ease;
+}
+
+.btn-orkut:hover {
+    background-color: var(--orkut-pink-hover);
+    color: #ffffff;
+}
+
+.btn-orkut-blue {
+    background-color: var(--orkut-blue);
+    color: #ffffff;
+    font-weight: 600;
+    border: 1px solid var(--orkut-blue-dark);
+    border-radius: 4px;
+    padding: 0.35rem 0.85rem;
+    font-size: 0.88rem;
+}
+
+.btn-orkut-blue:hover {
+    background-color: var(--orkut-blue-light);
+    color: #ffffff;
+}
+
+/* Footer */
+.orkut-footer {
+    background-color: #edf3f8;
+    border-top: 1px solid var(--orkut-border);
+    padding: 1rem 0;
+    font-size: 0.82rem;
+    color: #555555;
+    margin-top: auto;
+}

@@ -1,0 +1,370 @@
+{% extends 'base.html' %}
+
+{% block title %}orkut - {{ profile.full_name|default:target_user.username }}'s profile{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-md-4">
+    <div class="row g-3">
+
+        <!-- ================= LEFT PROFILE CARD ================= -->
+        <div class="col-lg-3 col-md-4">
+            <div class="orkut-card text-center">
+                <img src="{{ profile.avatar_url }}" alt="{{ profile.full_name }}" class="profile-photo-frame mb-3">
+                
+                <h4 class="fw-bold mb-1 text-primary">
+                    {{ profile.full_name|default:target_user.username }}
+                </h4>
+                <div class="text-muted small mb-2">
+                    @{{ target_user.username }} &bull;
+                    {% if profile.is_online %}
+                        <span class="text-success fw-bold"><span class="online-dot me-1"></span>Online</span>
+                    {% else %}
+                        <span class="text-muted"><span class="offline-dot me-1"></span>Offline</span>
+                    {% endif %}
+                </div>
+
+                <!-- Action Buttons for other users -->
+                {% if not is_self %}
+                <div class="d-flex flex-column gap-2 my-3">
+                    {% if is_friend %}
+                        <div class="btn-group w-100">
+                            <button type="button" class="btn btn-outline-success btn-sm disabled">
+                                <i class="fas fa-check me-1"></i> Friends
+                            </button>
+                            <a href="{% url 'remove_friend' target_user.username %}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Remove friend?');">
+                                <i class="fas fa-user-minus"></i>
+                            </a>
+                        </div>
+                    {% elif has_sent_request %}
+                        <button class="btn btn-secondary btn-sm w-100" disabled>
+                            <i class="fas fa-clock me-1"></i> Request Pending
+                        </button>
+                    {% elif has_received_request %}
+                        <a href="{% url 'friend_requests' %}" class="btn btn-warning btn-sm w-100">
+                            <i class="fas fa-user-check me-1"></i> Respond to Request
+                        </a>
+                    {% else %}
+                        <a href="{% url 'send_friend_request' target_user.username %}" class="btn btn-orkut-blue btn-sm w-100">
+                            <i class="fas fa-user-plus me-1"></i> Add as Friend
+                        </a>
+                    {% endif %}
+
+                    <!-- Send Scrap -->
+                    <a href="{% url 'scrapbook' target_user.username %}" class="btn btn-orkut btn-sm w-100">
+                        <i class="fas fa-pen-nib me-1"></i> Leave a Scrap
+                    </a>
+
+                    <!-- Direct Message -->
+                    <a href="{% url 'chat_with_user' target_user.username %}" class="btn btn-outline-primary btn-sm w-100">
+                        <i class="fas fa-envelope me-1"></i> Send Private Message
+                    </a>
+
+                    <!-- Fan Toggle -->
+                    <a href="{% url 'toggle_fan' target_user.username %}" class="btn btn-sm {% if is_fan %}btn-outline-danger{% else %}btn-danger{% endif %} w-100">
+                        <i class="fas fa-heart me-1"></i> {% if is_fan %}You are a Fan! (Unfan){% else %}Become a Fan{% endif %} ({{ total_fans }})
+                    </a>
+                </div>
+                {% else %}
+                <div class="d-grid my-3">
+                    <a href="{% url 'edit_profile' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-pencil me-1"></i> Edit My Profile
+                    </a>
+                </div>
+                {% endif %}
+
+                <!-- Badges / Rating Meters -->
+                <div class="p-2 bg-light rounded border text-start mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-uppercase fw-bold text-muted" style="font-size: 0.68rem;">
+                            <i class="fas fa-award text-primary me-1"></i> Ratings
+                        </span>
+                        {% if not is_self %}
+                        <button class="btn btn-sm btn-link p-0 small" data-bs-toggle="collapse" data-bs-target="#rateUserCollapse">
+                            Rate {{ target_user.username }}
+                        </button>
+                        {% endif %}
+                    </div>
+
+                    <div class="orkut-meter">
+                        <span class="meter-label text-warning"><i class="fas fa-smile me-1"></i>Trusty:</span>
+                        <div class="icons text-warning">
+                            {% for i in "123" %}
+                                {% if forloop.counter <= profile.trusty_rating %}<i class="fas fa-star"></i>{% else %}<i class="far fa-star text-muted"></i>{% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="orkut-meter">
+                        <span class="meter-label text-info"><i class="fas fa-snowflake me-1"></i>Cool:</span>
+                        <div class="icons text-info">
+                            {% for i in "123" %}
+                                {% if forloop.counter <= profile.cool_rating %}<i class="fas fa-cube"></i>{% else %}<i class="far fa-square text-muted"></i>{% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="orkut-meter">
+                        <span class="meter-label text-danger"><i class="fas fa-heart me-1"></i>Sexy:</span>
+                        <div class="icons text-danger">
+                            {% for i in "123" %}
+                                {% if forloop.counter <= profile.sexy_rating %}<i class="fas fa-heart"></i>{% else %}<i class="far fa-heart text-muted"></i>{% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Rate user dropdown form for friends -->
+                    {% if not is_self %}
+                    <div class="collapse mt-2 pt-2 border-top" id="rateUserCollapse">
+                        <form action="{% url 'rate_user' target_user.username %}" method="post">
+                            {% csrf_token %}
+                            <div class="mb-2">
+                                <label class="small text-muted">Trusty (1-3):</label>
+                                <select name="trusty" class="form-select form-select-sm">
+                                    <option value="1">1 Star</option>
+                                    <option value="2">2 Stars</option>
+                                    <option value="3" selected>3 Stars</option>
+                                </select>
+                            </div>
+                            <div class="mb-2">
+                                <label class="small text-muted">Cool (1-3):</label>
+                                <select name="cool" class="form-select form-select-sm">
+                                    <option value="1">1 Ice Cube</option>
+                                    <option value="2">2 Ice Cubes</option>
+                                    <option value="3" selected>3 Ice Cubes</option>
+                                </select>
+                            </div>
+                            <div class="mb-2">
+                                <label class="small text-muted">Sexy (1-3):</label>
+                                <select name="sexy" class="form-select form-select-sm">
+                                    <option value="1">1 Heart</option>
+                                    <option value="2">2 Hearts</option>
+                                    <option value="3" selected>3 Hearts</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-primary w-100">Submit Rating</button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Stats summary -->
+                <div class="row g-2 text-center small text-muted border-top pt-2">
+                    <div class="col-4">
+                        <div class="fw-bold text-dark">{{ total_friends }}</div>
+                        <div style="font-size: 0.68rem;">Friends</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="fw-bold text-dark">{{ total_fans }}</div>
+                        <div style="font-size: 0.68rem;">Fans</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="fw-bold text-dark">{{ profile.profile_views }}</div>
+                        <div style="font-size: 0.68rem;">Views</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mutual Friends (if viewing someone else) -->
+            {% if not is_self and mutual_friends %}
+            <div class="orkut-card">
+                <div class="orkut-card-header">
+                    <span><i class="fas fa-handshake me-1 text-primary"></i> Mutual Friends ({{ mutual_friends|length }})</span>
+                </div>
+                <div class="row g-2">
+                    {% for mf in mutual_friends|slice:":6" %}
+                    <div class="col-4 text-center">
+                        <a href="{% url 'profile' mf.username %}" class="text-decoration-none">
+                            <img src="{{ mf.orkut_profile.avatar_url }}" alt="{{ mf.username }}" class="rounded-circle border" style="width: 44px; height: 44px; object-fit: cover;">
+                            <div class="small text-truncate text-secondary" style="font-size: 0.68rem;">{{ mf.orkut_profile.full_name|default:mf.username }}</div>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ================= MIDDLE / RIGHT: Full Profile Details, Scraps & Photos ================= -->
+        <div class="col-lg-9 col-md-8">
+
+            <!-- Today's Fortune / Status Banner -->
+            <div class="orkut-card bg-white">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <i class="fas fa-cookie-bite fa-2x text-warning"></i>
+                    <div>
+                        <div class="text-uppercase fw-bold text-muted" style="font-size: 0.7rem;">Today's Fortune / Status</div>
+                        <h6 class="fst-italic text-secondary mb-0">"{{ profile.fortune|default:'A pleasant surprise is waiting for you today.' }}"</h6>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Info Card -->
+            <div class="orkut-card">
+                <div class="orkut-card-header">
+                    <span><i class="fas fa-id-card me-1 text-primary"></i> Personal Information</span>
+                    {% if is_self %}
+                    <a href="{% url 'edit_profile' %}" class="small text-decoration-none"><i class="fas fa-pencil me-1"></i>edit</a>
+                    {% endif %}
+                </div>
+
+                <div class="row g-3 small">
+                    <div class="col-md-6">
+                        <table class="table table-sm table-borderless mb-0">
+                            <tr>
+                                <th class="text-muted" style="width: 140px;">Full Name:</th>
+                                <td class="fw-semibold">{{ profile.full_name|default:target_user.username }}</td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted">Gender:</th>
+                                <td>{{ profile.get_gender_display }}</td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted">Relationship:</th>
+                                <td><span class="badge bg-light text-dark border">{{ profile.relationship_status }}</span></td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted">Location / City:</th>
+                                <td>{{ profile.city }}{% if profile.country %}, {{ profile.country }}{% endif %}</td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted">Date of Birth:</th>
+                                <td>{{ profile.date_of_birth|default:'Not specified' }}</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div class="col-md-6">
+                        <table class="table table-sm table-borderless mb-0">
+                            <tr>
+                                <th class="text-muted" style="width: 140px;">Profession:</th>
+                                <td>{{ profile.profession|default:'Not specified' }}</td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted">Education:</th>
+                                <td>{{ profile.education|default:'Not specified' }}</td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted">Interests &amp; Hobbies:</th>
+                                <td>{{ profile.interests_hobbies|default:'Not specified' }}</td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted">Member Since:</th>
+                                <td>{{ target_user.date_joined|date:"M d, Y" }}</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div class="col-12 border-top pt-2">
+                        <div class="fw-bold text-muted mb-1">About Me:</div>
+                        <p class="text-secondary mb-0 leading-relaxed">{{ profile.about_me|default:'No bio provided yet.' }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Photo Albums Row -->
+            <div class="orkut-card">
+                <div class="orkut-card-header">
+                    <span><i class="fas fa-images me-1 text-primary"></i> Photo Albums</span>
+                    <a href="{% url 'photos_list' target_user.username %}" class="small text-decoration-none">view all</a>
+                </div>
+                {% if albums %}
+                <div class="row g-3">
+                    {% for album in albums %}
+                    <div class="col-md-3 col-6">
+                        <a href="{% url 'album_detail' album.id %}" class="text-decoration-none">
+                            <div class="border rounded p-2 text-center bg-light">
+                                <div class="bg-secondary text-white rounded mb-2 d-flex align-items-center justify-content-center" style="height: 100px;">
+                                    {% if album.photos.first %}
+                                    <img src="{{ album.photos.first.image.url }}" alt="{{ album.title }}" class="img-fluid rounded" style="max-height: 100px; width: 100%; object-fit: cover;">
+                                    {% else %}
+                                    <i class="fas fa-folder fa-2x text-white-50"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="fw-bold small text-truncate text-dark">{{ album.title }}</div>
+                                <div class="text-muted" style="font-size: 0.68rem;">{{ album.photos.count }} photos</div>
+                            </div>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="small text-muted mb-0">No photo albums uploaded yet.</p>
+                {% endif %}
+            </div>
+
+            <!-- Recent Scraps on this profile -->
+            <div class="orkut-card">
+                <div class="orkut-card-header">
+                    <span><i class="fas fa-book-open me-1 text-danger"></i> Recent Scrap Messages</span>
+                    <a href="{% url 'scrapbook' target_user.username %}" class="small text-decoration-none">view all scraps</a>
+                </div>
+
+                <!-- Add quick scrap form -->
+                <form action="{% url 'scrapbook' target_user.username %}" method="post" class="mb-3">
+                    {% csrf_token %}
+                    <div class="input-group">
+                        <textarea name="message" class="form-control form-control-sm" rows="2" placeholder="Leave a scrap for {{ profile.full_name|default:target_user.username }}..." required></textarea>
+                        <button type="submit" class="btn btn-orkut btn-sm px-3">
+                            <i class="fas fa-paper-plane me-1"></i> Post Scrap
+                        </button>
+                    </div>
+                </form>
+
+                {% if scraps %}
+                    {% for scrap in scraps %}
+                    <div class="scrap-entry">
+                        <div class="d-flex align-items-start gap-2">
+                            <a href="{% url 'profile' scrap.sender.username %}">
+                                <img src="{{ scrap.sender.orkut_profile.avatar_url }}" alt="avatar" class="rounded-circle" style="width: 36px; height: 36px; object-fit: cover;">
+                            </a>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <a href="{% url 'profile' scrap.sender.username %}" class="fw-bold text-decoration-none text-primary small">
+                                        {{ scrap.sender.orkut_profile.full_name|default:scrap.sender.username }}
+                                    </a>
+                                    <span class="text-muted" style="font-size: 0.68rem;">
+                                        <i class="far fa-clock me-1"></i>{{ scrap.created_at|date:"M d, Y h:i A" }}
+                                    </span>
+                                </div>
+                                <div class="small text-secondary mt-1">{{ scrap.message }}</div>
+                            </div>
+                            {% if scrap.recipient == user or scrap.sender == user or user.is_staff %}
+                            <a href="{% url 'delete_scrap' scrap.id %}" class="text-muted small" title="Delete scrap" onclick="return confirm('Delete this scrap?');">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="small text-muted mb-0">No scrap messages yet. Be the first to leave a scrap!</p>
+                {% endif %}
+            </div>
+
+            <!-- Friends Grid Section -->
+            <div class="orkut-card">
+                <div class="orkut-card-header">
+                    <span><i class="fas fa-users me-1 text-success"></i> {{ profile.full_name|default:target_user.username }}'s Friends ({{ total_friends }})</span>
+                    <a href="{% url 'user_friends' target_user.username %}" class="small text-decoration-none">view all friends</a>
+                </div>
+                {% if friends %}
+                <div class="row g-2">
+                    {% for friend in friends %}
+                    <div class="col-md-2 col-4 text-center">
+                        <a href="{% url 'profile' friend.username %}" class="text-decoration-none">
+                            <img src="{{ friend.orkut_profile.avatar_url }}" alt="{{ friend.username }}" class="rounded border mb-1" style="width: 50px; height: 50px; object-fit: cover;">
+                            <div class="small text-truncate text-secondary" style="font-size: 0.72rem;">{{ friend.orkut_profile.full_name|default:friend.username }}</div>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="small text-muted mb-0">No friends added yet.</p>
+                {% endif %}
+            </div>
+
+        </div>
+
+    </div>
+</div>
+{% endblock %}

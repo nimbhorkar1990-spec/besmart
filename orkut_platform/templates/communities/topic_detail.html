@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}orkut - {{ topic.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-3">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            <!-- Breadcrumbs -->
+            <div class="mb-3 small">
+                <a href="{% url 'communities_list' %}" class="text-decoration-none">Communities</a> &raquo;
+                <a href="{% url 'community_detail' community.id %}" class="text-decoration-none">{{ community.name }}</a> &raquo;
+                <span class="text-muted">{{ topic.title }}</span>
+            </div>
+
+            <!-- Topic Card (Main Post) -->
+            <div class="orkut-card mb-3">
+                <div class="orkut-card-header">
+                    <span><i class="fas fa-comment-dots me-1 text-primary"></i> {{ topic.title }}</span>
+                    <span class="small text-muted">{{ topic.created_at|date:"M d, Y h:i A" }}</span>
+                </div>
+
+                <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                    <a href="{% url 'profile' topic.author.username %}">
+                        <img src="{{ topic.author.orkut_profile.avatar_url }}" alt="avatar" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">
+                    </a>
+                    <div>
+                        <a href="{% url 'profile' topic.author.username %}" class="fw-bold text-decoration-none text-primary">
+                            {{ topic.author.orkut_profile.full_name|default:topic.author.username }}
+                        </a>
+                        <div class="text-muted small">@{{ topic.author.username }}</div>
+                    </div>
+                </div>
+
+                <div class="post-content mb-3 text-secondary leading-relaxed" style="white-space: pre-line;">
+                    {{ topic.content }}
+                </div>
+            </div>
+
+            <!-- Replies / Discussion List -->
+            <div class="orkut-card">
+                <div class="orkut-card-header">
+                    <span><i class="fas fa-reply-all me-1 text-info"></i> Replies ({{ replies|length }})</span>
+                </div>
+
+                {% if replies %}
+                    {% for reply in replies %}
+                    <div class="p-3 mb-2 bg-light rounded border">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <a href="{% url 'profile' reply.author.username %}">
+                                    <img src="{{ reply.author.orkut_profile.avatar_url }}" alt="avatar" class="rounded-circle" style="width: 30px; height: 30px; object-fit: cover;">
+                                </a>
+                                <a href="{% url 'profile' reply.author.username %}" class="fw-bold text-decoration-none text-dark small">
+                                    {{ reply.author.orkut_profile.full_name|default:reply.author.username }}
+                                </a>
+                            </div>
+                            <span class="text-muted small" style="font-size: 0.68rem;">{{ reply.created_at|timesince }} ago</span>
+                        </div>
+                        <div class="small text-secondary ps-4" style="white-space: pre-line;">
+                            {{ reply.content }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="small text-muted py-3 text-center">No replies yet. Be the first to join the conversation!</p>
+                {% endif %}
+
+                <!-- Post Reply Form -->
+                <form method="post" class="mt-4 pt-3 border-top">
+                    {% csrf_token %}
+                    <label class="form-label small fw-bold"><i class="fas fa-reply me-1 text-primary"></i> Leave a Reply:</label>
+                    <div class="mb-2">
+                        <textarea name="content" class="form-control form-control-sm" rows="3" placeholder="Write your reply here..." required></textarea>
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-orkut btn-sm px-4">Post Reply</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

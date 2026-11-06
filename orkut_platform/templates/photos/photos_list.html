@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+
+{% block title %}orkut - {{ target_user.username }}'s photos{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-md-4">
+    <div class="row g-3">
+        <!-- Main Photos Area -->
+        <div class="col-lg-9 col-md-8">
+            <!-- Albums Section -->
+            <div class="orkut-card">
+                <div class="orkut-card-header">
+                    <span>
+                        <i class="fas fa-folder me-1 text-primary"></i>
+                        {% if is_self %}My Photo Albums{% else %}{{ target_user.username }}'s Albums{% endif %} ({{ albums|length }})
+                    </span>
+                    {% if is_self %}
+                    <button class="btn btn-orkut btn-sm py-0 px-2" data-bs-toggle="collapse" data-bs-target="#newAlbumCollapse">
+                        <i class="fas fa-plus me-1"></i>New Album
+                    </button>
+                    {% endif %}
+                </div>
+
+                <!-- Create Album Form (Collapsible) -->
+                {% if is_self %}
+                <div class="collapse mb-4 p-3 bg-light rounded border" id="newAlbumCollapse">
+                    <h6 class="fw-bold mb-2 small"><i class="fas fa-folder-plus text-primary me-1"></i> Create a New Album:</h6>
+                    <form action="{% url 'create_album' %}" method="post">
+                        {% csrf_token %}
+                        <div class="row g-2">
+                            <div class="col-md-6 mb-2">
+                                {{ album_form.title }}
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <div class="form-check mt-1">
+                                    {{ album_form.is_private }}
+                                    <label class="form-check-label small" for="{{ album_form.is_private.id_for_label }}">Private Album</label>
+                                </div>
+                            </div>
+                            <div class="col-12 mb-2">
+                                {{ album_form.description }}
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm px-3">Create Album</button>
+                    </form>
+                </div>
+                {% endif %}
+
+                <!-- Albums Grid -->
+                {% if albums %}
+                <div class="row g-3">
+                    {% for album in albums %}
+                    <div class="col-md-4 col-sm-6">
+                        <div class="p-2 border rounded bg-light text-center h-100 d-flex flex-column justify-content-between">
+                            <a href="{% url 'album_detail' album.id %}" class="text-decoration-none">
+                                <div class="bg-secondary rounded mb-2 d-flex align-items-center justify-content-center" style="height: 140px; overflow: hidden;">
+                                    {% if album.photos.first %}
+                                    <img src="{{ album.photos.first.image.url }}" alt="{{ album.title }}" class="img-fluid" style="width: 100%; height: 100%; object-fit: cover;">
+                                    {% else %}
+                                    <i class="fas fa-images fa-3x text-white-50"></i>
+                                    {% endif %}
+                                </div>
+                                <h6 class="fw-bold mb-1 text-truncate text-dark">{{ album.title }}</h6>
+                                <div class="small text-muted mb-2">{{ album.photos.count }} photos</div>
+                            </a>
+                            <div class="border-top pt-1 mt-auto">
+                                <a href="{% url 'album_detail' album.id %}" class="btn btn-outline-primary btn-sm py-0 px-2" style="font-size: 0.75rem;">Open Album</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-images fa-3x text-muted mb-2"></i>
+                    <h6 class="fw-bold text-secondary">No albums created yet</h6>
+                    {% if is_self %}
+                    <p class="small text-muted">Create your first album above to start sharing photos.</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Recent Photos Grid -->
+            <div class="orkut-card">
+                <div class="orkut-card-header">
+                    <span><i class="fas fa-camera-retro me-1 text-info"></i> All Photos</span>
+                </div>
+                {% if recent_photos %}
+                <div class="row g-2">
+                    {% for photo in recent_photos %}
+                    <div class="col-md-3 col-4">
+                        <a href="{% url 'photo_detail' photo.id %}">
+                            <img src="{{ photo.image.url }}" alt="{{ photo.caption }}" class="img-fluid rounded border" style="height: 120px; width: 100%; object-fit: cover;">
+                        </a>
+                        {% if photo.caption %}
+                        <div class="small text-muted text-truncate" style="font-size: 0.7rem;">{{ photo.caption }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="small text-muted mb-0">No photos uploaded yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Right sidebar: Upload Photo (if owner) -->
+        <div class="col-lg-3 col-md-4">
+            {% if is_self %}
+            <div class="orkut-card">
+                <div class="orkut-card-header">
+                    <span><i class="fas fa-upload me-1 text-success"></i> Upload a Photo</span>
+                </div>
+                <form action="{% url 'upload_photo' %}" method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold">Select Album:</label>
+                        {{ upload_form.album }}
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold">Choose Image:</label>
+                        {{ upload_form.image }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Caption:</label>
+                        {{ upload_form.caption }}
+                    </div>
+                    <button type="submit" class="btn btn-orkut btn-sm w-100">Upload Photo</button>
+                </form>
+            </div>
+            {% endif %}
+
+            <div class="orkut-card text-center p-3">
+                <i class="fas fa-lock text-muted fa-2x mb-2"></i>
+                <h6 class="fw-bold">Privacy Control</h6>
+                <p class="small text-muted mb-0">You can set any album to Private so only you can see it, or keep it public for your friends to comment on.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

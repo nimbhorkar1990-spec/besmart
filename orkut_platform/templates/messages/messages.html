@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+
+{% block title %}orkut - private messages{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-md-4">
+    <div class="row g-3">
+        <!-- Left: Conversations List -->
+        <div class="col-lg-4 col-md-5">
+            <div class="orkut-card p-0 overflow-hidden">
+                <div class="orkut-card-header m-0 rounded-0">
+                    <span><i class="fas fa-inbox me-1 text-primary"></i> Conversations</span>
+                    <a href="{% url 'friends_list' %}" class="small text-decoration-none">+ New Message</a>
+                </div>
+
+                <div class="list-group list-group-flush" style="max-height: 550px; overflow-y: auto;">
+                    {% if partners %}
+                        {% for partner in partners %}
+                        <a href="{% url 'chat_with_user' partner.username %}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 {% if active_partner and active_partner == partner %}active bg-light text-dark{% endif %}">
+                            <div class="d-flex align-items-center gap-2">
+                                <img src="{{ partner.orkut_profile.avatar_url }}" alt="avatar" class="rounded-circle border" style="width: 44px; height: 44px; object-fit: cover;">
+                                <div>
+                                    <div class="fw-bold small text-truncate" style="max-width: 160px;">
+                                        {{ partner.orkut_profile.full_name|default:partner.username }}
+                                    </div>
+                                    <div class="text-muted" style="font-size: 0.72rem;">
+                                        {% if partner.orkut_profile.is_online %}
+                                            <span class="text-success"><span class="online-dot me-1"></span>Online</span>
+                                        {% else %}
+                                            <span class="text-muted">Offline</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <span class="text-muted small"><i class="fas fa-chevron-right" style="font-size: 0.7rem;"></i></span>
+                        </a>
+                        {% endfor %}
+                    {% else %}
+                        <div class="p-4 text-center text-muted">
+                            <i class="fas fa-envelope-open fa-2x mb-2"></i>
+                            <p class="small mb-0">No conversations yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Active Chat Stream -->
+        <div class="col-lg-8 col-md-7">
+            <div class="orkut-card p-0 overflow-hidden">
+                {% if active_partner %}
+                    <div class="orkut-card-header m-0 rounded-0 d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-2">
+                            <a href="{% url 'profile' active_partner.username %}">
+                                <img src="{{ active_partner.orkut_profile.avatar_url }}" alt="avatar" class="rounded-circle border" style="width: 32px; height: 32px; object-fit: cover;">
+                            </a>
+                            <div>
+                                <a href="{% url 'profile' active_partner.username %}" class="fw-bold text-decoration-none text-primary">
+                                    {{ active_partner.orkut_profile.full_name|default:active_partner.username }}
+                                </a>
+                                <span class="text-muted small ms-1" style="font-size: 0.75rem;">(@{{ active_partner.username }})</span>
+                            </div>
+                        </div>
+                        <a href="{% url 'delete_conversation' active_partner.username %}" class="btn btn-outline-danger btn-sm py-0 px-2 small" onclick="return confirm('Delete this conversation history?');">
+                            <i class="fas fa-trash me-1"></i>Delete Chat
+                        </a>
+                    </div>
+
+                    <!-- Chat messages scroll box -->
+                    <div id="chatMessagesBox" class="p-3 bg-body-tertiary" style="height: 420px; overflow-y: auto;">
+                        {% for msg in chat_messages %}
+                            <div class="d-flex mb-3 {% if msg.sender == user %}justify-content-end{% else %}justify-content-start{% endif %}">
+                                <div class="p-2 px-3 rounded-3 shadow-sm {% if msg.sender == user %}bg-primary text-white{% else %}bg-white border text-dark{% endif %}" style="max-width: 75%;">
+                                    <div class="message-text" style="white-space: pre-line;">{{ msg.message }}</div>
+                                    <div class="text-end mt-1 {% if msg.sender == user %}text-white-50{% else %}text-muted{% endif %}" style="font-size: 0.65rem;">
+                                        {{ msg.created_at|date:"h:i A" }}
+                                    </div>
+                                </div>
+                            </div>
+                        {% empty %}
+                            <div class="text-center py-5 text-muted">
+                                <i class="fas fa-comments fa-3x mb-2"></i>
+                                <p class="small">Say hi to {{ active_partner.orkut_profile.full_name|default:active_partner.username }}!</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Input Box -->
+                    <div class="p-3 bg-white border-top">
+                        <form id="chatForm" class="d-flex gap-2">
+                            {% csrf_token %}
+                            <input type="hidden" name="recipient" value="{{ active_partner.username }}">
+                            <input type="text" id="chatInput" name="message" class="form-control" placeholder="Type a message to {{ active_partner.username }}..." required autocomplete="off">
+                            <button type="submit" class="btn btn-orkut px-4">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </form>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5 my-5 text-muted">
+                        <i class="fas fa-comments fa-4x mb-3 text-secondary"></i>
+                        <h5 class="fw-bold">Your Messages</h5>
+                        <p class="small">Select a conversation from the left or open a friend's profile to start chatting.</p>
+                        <a href="{% url 'friends_list' %}" class="btn btn-primary btn-sm px-3">View Friends</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if active_partner %}
+<script>
+    const chatBox = document.getElementById('chatMessagesBox');
+    if (chatBox) {
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    const chatForm = document.getElementById('chatForm');
+    const chatInput = document.getElementById('chatInput');
+
+    if (chatForm) {
+        chatForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const msg = chatInput.value.trim();
+            if (!msg) return;
+
+            const formData = new FormData(chatForm);
+            fetch("{% url 'api_send_message' %}", {
+                method: "POST",
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'ok') {
+                    const bubble = document.createElement('div');
+                    bubble.className = 'd-flex mb-3 justify-content-end';
+                    bubble.innerHTML = `
+                        <div class="p-2 px-3 rounded-3 shadow-sm bg-primary text-white" style="max-width: 75%;">
+                            <div class="message-text" style="white-space: pre-line;">${data.message}</div>
+                            <div class="text-end mt-1 text-white-50" style="font-size: 0.65rem;">${data.time}</div>
+                        </div>
+                    `;
+                    chatBox.appendChild(bubble);
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                    chatInput.value = '';
+                }
+            });
+        });
+
+        // Polling every 3 seconds for new incoming messages
+        setInterval(function() {
+            fetch("/api/messages/get/{{ active_partner.username }}/")
+            .then(res => res.json())
+            .then(data => {
+                if (data.messages) {
+                    let html = '';
+                    data.messages.forEach(m => {
+                        const isMe = m.is_me;
+                        html += `
+                            <div class="d-flex mb-3 ${isMe ? 'justify-content-end' : 'justify-content-start'}">
+                                <div class="p-2 px-3 rounded-3 shadow-sm ${isMe ? 'bg-primary text-white' : 'bg-white border text-dark'}" style="max-width: 75%;">
+                                    <div class="message-text" style="white-space: pre-line;">${m.message}</div>
+                                    <div class="text-end mt-1 ${isMe ? 'text-white-50' : 'text-muted'}" style="font-size: 0.65rem;">${m.time}</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    if (data.messages.length > 0) {
+                        chatBox.innerHTML = html;
+                    }
+                }
+            })
+            .catch(err => console.log('Polling err:', err));
+        }, 3000);
+    }
+</script>
+{% endif %}
+{% endblock %}

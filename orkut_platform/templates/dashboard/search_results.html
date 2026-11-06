@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block title %}orkut - search results{% endblock %}
+
+{% block content %}
+<div class="container py-3">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            <div class="orkut-card">
+                <div class="orkut-card-header">
+                    <span><i class="fas fa-search me-1 text-primary"></i> Search Results for "{{ query }}"</span>
+                </div>
+
+                <!-- Tabs -->
+                <ul class="nav nav-pills mb-3 border-bottom pb-2">
+                    <li class="nav-item">
+                        <a class="nav-link py-1 px-3 small {% if category == 'all' %}active bg-primary{% endif %}" href="{% url 'search' %}?q={{ query }}&cat=all">All</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link py-1 px-3 small {% if category == 'people' %}active bg-primary{% endif %}" href="{% url 'search' %}?q={{ query }}&cat=people">People ({{ users|length }})</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link py-1 px-3 small {% if category == 'communities' %}active bg-primary{% endif %}" href="{% url 'search' %}?q={{ query }}&cat=communities">Communities ({{ communities|length }})</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link py-1 px-3 small {% if category == 'posts' %}active bg-primary{% endif %}" href="{% url 'search' %}?q={{ query }}&cat=posts">Posts ({{ posts|length }})</a>
+                    </li>
+                </ul>
+
+                <!-- People Results -->
+                {% if users %}
+                <h6 class="fw-bold text-primary mb-2"><i class="fas fa-user me-1"></i> People</h6>
+                <div class="row g-2 mb-4">
+                    {% for u in users %}
+                    <div class="col-md-6">
+                        <div class="p-2 border rounded bg-light d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                <a href="{% url 'profile' u.username %}">
+                                    <img src="{{ u.orkut_profile.avatar_url }}" alt="avatar" class="rounded-circle border" style="width: 44px; height: 44px; object-fit: cover;">
+                                </a>
+                                <div class="overflow-hidden">
+                                    <a href="{% url 'profile' u.username %}" class="fw-bold text-decoration-none text-dark small text-truncate d-block">
+                                        {{ u.orkut_profile.full_name|default:u.username }}
+                                    </a>
+                                    <div class="text-muted" style="font-size: 0.68rem;">{{ u.orkut_profile.city|default:'India' }} &bull; {{ u.orkut_profile.profession|default:'Member' }}</div>
+                                </div>
+                            </div>
+                            <a href="{% url 'profile' u.username %}" class="btn btn-outline-primary btn-sm py-0 px-2 small">View</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Communities Results -->
+                {% if communities %}
+                <h6 class="fw-bold text-warning mb-2"><i class="fas fa-comments me-1"></i> Communities</h6>
+                <div class="row g-2 mb-4">
+                    {% for c in communities %}
+                    <div class="col-md-6">
+                        <div class="p-2 border rounded bg-light d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                <a href="{% url 'community_detail' c.id %}">
+                                    <img src="{{ c.avatar_url }}" alt="logo" class="rounded border" style="width: 44px; height: 44px; object-fit: cover;">
+                                </a>
+                                <div class="overflow-hidden">
+                                    <a href="{% url 'community_detail' c.id %}" class="fw-bold text-decoration-none text-dark small text-truncate d-block">
+                                        {{ c.name }}
+                                    </a>
+                                    <div class="text-muted" style="font-size: 0.68rem;">{{ c.category }} &bull; {{ c.member_count }} members</div>
+                                </div>
+                            </div>
+                            <a href="{% url 'community_detail' c.id %}" class="btn btn-outline-warning btn-sm py-0 px-2 text-dark small">Open</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Posts Results -->
+                {% if posts %}
+                <h6 class="fw-bold text-secondary mb-2"><i class="fas fa-stream me-1"></i> Posts</h6>
+                <div class="list-group list-group-flush mb-3">
+                    {% for p in posts %}
+                    <div class="list-group-item p-2">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <a href="{% url 'profile' p.author.username %}">
+                                <img src="{{ p.author.orkut_profile.avatar_url }}" alt="avatar" class="rounded-circle" style="width: 24px; height: 24px; object-fit: cover;">
+                            </a>
+                            <span class="fw-bold small">{{ p.author.orkut_profile.full_name|default:p.author.username }}</span>
+                            <span class="text-muted" style="font-size: 0.68rem;">{{ p.created_at|timesince }} ago</span>
+                        </div>
+                        <div class="small text-secondary ps-4">{{ p.content|truncatechars:150 }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if not users and not communities and not posts %}
+                <div class="text-center py-5 text-muted">
+                    <i class="fas fa-search fa-3x mb-2 text-secondary"></i>
+                    <h6 class="fw-bold">No results found for "{{ query }}"</h6>
+                    <p class="small">Try checking your spelling or searching for different keywords.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

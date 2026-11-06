@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block title %}orkut - {{ community.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-md-4">
+    <div class="row g-3">
+        <!-- Left: Community Info Card & Members -->
+        <div class="col-lg-3 col-md-4">
+            <div class="orkut-card text-center">
+                <img src="{{ community.avatar_url }}" alt="{{ community.name }}" class="profile-photo-frame mb-3" style="max-width: 140px;">
+                <h5 class="fw-bold text-primary mb-1">{{ community.name }}</h5>
+                <div class="badge bg-secondary mb-2">{{ community.category }}</div>
+                {% if community.is_private %}
+                    <div><span class="badge bg-warning text-dark"><i class="fas fa-lock me-1"></i>Private Community</span></div>
+                {% endif %}
+                <p class="small text-secondary mt-2">{{ community.description }}</p>
+
+                <!-- Actions -->
+                <div class="d-grid gap-2 my-3">
+                    {% if is_member %}
+                        <a href="{% url 'leave_community' community.id %}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Leave this community?');">
+                            <i class="fas fa-sign-out-alt me-1"></i> Leave Community
+                        </a>
+                    {% elif is_pending %}
+                        <button class="btn btn-secondary btn-sm" disabled>
+                            <i class="fas fa-clock me-1"></i> Membership Pending
+                        </button>
+                    {% else %}
+                        <a href="{% url 'join_community' community.id %}" class="btn btn-orkut btn-sm">
+                            <i class="fas fa-plus-circle me-1"></i> Join Community
+                        </a>
+                    {% endif %}
+                </div>
+
+                <div class="border-top pt-2 small text-muted text-start">
+                    <div><strong>Created by:</strong> <a href="{% url 'profile' community.creator.username %}" class="text-decoration-none">@{{ community.creator.username }}</a></div>
+                    <div><strong>Members:</strong> {{ total_members }}</div>
+                    <div><strong>Created:</strong> {{ community.created_at|date:"M d, Y" }}</div>
+                </div>
+            </div>
+
+            <!-- Members Preview -->
+            <div class="orkut-card">
+                <div class="orkut-card-header">
+                    <span><i class="fas fa-users me-1 text-primary"></i> Members ({{ total_members }})</span>
+                </div>
+                <div class="row g-2 text-center">
+                    {% for m in members %}
+                    <div class="col-3">
+                        <a href="{% url 'profile' m.user.username %}" title="{{ m.user.orkut_profile.full_name|default:m.user.username }}">
+                            <img src="{{ m.user.orkut_profile.avatar_url }}" alt="avatar" class="rounded border mb-1" style="width: 44px; height: 44px; object-fit: cover;">
+                            <div class="small text-truncate text-secondary" style="font-size: 0.65rem;">{{ m.user.username }}</div>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Middle: Discussions / Topics Forum -->
+        <div class="col-lg-9 col-md-8">
+            <div class="orkut-card">
+                <div class="orkut-card-header">
+                    <span><i class="fas fa-comments me-1 text-warning"></i> Community Forum Topics</span>
+                    {% if is_member %}
+                    <button class="btn btn-primary btn-sm py-0 px-2 small" data-bs-toggle="collapse" data-bs-target="#newTopicCollapse">
+                        <i class="fas fa-plus me-1"></i>New Topic
+                    </button>
+                    {% endif %}
+                </div>
+
+                <!-- New Topic Form (Collapsible) -->
+                {% if is_member %}
+                <div class="collapse mb-4 p-3 bg-light rounded border" id="newTopicCollapse">
+                    <h6 class="fw-bold mb-2 small"><i class="fas fa-pen me-1 text-primary"></i> Start a Discussion:</h6>
+                    <form action="{% url 'create_community_topic' community.id %}" method="post">
+                        {% csrf_token %}
+                        <div class="mb-2">
+                            {{ topic_form.title }}
+                        </div>
+                        <div class="mb-2">
+                            {{ topic_form.content }}
+                        </div>
+                        <button type="submit" class="btn btn-orkut btn-sm px-3">Publish Topic</button>
+                    </form>
+                </div>
+                {% endif %}
+
+                <!-- Topics List -->
+                {% if topics %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle small mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Topic</th>
+                                <th style="width: 150px;">Author</th>
+                                <th style="width: 100px;">Replies</th>
+                                <th style="width: 150px;">Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for topic in topics %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'community_topic_detail' topic.id %}" class="fw-bold text-decoration-none text-primary fs-6">
+                                        {{ topic.title }}
+                                    </a>
+                                    <div class="text-muted text-truncate" style="max-width: 450px;">{{ topic.content|truncatechars:100 }}</div>
+                                </td>
+                                <td>
+                                    <a href="{% url 'profile' topic.author.username %}" class="text-decoration-none text-dark fw-semibold">
+                                        {{ topic.author.orkut_profile.full_name|default:topic.author.username }}
+                                    </a>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary rounded-pill">{{ topic.reply_count }}</span>
+                                </td>
+                                <td class="text-muted" style="font-size: 0.72rem;">
+                                    {{ topic.created_at|date:"M d, Y h:i A" }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-comments fa-3x text-muted mb-2"></i>
+                    <h6 class="fw-bold text-secondary">No discussions yet in this community.</h6>
+                    {% if is_member %}
+                    <p class="small text-muted mb-3">Be the first to start a conversation!</p>
+                    <button class="btn btn-orkut btn-sm" data-bs-toggle="collapse" data-bs-target="#newTopicCollapse">
+                        <i class="fas fa-plus me-1"></i> Start First Topic
+                    </button>
+                    {% else %}
+                    <p class="small text-muted">Join this community to start or reply to discussion topics.</p>
+                    <a href="{% url 'join_community' community.id %}" class="btn btn-orkut btn-sm">+ Join to Participate</a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

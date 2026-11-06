@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block title %}orkut - recent profile visitors{% endblock %}
+
+{% block content %}
+<div class="container py-3">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="orkut-card">
+                <div class="orkut-card-header">
+                    <span><i class="fas fa-eye me-1 text-info"></i> Recent Profile Visitors (Total Views: {{ total_views }})</span>
+                    <a href="{% url 'my_profile' %}" class="small text-decoration-none">Back to Profile</a>
+                </div>
+
+                <p class="small text-muted mb-3">
+                    Here are the friends and members who recently viewed your Orkut profile:
+                </p>
+
+                {% if visitors %}
+                    <div class="list-group list-group-flush">
+                        {% for item in visitors %}
+                        <div class="list-group-item d-flex align-items-center justify-content-between p-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <a href="{% url 'profile' item.visitor.username %}">
+                                    <img src="{{ item.visitor.orkut_profile.avatar_url }}" alt="avatar" class="rounded-circle border" style="width: 48px; height: 48px; object-fit: cover;">
+                                </a>
+                                <div>
+                                    <h6 class="mb-0 fw-bold">
+                                        <a href="{% url 'profile' item.visitor.username %}" class="text-decoration-none text-primary">
+                                            {{ item.visitor.orkut_profile.full_name|default:item.visitor.username }}
+                                        </a>
+                                    </h6>
+                                    <div class="small text-muted">
+                                        @{{ item.visitor.username }} &bull; {{ item.visitor.orkut_profile.city|default:'India' }}
+                                    </div>
+                                    <div class="text-muted" style="font-size: 0.7rem;">
+                                        <i class="far fa-clock me-1"></i>Last visited {{ item.visited_at|timesince }} ago
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <a href="{% url 'scrapbook' item.visitor.username %}" class="btn btn-outline-danger btn-sm py-1 px-3">
+                                    <i class="fas fa-book-open me-1"></i> Scrap
+                                </a>
+                                <a href="{% url 'profile' item.visitor.username %}" class="btn btn-outline-primary btn-sm py-1 px-3">
+                                    View Profile
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-5 text-muted">
+                        <i class="fas fa-eye-slash fa-3x mb-2 text-secondary"></i>
+                        <h6 class="fw-bold">No profile visits recorded yet.</h6>
+                        <p class="small">When other users view your profile, they will appear here!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

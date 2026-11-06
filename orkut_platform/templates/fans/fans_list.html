@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}orkut - fans &amp; idols{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-md-4">
+    <div class="row g-3">
+        <!-- Fans of this user -->
+        <div class="col-lg-6">
+            <div class="orkut-card">
+                <div class="orkut-card-header">
+                    <span><i class="fas fa-heart text-danger me-1"></i> People who are Fans of {% if is_self %}You{% else %}{{ target_user.username }}{% endif %} ({{ fans|length }})</span>
+                </div>
+
+                {% if fans %}
+                <div class="row g-2">
+                    {% for f in fans %}
+                    <div class="col-md-6">
+                        <div class="p-2 border rounded bg-light d-flex align-items-center gap-2">
+                            <a href="{% url 'profile' f.fan.username %}">
+                                <img src="{{ f.fan.orkut_profile.avatar_url }}" alt="{{ f.fan.username }}" class="rounded-circle border" style="width: 44px; height: 44px; object-fit: cover;">
+                            </a>
+                            <div class="overflow-hidden">
+                                <a href="{% url 'profile' f.fan.username %}" class="fw-bold text-decoration-none text-primary small text-truncate d-block">
+                                    {{ f.fan.orkut_profile.full_name|default:f.fan.username }}
+                                </a>
+                                <div class="text-muted" style="font-size: 0.68rem;">Fan since {{ f.created_at|date:"M d, Y" }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="far fa-heart fa-2x mb-2 text-secondary"></i>
+                    <p class="small mb-0">No fans yet. Share updates and make new friends!</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Idols (people target_user is a fan of) -->
+        <div class="col-lg-6">
+            <div class="orkut-card">
+                <div class="orkut-card-header">
+                    <span><i class="fas fa-star text-warning me-1"></i> Idols ({% if is_self %}You are a fan of{% else %}{{ target_user.username }} is a fan of{% endif %}) ({{ idols|length }})</span>
+                </div>
+
+                {% if idols %}
+                <div class="row g-2">
+                    {% for idol in idols %}
+                    <div class="col-md-6">
+                        <div class="p-2 border rounded bg-light d-flex align-items-center gap-2">
+                            <a href="{% url 'profile' idol.user.username %}">
+                                <img src="{{ idol.user.orkut_profile.avatar_url }}" alt="{{ idol.user.username }}" class="rounded-circle border" style="width: 44px; height: 44px; object-fit: cover;">
+                            </a>
+                            <div class="overflow-hidden">
+                                <a href="{% url 'profile' idol.user.username %}" class="fw-bold text-decoration-none text-primary small text-truncate d-block">
+                                    {{ idol.user.orkut_profile.full_name|default:idol.user.username }}
+                                </a>
+                                <div class="text-muted" style="font-size: 0.68rem;">{{ idol.user.orkut_profile.city|default:'India' }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="far fa-star fa-2x mb-2 text-secondary"></i>
+                    <p class="small mb-0">Not a fan of anyone yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block title %}orkut - {{ profile.full_name|default:target_user.username }}'s scrapbook{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-md-4">
+    <div class="row g-3">
+        <!-- Left info card -->
+        <div class="col-lg-3 col-md-4">
+            <div class="orkut-card text-center">
+                <a href="{% url 'profile' target_user.username %}">
+                    <img src="{{ profile.avatar_url }}" alt="{{ target_user.username }}" class="profile-photo-frame mb-2">
+                </a>
+                <h5 class="fw-bold mb-1">
+                    <a href="{% url 'profile' target_user.username %}" class="text-decoration-none text-primary">
+                        {{ profile.full_name|default:target_user.username }}
+                    </a>
+                </h5>
+                <div class="text-muted small mb-3">@{{ target_user.username }}</div>
+
+                <div class="list-group list-group-flush text-start small border-top pt-2">
+                    <a href="{% url 'profile' target_user.username %}" class="list-group-item list-group-item-action py-2">
+                        <i class="fas fa-user me-2 text-primary"></i>View Profile
+                    </a>
+                    <a href="{% url 'photos_list' target_user.username %}" class="list-group-item list-group-item-action py-2">
+                        <i class="fas fa-images me-2 text-info"></i>Photo Albums
+                    </a>
+                    <a href="{% url 'user_friends' target_user.username %}" class="list-group-item list-group-item-action py-2">
+                        <i class="fas fa-users me-2 text-success"></i>Friends
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Middle / Main Scrapbook area -->
+        <div class="col-lg-9 col-md-8">
+            <div class="orkut-card">
+                <div class="orkut-card-header">
+                    <span>
+                        <i class="fas fa-book-open me-1 text-danger"></i>
+                        {{ profile.full_name|default:target_user.username }}'s Scrapbook ({{ scraps|length }} Scraps)
+                    </span>
+                    <a href="{% url 'profile' target_user.username %}" class="small text-decoration-none">back to profile</a>
+                </div>
+
+                <!-- Add Scrap Form -->
+                {% if can_scrap %}
+                <div class="p-3 bg-light rounded border mb-4">
+                    <h6 class="fw-bold mb-2 small text-secondary">
+                        <i class="fas fa-pen me-1 text-primary"></i> Leave a Scrap for {{ profile.full_name|default:target_user.username }}:
+                    </h6>
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-2">
+                            {{ form.message }}
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="small text-muted" style="font-size: 0.75rem;">
+                                <i class="fas fa-info-circle me-1"></i>Be kind and respectful in scrap messages.
+                            </span>
+                            <button type="submit" class="btn btn-orkut btn-sm px-4">
+                                <i class="fas fa-paper-plane me-1"></i> Post Scrap
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                {% else %}
+                <div class="alert alert-warning py-2 small mb-4">
+                    <i class="fas fa-lock me-1"></i> This user has restricted their scrapbook messages to friends only.
+                </div>
+                {% endif %}
+
+                <!-- Scraps Stream -->
+                {% if scraps %}
+                    {% for scrap in scraps %}
+                    <div class="scrap-entry">
+                        <div class="d-flex align-items-start gap-3">
+                            <a href="{% url 'profile' scrap.sender.username %}">
+                                <img src="{{ scrap.sender.orkut_profile.avatar_url }}" alt="avatar" class="rounded border" style="width: 48px; height: 48px; object-fit: cover;">
+                            </a>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <a href="{% url 'profile' scrap.sender.username %}" class="fw-bold text-decoration-none text-primary">
+                                            {{ scrap.sender.orkut_profile.full_name|default:scrap.sender.username }}
+                                        </a>
+                                        <span class="text-muted small">(@{{ scrap.sender.username }})</span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="text-muted small" style="font-size: 0.72rem;">
+                                            <i class="far fa-clock me-1"></i>{{ scrap.created_at|date:"M d, Y @ h:i A" }}
+                                        </span>
+                                        {% if scrap.recipient == user or scrap.sender == user or user.is_staff %}
+                                        <a href="{% url 'delete_scrap' scrap.id %}" class="text-danger small" title="Delete Scrap" onclick="return confirm('Delete this scrap message?');">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="mt-2 text-secondary" style="white-space: pre-line;">
+                                    {{ scrap.message }}
+                                </div>
+                                <!-- Quick reply link -->
+                                {% if scrap.sender != user %}
+                                <div class="mt-2">
+                                    <a href="{% url 'scrapbook' scrap.sender.username %}" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.72rem;">
+                                        <i class="fas fa-reply me-1"></i>Scrap back
+                                    </a>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-book-open fa-3x text-muted mb-2"></i>
+                        <h6 class="fw-bold text-secondary">No scraps here yet!</h6>
+                        <p class="small text-muted">Leave the very first scrap message above.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

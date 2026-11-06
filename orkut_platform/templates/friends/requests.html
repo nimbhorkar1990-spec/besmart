@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block title %}orkut - friend requests{% endblock %}
+
+{% block content %}
+<div class="container py-3">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="orkut-card">
+                <div class="orkut-card-header">
+                    <span><i class="fas fa-user-clock me-1 text-warning"></i> Pending Friend Requests ({{ pending_requests|length }})</span>
+                    <a href="{% url 'friends_list' %}" class="small text-decoration-none">Back to Friends</a>
+                </div>
+
+                {% if pending_requests %}
+                    <div class="list-group list-group-flush">
+                        {% for req in pending_requests %}
+                        <div class="list-group-item d-flex align-items-center justify-content-between p-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <a href="{% url 'profile' req.from_user.username %}">
+                                    <img src="{{ req.from_user.orkut_profile.avatar_url }}" alt="{{ req.from_user.username }}" class="rounded-circle border" style="width: 50px; height: 50px; object-fit: cover;">
+                                </a>
+                                <div>
+                                    <h6 class="mb-0 fw-bold">
+                                        <a href="{% url 'profile' req.from_user.username %}" class="text-decoration-none text-primary">
+                                            {{ req.from_user.orkut_profile.full_name|default:req.from_user.username }}
+                                        </a>
+                                    </h6>
+                                    <div class="text-muted small">
+                                        {{ req.from_user.orkut_profile.city|default:'India' }} &bull; {{ req.created_at|timesince }} ago
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <a href="{% url 'accept_friend_request' req.id %}" class="btn btn-success btn-sm px-3">
+                                    <i class="fas fa-check me-1"></i> Accept
+                                </a>
+                                <a href="{% url 'reject_friend_request' req.id %}" class="btn btn-outline-secondary btn-sm px-3">
+                                    <i class="fas fa-times me-1"></i> Reject
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-check-circle fa-3x text-success mb-2"></i>
+                        <h6 class="fw-bold">No pending friend requests!</h6>
+                        <p class="small text-muted mb-0">You're all caught up with your invitations.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Sent Requests Section -->
+            {% if sent_requests %}
+            <div class="orkut-card mt-3">
+                <div class="orkut-card-header">
+                    <span><i class="fas fa-paper-plane me-1 text-primary"></i> Sent Requests (Awaiting Confirmation)</span>
+                </div>
+                <div class="list-group list-group-flush">
+                    {% for req in sent_requests %}
+                    <div class="list-group-item d-flex align-items-center justify-content-between p-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <a href="{% url 'profile' req.to_user.username %}">
+                                <img src="{{ req.to_user.orkut_profile.avatar_url }}" alt="avatar" class="rounded-circle" style="width: 36px; height: 36px; object-fit: cover;">
+                            </a>
+                            <div>
+                                <span class="fw-semibold">{{ req.to_user.orkut_profile.full_name|default:req.to_user.username }}</span>
+                                <span class="text-muted small" style="font-size: 0.7rem;">(Sent {{ req.created_at|timesince }} ago)</span>
+                            </div>
+                        </div>
+                        <span class="badge bg-secondary">Pending</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
