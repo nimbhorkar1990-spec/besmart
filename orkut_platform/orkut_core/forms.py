@@ -139,3 +139,4 @@ class ReportForm(forms.ModelForm):
         widgets = {
             'reason': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Please specify why you are reporting this content...'}),
         }
+

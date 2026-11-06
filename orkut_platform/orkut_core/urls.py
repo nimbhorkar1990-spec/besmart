@@ -82,3 +82,4 @@ urlpatterns = [
     path('admin-dashboard/user/<int:user_id>/toggle/', views.admin_toggle_user_status, name='admin_toggle_user_status'),
     path('admin-dashboard/report/<int:report_id>/<str:action>/', views.admin_resolve_report, name='admin_resolve_report'),
 ]
+

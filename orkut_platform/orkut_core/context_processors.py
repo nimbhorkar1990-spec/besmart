@@ -45,3 +45,4 @@ def orkut_context(request):
         'total_friends_count': len(friends),
         'user_communities': [m.community for m in user_communities],
     }
+
