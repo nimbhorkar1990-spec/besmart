@@ -36,6 +36,18 @@ public class CustomUserDetails implements UserDetails {
         return user.getAvatarUrl();
     }
 
+    public boolean isEmployer() {
+        return user != null && user.isEmployer();
+    }
+
+    public String getAccountType() {
+        return user != null ? user.getAccountType() : null;
+    }
+
+    public String getCompanyName() {
+        return user != null ? user.getCompanyName() : null;
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return Collections.singletonList(new SimpleGrantedAuthority(user.getRole().name()));

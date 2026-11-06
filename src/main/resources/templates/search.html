@@ -78,6 +78,18 @@
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="searchUserMenuBtn">
                     <li><h6 class="dropdown-header" th:text="${currentUser != null ? currentUser.fullName : 'Account'}">User</h6></li>
+
+                    <!-- Employer Option: Post a Hiring / Job Post -->
+                    <li th:if="${currentUser != null and currentUser.isEmployer()}">
+                        <a class="dropdown-item fw-semibold text-primary py-2 d-flex align-items-center justify-content-between" th:href="@{/employment(post='true')}">
+                            <span><i class="fas fa-bullhorn me-2 text-primary"></i>Post a Hiring / Job Post</span>
+                            <span class="badge bg-primary text-white rounded-pill ms-2" style="font-size: 0.65rem;">Employer</span>
+                        </a>
+                    </li>
+                    <li th:if="${currentUser != null and currentUser.isEmployer()}">
+                        <hr class="dropdown-divider">
+                    </li>
+
                     <li><a class="dropdown-item" th:href="@{/user/saved}"><i class="fas fa-bookmark me-2 text-primary"></i>Saved Bookmarks</a></li>
                     <li><a class="dropdown-item" th:href="@{/user/history}"><i class="fas fa-history me-2 text-info"></i>Search History</a></li>
                     <li><a class="dropdown-item" th:href="@{/user/profile}"><i class="fas fa-user-circle me-2 text-secondary"></i>Profile</a></li>

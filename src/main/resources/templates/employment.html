@@ -81,15 +81,6 @@
                                 <i class="fas fa-plus-circle me-1"></i> Post a Job Opening
                             </button>
                         </div>
-                        <!-- When not logged in as Employer, hide Post a Job and prompt for Employer Login -->
-                        <div th:unless="${isEmployer}" class="d-flex align-items-center gap-2">
-                            <a th:href="@{/login}" class="btn btn-light text-primary fw-semibold btn-sm px-3 rounded-pill shadow-sm">
-                                <i class="fas fa-sign-in-alt me-1"></i> Employer Sign In to Post
-                            </a>
-                            <a th:href="@{/register?role=employer}" class="btn btn-outline-light btn-sm px-3 rounded-pill">
-                                Register
-                            </a>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -295,25 +286,6 @@
                                 data-bs-toggle="modal" data-bs-target="#postJobModal">
                             <i class="fas fa-plus-circle me-1"></i> Post a Job Opening
                         </button>
-                    </div>
-
-                    <!-- Employer Portal Info Card (Visible when NOT logged in as Employer) -->
-                    <div class="card border rounded-3 p-4 shadow-sm bg-body" th:unless="${isEmployer}">
-                        <div class="d-flex align-items-center gap-2 mb-2 text-primary">
-                            <i class="fas fa-building-circle-check fa-lg"></i>
-                            <h5 class="fw-bold mb-0">Employer Portal</h5>
-                        </div>
-                        <p class="text-secondary small mb-3">
-                            Posting a job opening is exclusively available to verified employers. Sign in with your Employer account or register your company to publish vacancies.
-                        </p>
-                        <div class="d-grid gap-2">
-                            <a th:href="@{/login}" class="btn btn-outline-primary btn-sm rounded-pill fw-medium">
-                                <i class="fas fa-sign-in-alt me-1"></i> Employer Sign In
-                            </a>
-                            <a th:href="@{/register?role=employer}" class="btn btn-light btn-sm rounded-pill text-secondary border">
-                                <i class="fas fa-user-plus me-1"></i> Register as Employer
-                            </a>
-                        </div>
                     </div>
 
                     <!-- Employment Services Overview Card -->

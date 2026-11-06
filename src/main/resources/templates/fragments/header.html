@@ -125,7 +125,7 @@
                                 <span class="badge bg-success text-white px-2 py-1 rounded-pill small fw-bold"><i class="fas fa-plus"></i></span>
                                 <i class="fas fa-bullhorn text-success fa-lg"></i>
                                 <div>
-                                    <div class="fw-semibold text-body">Post a Job Ad</div>
+                                    <div class="fw-semibold text-body">Post a Hiring / Job Post</div>
                                     <div class="text-muted small" style="font-size: 0.75rem;">Create &amp; publish verified vacancies</div>
                                 </div>
                             </a>
@@ -137,12 +137,12 @@
 
         <!-- Right: Actions, Theme Selector Dropdown, User Profile -->
         <div class="d-flex align-items-center gap-3">
-            <!-- Employer Quick Action: Post Job Ad -->
+            <!-- Employer Quick Action: Post a Hiring / Job Post -->
             <a th:if="${currentUser != null and currentUser.isEmployer()}" 
                th:href="@{/employment(post='true')}" 
                class="btn btn-primary btn-sm px-3 rounded-pill d-none d-sm-inline-flex align-items-center gap-1 shadow-sm fw-semibold">
                 <i class="fas fa-bullhorn"></i>
-                <span>Post Job Ad</span>
+                <span>Post Hiring Post</span>
             </a>
 
             <!-- Theme Dropdown Selector -->
@@ -159,10 +159,11 @@
                 <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="userMenuBtn">
                     <li><h6 class="dropdown-header" th:text="${currentUser != null ? currentUser.email : ''}">user@mail.com</h6></li>
 
-                    <!-- Employer Option: Post a Job Ad -->
+                    <!-- Employer Option: Post a Hiring / Job Post -->
                     <li th:if="${currentUser != null and currentUser.isEmployer()}">
-                        <a class="dropdown-item fw-semibold text-primary" th:href="@{/employment(post='true')}">
-                            <i class="fas fa-bullhorn me-2 text-primary"></i>Post a Job Ad
+                        <a class="dropdown-item fw-semibold text-primary py-2 d-flex align-items-center justify-content-between" th:href="@{/employment(post='true')}">
+                            <span><i class="fas fa-bullhorn me-2 text-primary"></i>Post a Hiring / Job Post</span>
+                            <span class="badge bg-primary text-white rounded-pill ms-2" style="font-size: 0.65rem;">Employer</span>
                         </a>
                     </li>
                     <li th:if="${currentUser != null and currentUser.isEmployer()}">
